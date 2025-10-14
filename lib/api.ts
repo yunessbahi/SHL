@@ -19,7 +19,8 @@ export async function authFetch(input: RequestInfo | URL, init: RequestInit = {}
 		? inputStr
 		: `${baseUrl.replace(/\/+$/, "")}/${inputStr.replace(/^\/+/, "")}`;
 
-	return fetch(url, {
+	return fetch(
+        url, {
 		...init,
 		headers,
 	});
