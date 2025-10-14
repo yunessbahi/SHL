@@ -79,5 +79,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Install Vercel CLI
+        run: pnpm add vercel -D
+
       - name: Deploy to Vercel
         run: pnpm exec vercel --prod --token ${{ secrets.VERCEL_TOKEN }}
