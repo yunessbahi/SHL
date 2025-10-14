@@ -15,10 +15,11 @@ module.exports = {
         "plugin:react-hooks/recommended" // <-- keep in extends only
     ],
     rules: {
-        "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
-        "react/react-in-jsx-scope": "off",
-        "no-console": "warn"
-    },
+    "@typescript-eslint/no-unused-vars": "warn",
+        "@typescript-eslint/no-explicit-any": "warn",
+        "react/no-unescaped-entities": "warn",
+        "no-console": "warn",
+},
     settings: {
         react: { version: "detect" }
     }
