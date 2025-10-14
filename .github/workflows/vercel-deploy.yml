@@ -22,10 +22,10 @@ jobs:
           cache: 'npm'
 
       - name: Install Dependencies
-        run: npm install
+        run: npm ci
 
       - name: Run ESLint
-        run: npm run lint
+        run: npx eslint . --ext .js,.jsx,.ts,.tsx,.mts,.cts --max-warnings=0
 
       - name: Run Prettier
         run: npm run format -- --check
@@ -46,7 +46,7 @@ jobs:
           cache: 'npm'
 
       - name: Install Dependencies
-        run: npm install
+        run: npm ci
 
       - name: Run TypeScript Type Checking
         run: npm run type-check
@@ -60,6 +60,15 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
 
       - name: Install Vercel CLI
         run: npm install -g vercel
