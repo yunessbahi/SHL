@@ -83,4 +83,4 @@ jobs:
         run: pnpm add vercel -D
 
       - name: Deploy to Vercel
-        run: pnpm exec vercel --prod --token ${{ secrets.VERCEL_TOKEN }}
+        run: pnpm exec vercel --prod --token=${{ secrets.VERCEL_TOKEN }}
