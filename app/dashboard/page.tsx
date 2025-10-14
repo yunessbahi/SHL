@@ -22,25 +22,28 @@ export default function Dashboard() {
   const supabase = createClient();
 
   useEffect(() => {
-    checkUser();
-    loadLinks();
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push("/auth/login");
+        return;
+      }
+      setUser(user);
+      // Load links only after we know we are authenticated
+      await loadLinks();
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const checkUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      router.push("/auth/login");
-      return;
-    }
-    setUser(user);
-  };
 
   const loadLinks = async () => {
     try {
-      const res = await authFetch("/api/links");
+      const res = await authFetch("/api/links/");
       if (res.ok) {
         const data = await res.json();
         setLinks(data);
+      } else {
+        const text = await res.text();
+        console.error("Failed to load links:", res.status, text);
       }
     } catch (err) {
       console.error("Failed to load links:", err);
@@ -60,7 +63,7 @@ export default function Dashboard() {
     setError("");
     
     try {
-      const res = await authFetch("/api/links", {
+      const res = await authFetch("/api/links/", {
         method: "POST",
         body: JSON.stringify({ target_url: url }),
       });
@@ -70,8 +73,14 @@ export default function Dashboard() {
         setLinks((prev) => [data, ...prev]);
         setUrl("");
       } else {
-        const errorData = await res.json();
-        setError(errorData.detail || "Failed to create link");
+        const text = await res.text();
+        console.error("Create link error:", res.status, text);
+        try {
+          const errorData = JSON.parse(text);
+          setError(errorData.detail || "Failed to create link");
+        } catch {
+          setError("Failed to create link");
+        }
       }
     } catch (err) {
       setError("Failed to create link");
@@ -81,9 +90,9 @@ export default function Dashboard() {
   };
 
   const copyToClipboard = async (shortCode: string) => {
-    const fullUrl = `${process.env.NEXT_PUBLIC_API_URL}/r/${shortCode}`;
+    const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "") || "";
+    const fullUrl = `${base}/r/${shortCode}`;
     await navigator.clipboard.writeText(fullUrl);
-    // You could add a toast notification here
   };
 
   const formatDate = (dateString: string) => {
@@ -226,7 +235,7 @@ export default function Dashboard() {
                       <div className="flex items-center space-x-3">
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-indigo-600 truncate">
-                            {process.env.NEXT_PUBLIC_API_URL}/r/{link.short_code}
+                            {process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "")}/r/{link.short_code}
                           </p>
                           <p className="text-sm text-gray-500 truncate">
                             → {link.target_url}
@@ -259,14 +268,14 @@ export default function Dashboard() {
                         </svg>
                       </button>
                       <a
-                        href={`${process.env.NEXT_PUBLIC_API_URL}/r/${link.short_code}`}
+                        href={`${process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "")}/r/${link.short_code}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-gray-400 hover:text-gray-600 p-1"
                         title="Open link"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 0 0 2-2v-4M14 4h6m0 0v6m0-6L10 14" />
                         </svg>
                       </a>
                     </div>

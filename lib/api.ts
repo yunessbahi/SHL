@@ -7,13 +7,19 @@ export async function authFetch(input: RequestInfo | URL, init: RequestInit = {}
 	const headers = new Headers(init.headers || {});
 	if (token) headers.set("Authorization", `Bearer ${token}`);
 	headers.set("Content-Type", "application/json");
-	
+
 	const baseUrl = process.env.NEXT_PUBLIC_API_URL;
 	if (!baseUrl) {
 		throw new Error("NEXT_PUBLIC_API_URL environment variable is not set");
 	}
-	
-	return fetch(new URL(String(input), baseUrl), {
+	// Build absolute URL without causing proxy 307 redirects
+	const inputStr = String(input);
+	const absolute = inputStr.startsWith("http://") || inputStr.startsWith("https://");
+	const url = absolute
+		? inputStr
+		: `${baseUrl.replace(/\/+$/, "")}/${inputStr.replace(/^\/+/, "")}`;
+
+	return fetch(url, {
 		...init,
 		headers,
 	});
