@@ -71,7 +71,10 @@ export default function LoginPage() {
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             Or{" "}
-            <Link href="/auth/signup" className="font-medium text-indigo-600 hover:text-indigo-500">
+            <Link
+              href="/auth/signup"
+              className="font-medium text-indigo-600 hover:text-indigo-500"
+            >
               create a new account
             </Link>
           </p>
@@ -86,7 +89,10 @@ export default function LoginPage() {
 
           <form className="space-y-6" onSubmit={handleEmailLogin}>
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Email address
               </label>
               <input
@@ -103,7 +109,10 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Password
               </label>
               <input
@@ -136,7 +145,9 @@ export default function LoginPage() {
                 <div className="w-full border-t border-gray-300" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Or continue with</span>
+                <span className="px-2 bg-white text-gray-500">
+                  Or continue with
+                </span>
               </div>
             </div>
 

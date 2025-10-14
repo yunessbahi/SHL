@@ -80,13 +80,26 @@ export default function SignupPage() {
         <div className="max-w-md w-full space-y-8">
           <div className="bg-white py-8 px-6 shadow rounded-lg text-center">
             <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              <svg
+                className="w-6 h-6 text-green-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Check your email</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              Check your email
+            </h2>
             <p className="text-gray-600 mb-6">
-              We've sent you a confirmation link. Click it to activate your account.
+              We've sent you a confirmation link. Click it to activate your
+              account.
             </p>
             <Link
               href="/auth/login"
@@ -114,7 +127,10 @@ export default function SignupPage() {
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             Or{" "}
-            <Link href="/auth/login" className="font-medium text-indigo-600 hover:text-indigo-500">
+            <Link
+              href="/auth/login"
+              className="font-medium text-indigo-600 hover:text-indigo-500"
+            >
               sign in to your existing account
             </Link>
           </p>
@@ -129,7 +145,10 @@ export default function SignupPage() {
 
           <form className="space-y-6" onSubmit={handleEmailSignup}>
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Email address
               </label>
               <input
@@ -146,7 +165,10 @@ export default function SignupPage() {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Password
               </label>
               <input
@@ -163,7 +185,10 @@ export default function SignupPage() {
             </div>
 
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="confirmPassword"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Confirm Password
               </label>
               <input
@@ -196,7 +221,9 @@ export default function SignupPage() {
                 <div className="w-full border-t border-gray-300" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Or continue with</span>
+                <span className="px-2 bg-white text-gray-500">
+                  Or continue with
+                </span>
               </div>
             </div>
 

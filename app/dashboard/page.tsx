@@ -23,7 +23,9 @@ export default function Dashboard() {
 
   useEffect(() => {
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
         router.push("/auth/login");
         return;
@@ -58,16 +60,16 @@ export default function Dashboard() {
   const createLink = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!url) return;
-    
+
     setLoading(true);
     setError("");
-    
+
     try {
       const res = await authFetch("/api/links/", {
         method: "POST",
         body: JSON.stringify({ target_url: url }),
       });
-      
+
       if (res.ok) {
         const data = await res.json();
         setLinks((prev) => [data, ...prev]);
@@ -114,9 +116,11 @@ export default function Dashboard() {
               <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">SL</span>
               </div>
-              <span className="text-xl font-bold text-gray-900">Smart Link Hub</span>
+              <span className="text-xl font-bold text-gray-900">
+                Smart Link Hub
+              </span>
             </div>
-            
+
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-600">
                 Welcome, {user?.email}
@@ -138,13 +142,25 @@ export default function Dashboard() {
           <div className="bg-white p-6 rounded-lg shadow-sm">
             <div className="flex items-center">
               <div className="p-2 bg-indigo-100 rounded-lg">
-                <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                <svg
+                  className="w-6 h-6 text-indigo-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+                  />
                 </svg>
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Total Links</p>
-                <p className="text-2xl font-semibold text-gray-900">{links.length}</p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {links.length}
+                </p>
               </div>
             </div>
           </div>
@@ -152,14 +168,26 @@ export default function Dashboard() {
           <div className="bg-white p-6 rounded-lg shadow-sm">
             <div className="flex items-center">
               <div className="p-2 bg-green-100 rounded-lg">
-                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg
+                  className="w-6 h-6 text-green-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Active Links</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Active Links
+                </p>
                 <p className="text-2xl font-semibold text-gray-900">
-                  {links.filter(link => !isExpired(link.expires_at)).length}
+                  {links.filter((link) => !isExpired(link.expires_at)).length}
                 </p>
               </div>
             </div>
@@ -168,14 +196,26 @@ export default function Dashboard() {
           <div className="bg-white p-6 rounded-lg shadow-sm">
             <div className="flex items-center">
               <div className="p-2 bg-yellow-100 rounded-lg">
-                <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg
+                  className="w-6 h-6 text-yellow-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Expired Links</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Expired Links
+                </p>
                 <p className="text-2xl font-semibold text-gray-900">
-                  {links.filter(link => isExpired(link.expires_at)).length}
+                  {links.filter((link) => isExpired(link.expires_at)).length}
                 </p>
               </div>
             </div>
@@ -184,8 +224,10 @@ export default function Dashboard() {
 
         {/* Create Link Form */}
         <div className="bg-white p-6 rounded-lg shadow-sm mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Create New Link</h2>
-          
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            Create New Link
+          </h2>
+
           {error && (
             <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
               {error}
@@ -218,11 +260,21 @@ export default function Dashboard() {
           <div className="px-6 py-4 border-b border-gray-200">
             <h2 className="text-lg font-semibold text-gray-900">Your Links</h2>
           </div>
-          
+
           {links.length === 0 ? (
             <div className="p-6 text-center text-gray-500">
-              <svg className="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+              <svg
+                className="w-12 h-12 mx-auto mb-4 text-gray-300"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+                />
               </svg>
               <p>No links created yet. Create your first link above!</p>
             </div>
@@ -235,7 +287,11 @@ export default function Dashboard() {
                       <div className="flex items-center space-x-3">
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-indigo-600 truncate">
-                            {process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "")}/r/{link.short_code}
+                            {process.env.NEXT_PUBLIC_API_URL?.replace(
+                              /\/+$/,
+                              "",
+                            )}
+                            /r/{link.short_code}
                           </p>
                           <p className="text-sm text-gray-500 truncate">
                             → {link.target_url}
@@ -250,21 +306,29 @@ export default function Dashboard() {
                       <div className="mt-2 flex items-center space-x-4 text-xs text-gray-500">
                         <span>Created: {formatDate(link.created_at)}</span>
                         {link.expires_at && (
-                          <span>
-                            Expires: {formatDate(link.expires_at)}
-                          </span>
+                          <span>Expires: {formatDate(link.expires_at)}</span>
                         )}
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => copyToClipboard(link.short_code)}
                         className="text-gray-400 hover:text-gray-600 p-1"
                         title="Copy link"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                          />
                         </svg>
                       </button>
                       <a
@@ -274,8 +338,18 @@ export default function Dashboard() {
                         className="text-gray-400 hover:text-gray-600 p-1"
                         title="Open link"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 0 0 2-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 0 0 2-2v-4M14 4h6m0 0v6m0-6L10 14"
+                          />
                         </svg>
                       </a>
                     </div>
