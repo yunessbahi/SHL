@@ -1,8 +1,8 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { authFetch } from "../../lib/api";
-import { createClient } from "../../lib/supabase/client";
+import { authFetch } from "@/lib/api";
+import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 
 interface LinkData {
