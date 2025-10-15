@@ -11,7 +11,7 @@ interface LinkData {
 }
 
 // --------- authFetch helper ---------
-const authFetch = async (input: RequestInfo, init?: RequestInit) => {
+const authFetch = async (endpoint: string, init?: RequestInit) => {
   const supabase = createClient();
   const {
     data: { session },
@@ -21,8 +21,10 @@ const authFetch = async (input: RequestInfo, init?: RequestInit) => {
   if (error || !session) throw new Error("No active session");
 
   const token = session.access_token;
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "") || "";
+  const fullUrl = `${baseUrl}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
 
-  return fetch(input, {
+  return fetch(fullUrl, {
     ...init,
     headers: {
       ...(init?.headers || {}),
@@ -367,7 +369,7 @@ export default function Dashboard() {
                             strokeLinecap="round"
                             strokeLinejoin="round"
                             strokeWidth={2}
-                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 0 0 2-2v-4M14 4h6m0 0v6m0-6L10 14"
+                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
                           />
                         </svg>
                       </a>
