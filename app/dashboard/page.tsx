@@ -1,9 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import Link from "next/link";
-import { authFetch } from "@/lib/api";
-import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
 interface LinkData {
   short_code: string;
@@ -11,6 +9,28 @@ interface LinkData {
   expires_at: string | null;
   created_at: string;
 }
+
+// --------- authFetch helper ---------
+const authFetch = async (input: RequestInfo, init?: RequestInit) => {
+  const supabase = createClient();
+  const {
+    data: { session },
+    error,
+  } = await supabase.auth.getSession();
+
+  if (error || !session) throw new Error("No active session");
+
+  const token = session.access_token;
+
+  return fetch(input, {
+    ...init,
+    headers: {
+      ...(init?.headers || {}),
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
+};
 
 export default function Dashboard() {
   const [url, setUrl] = useState("");
@@ -21,6 +41,7 @@ export default function Dashboard() {
   const router = useRouter();
   const supabase = createClient();
 
+  // --------- Load user & links ---------
   useEffect(() => {
     (async () => {
       const {
@@ -31,7 +52,6 @@ export default function Dashboard() {
         return;
       }
       setUser(user);
-      // Load links only after we know we are authenticated
       await loadLinks();
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -97,9 +117,8 @@ export default function Dashboard() {
     await navigator.clipboard.writeText(fullUrl);
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
-  };
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString();
 
   const isExpired = (expiresAt: string | null) => {
     if (!expiresAt) return false;
