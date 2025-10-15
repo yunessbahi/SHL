@@ -8,6 +8,7 @@ interface LinkData {
   target_url: string;
   expires_at: string | null;
   created_at: string;
+  short_url?: string; // optional, can come from backend
 }
 
 // --------- authFetch helper ---------
@@ -63,8 +64,13 @@ export default function Dashboard() {
     try {
       const res = await authFetch("/api/links/");
       if (res.ok) {
-        const data = await res.json();
-        setLinks(data);
+        const data = await res.json(); // array of links
+        // Map each link to include short_url for convenience
+        const mapped = data.map((link: LinkData) => ({
+          ...link,
+          short_url: `${process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "")}/r/${link.short_code}`,
+        }));
+        setLinks(mapped);
       } else {
         const text = await res.text();
         console.error("Failed to load links:", res.status, text);
@@ -93,8 +99,10 @@ export default function Dashboard() {
       });
 
       if (res.ok) {
-        const data = await res.json();
-        setLinks((prev) => [data, ...prev]);
+        const data = await res.json(); // backend returns array
+        const linkObj = Array.isArray(data) ? data[0] : data;
+        linkObj.short_url = `${process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "")}/r/${linkObj.short_code}`;
+        setLinks((prev) => [linkObj, ...prev]);
         setUrl("");
       } else {
         const text = await res.text();
@@ -113,10 +121,8 @@ export default function Dashboard() {
     }
   };
 
-  const copyToClipboard = async (shortCode: string) => {
-    const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "") || "";
-    const fullUrl = `${base}/r/${shortCode}`;
-    await navigator.clipboard.writeText(fullUrl);
+  const copyToClipboard = async (shortUrl: string) => {
+    await navigator.clipboard.writeText(shortUrl);
   };
 
   const formatDate = (dateString: string) =>
@@ -308,11 +314,7 @@ export default function Dashboard() {
                       <div className="flex items-center space-x-3">
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-indigo-600 truncate">
-                            {process.env.NEXT_PUBLIC_API_URL?.replace(
-                              /\/+$/,
-                              "",
-                            )}
-                            /r/{link.short_code}
+                            {link.short_url}
                           </p>
                           <p className="text-sm text-gray-500 truncate">
                             → {link.target_url}
@@ -334,7 +336,7 @@ export default function Dashboard() {
 
                     <div className="flex items-center space-x-2">
                       <button
-                        onClick={() => copyToClipboard(link.short_code)}
+                        onClick={() => copyToClipboard(link.short_url!)}
                         className="text-gray-400 hover:text-gray-600 p-1"
                         title="Copy link"
                       >
@@ -353,7 +355,7 @@ export default function Dashboard() {
                         </svg>
                       </button>
                       <a
-                        href={`${process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "")}/r/${link.short_code}`}
+                        href={link.short_url}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-gray-400 hover:text-gray-600 p-1"
