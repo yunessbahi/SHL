@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { authFetch } from "@/lib/api";
+import { createClient } from "@/lib/supabase/client";
 import WeightSlider from "@/app/components/WeightSlider";
 import RuleTabs from "@/app/components/RuleTabs";
 
@@ -17,17 +18,25 @@ export default function TargetsPage() {
   });
   const [editingId, setEditingId] = useState<number | null>(null);
   const [error, setError] = useState("");
+  const [hasSession, setHasSession] = useState<boolean | null>(null);
 
-  // Load targets
+  useEffect(() => {
+    const run = async () => {
+      const supabase = createClient();
+      const { data } = await supabase.auth.getSession();
+      setHasSession(!!data.session?.access_token);
+    };
+    run();
+  }, []);
+
   const load = async () => {
     const res = await authFetch(`/api/targets/link/${linkId}`);
     if (res.ok) setItems(await res.json());
   };
   useEffect(() => {
-    if (linkId) load();
-  }, [linkId]);
+    if (linkId && hasSession) load();
+  }, [linkId, hasSession]);
 
-  // Reset draft
   const resetDraft = () =>
     setDraft({
       id: null,
@@ -36,7 +45,6 @@ export default function TargetsPage() {
       rules: { country_allow: [], utm_overrides: {} },
     });
 
-  // Start editing
   const editTarget = (target: any) => {
     setEditingId(target.id);
     setDraft({
@@ -47,13 +55,11 @@ export default function TargetsPage() {
     });
   };
 
-  // Cancel editing
   const cancelEdit = () => {
     setEditingId(null);
     resetDraft();
   };
 
-  // Delete action
   const deleteTarget = async (id: number) => {
     if (!window.confirm("Remove this target?")) return;
     setError("");
@@ -64,7 +70,6 @@ export default function TargetsPage() {
     } else setError(await res.text());
   };
 
-  // Apply (add or update)
   const apply = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -103,9 +108,16 @@ export default function TargetsPage() {
     }
   };
 
-  // Unified field setters
   const setDraftField = (k: string, v: any) =>
     setDraft((prev) => ({ ...prev, [k]: v }));
+
+  if (hasSession === false) {
+    return (
+      <div className="max-w-5xl mx-auto px-6 py-8">
+        Please sign in to manage targets.
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-8">

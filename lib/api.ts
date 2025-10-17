@@ -5,8 +5,12 @@ export async function authFetch(url: string, options: RequestInit = {}) {
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
 
+  if (!token) {
+    throw new Error("No authenticated session. Please sign in.");
+  }
+
   const headers = new Headers(options.headers || {});
-  if (token) headers.set("Authorization", `Bearer ${token}`);
+  headers.set("Authorization", `Bearer ${token}`);
   if (!headers.has("Content-Type") && options.body)
     headers.set("Content-Type", "application/json");
 
