@@ -114,16 +114,15 @@ export default function TargetsPage() {
         onSubmit={apply}
         className="bg-white p-4 rounded border mb-6 space-y-4"
       >
-        <div>
-          <label className="block text-sm">Target URL</label>
-          <input
-            value={draft.target_url}
-            onChange={(e) => setDraftField("target_url", e.target.value)}
-            className="w-full border p-2 rounded"
-            required
-            disabled={!!editingId && editingId !== draft.id}
-          />
-        </div>
+         <div>
+           <label className="block text-sm">Target URL</label>
+           <input
+             value={draft.target_url}
+             onChange={(e) => setDraftField("target_url", e.target.value)}
+             className="w-full border p-2 rounded"
+             required
+           />
+         </div>
         <WeightSlider
           value={draft.weight}
           onChange={(v) => setDraftField("weight", v)}
