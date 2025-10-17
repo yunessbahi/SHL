@@ -12,14 +12,23 @@ const COUNTRY_OPTIONS = [
   { label: "CA", value: "CA" },
 ];
 
+type RuleTabsProps = {
+  rules: any;
+  setRules: (r: any) => void;
+  activeTab?: string;
+  onTabChange?: (tab: string) => void;
+};
+
 export default function RuleTabs({
   rules,
   setRules,
-}: {
-  rules: any;
-  setRules: (r: any) => void;
-}) {
-  const [tab, setTab] = useState("audience");
+  activeTab,
+  onTabChange,
+}: RuleTabsProps) {
+  const [internalTab, setInternalTab] = useState("audience");
+  const tab = activeTab ?? internalTab;
+  const changeTab = onTabChange ?? setInternalTab;
+
   const jsonStr = useMemo(() => JSON.stringify(rules || {}, null, 2), [rules]);
 
   return (
@@ -28,7 +37,7 @@ export default function RuleTabs({
         {["audience", "behavior", "utm", "json"].map((t) => (
           <button
             key={t}
-            onClick={() => setTab(t)}
+            onClick={() => changeTab(t)}
             className={`px-3 py-2 text-sm ${tab === t ? "border-b-2 border-indigo-600 font-semibold" : "text-gray-600"}`}
           >
             {t.toUpperCase()}
