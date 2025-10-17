@@ -1,5 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
+import Sidebar from "./components/sidebar/Sidebar";
 
 export const metadata: Metadata = {
   title: "Smart Link Hub",
@@ -13,7 +14,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <Sidebar>{children}</Sidebar>
+      </body>
     </html>
   );
 }

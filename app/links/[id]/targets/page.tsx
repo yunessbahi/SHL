@@ -5,12 +5,16 @@ import { authFetch } from "@/lib/api";
 import { createClient } from "@/lib/supabase/client";
 import WeightSlider from "@/app/components/WeightSlider";
 import RuleTabs from "@/app/components/RuleTabs";
+import TargetMetadataSelector from "@/app/components/TargetMetadataSelector";
 
 type Draft = {
   id: number | null;
   target_url: string;
   weight: number;
   rules: any;
+  campaign_id?: number | null;
+  group_id?: number | null;
+  utm_template_id?: number | null;
 };
 
 type Action =
@@ -25,6 +29,9 @@ const initialDraft: Draft = {
   target_url: "",
   weight: 10,
   rules: { country_allow: [], utm_overrides: {} },
+  campaign_id: null,
+  group_id: null,
+  utm_template_id: null,
 };
 
 function draftReducer(state: Draft, action: Action): Draft {
@@ -109,6 +116,9 @@ export default function TargetsPage() {
         target_url: target.target_url,
         weight: target.weight,
         rules: target.rules || {},
+        campaign_id: target.campaign_id,
+        group_id: target.group_id,
+        utm_template_id: target.utm_template_id,
       },
     });
   };
@@ -143,6 +153,9 @@ export default function TargetsPage() {
       target_url: draft.target_url,
       weight: Number(draft.weight) || 1,
       rules: draft.rules || {},
+      campaign_id: draft.campaign_id,
+      group_id: draft.group_id,
+      utm_template_id: draft.utm_template_id,
     };
     try {
       let res;
@@ -194,6 +207,24 @@ export default function TargetsPage() {
             }
             className="w-full border p-2 rounded"
             required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm mb-3">Metadata</label>
+          <TargetMetadataSelector
+            campaignId={draft.campaign_id}
+            groupId={draft.group_id}
+            utmTemplateId={draft.utm_template_id}
+            onCampaignChange={(id) =>
+              dispatch({ type: "set_field", key: "campaign_id", value: id })
+            }
+            onGroupChange={(id) =>
+              dispatch({ type: "set_field", key: "group_id", value: id })
+            }
+            onUTMTemplateChange={(id) =>
+              dispatch({ type: "set_field", key: "utm_template_id", value: id })
+            }
           />
         </div>
         <WeightSlider
