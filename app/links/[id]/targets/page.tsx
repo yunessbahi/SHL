@@ -213,9 +213,9 @@ export default function TargetsPage() {
         <div>
           <label className="block text-sm mb-3">Metadata</label>
           <TargetMetadataSelector
-            campaignId={draft.campaign_id}
-            groupId={draft.group_id}
-            utmTemplateId={draft.utm_template_id}
+            campaignId={draft.campaign_id ?? undefined}
+            groupId={draft.group_id ?? undefined}
+            utmTemplateId={draft.utm_template_id ?? undefined}
             onCampaignChange={(id) =>
               dispatch({ type: "set_field", key: "campaign_id", value: id })
             }

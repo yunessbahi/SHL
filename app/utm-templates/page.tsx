@@ -97,7 +97,13 @@ export default function UTMTemplatesPage() {
     setFormData({
       name: template.name,
       description: template.description,
-      utm_params: template.utm_params,
+      utm_params: {
+        utm_source: template.utm_params.utm_source || "",
+        utm_medium: template.utm_params.utm_medium || "",
+        utm_campaign: template.utm_params.utm_campaign || "",
+        utm_term: template.utm_params.utm_term || "",
+        utm_content: template.utm_params.utm_content || "",
+      },
     });
     setShowForm(true);
   };
