@@ -1,25 +1,63 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useReducer, useState } from "react";
 import { useParams } from "next/navigation";
 import { authFetch } from "@/lib/api";
 import { createClient } from "@/lib/supabase/client";
 import WeightSlider from "@/app/components/WeightSlider";
 import RuleTabs from "@/app/components/RuleTabs";
 
+type Draft = {
+  id: number | null;
+  target_url: string;
+  weight: number;
+  rules: any;
+};
+
+type Action =
+  | { type: "set_field"; key: keyof Draft; value: any }
+  | { type: "merge_rules"; value: any }
+  | { type: "replace_rules"; value: any }
+  | { type: "load"; value: Draft }
+  | { type: "reset" };
+
+const initialDraft: Draft = {
+  id: null,
+  target_url: "",
+  weight: 10,
+  rules: { country_allow: [], utm_overrides: {} },
+};
+
+function draftReducer(state: Draft, action: Action): Draft {
+  switch (action.type) {
+    case "set_field":
+      return { ...state, [action.key]: action.value } as Draft;
+    case "merge_rules":
+      return { ...state, rules: { ...state.rules, ...action.value } };
+    case "replace_rules":
+      return { ...state, rules: action.value };
+    case "load":
+      return { ...action.value };
+    case "reset":
+      return { ...initialDraft };
+    default:
+      return state;
+  }
+}
+
 export default function TargetsPage() {
   const params = useParams();
   const linkId = Number(params?.id);
+  const storageKey = useMemo(() => `targets_draft_link_${linkId}`, [linkId]);
+
   const [items, setItems] = useState<any[]>([]);
-  const [draft, setDraft] = useState({
-    id: null,
-    target_url: "",
-    weight: 10,
-    rules: { country_allow: [], utm_overrides: {} },
-  });
   const [editingId, setEditingId] = useState<number | null>(null);
   const [error, setError] = useState("");
   const [hasSession, setHasSession] = useState<boolean | null>(null);
+  const [activeTab, setActiveTab] = useState<string>("audience");
 
+  const [draft, dispatch] = useReducer(draftReducer, initialDraft);
+
+  // Load session
   useEffect(() => {
     const run = async () => {
       const supabase = createClient();
@@ -29,6 +67,26 @@ export default function TargetsPage() {
     run();
   }, []);
 
+  // Load persisted draft
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        dispatch({ type: "load", value: { ...initialDraft, ...parsed } });
+        setEditingId(parsed?.id ?? null);
+      }
+    } catch {}
+  }, [storageKey]);
+
+  // Persist draft
+  useEffect(() => {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(draft));
+    } catch {}
+  }, [storageKey, draft]);
+
+  // Fetch targets
   const load = async () => {
     const res = await authFetch(`/api/targets/link/${linkId}`);
     if (res.ok) setItems(await res.json());
@@ -37,26 +95,25 @@ export default function TargetsPage() {
     if (linkId && hasSession) load();
   }, [linkId, hasSession]);
 
-  const resetDraft = () =>
-    setDraft({
-      id: null,
-      target_url: "",
-      weight: 10,
-      rules: { country_allow: [], utm_overrides: {} },
-    });
+  const resetDraft = () => {
+    dispatch({ type: "reset" });
+    setEditingId(null);
+  };
 
   const editTarget = (target: any) => {
     setEditingId(target.id);
-    setDraft({
-      id: target.id,
-      target_url: target.target_url,
-      weight: target.weight,
-      rules: target.rules || {},
+    dispatch({
+      type: "load",
+      value: {
+        id: target.id,
+        target_url: target.target_url,
+        weight: target.weight,
+        rules: target.rules || {},
+      },
     });
   };
 
   const cancelEdit = () => {
-    setEditingId(null);
     resetDraft();
   };
 
@@ -65,9 +122,14 @@ export default function TargetsPage() {
     setError("");
     const res = await authFetch(`/api/targets/${id}`, { method: "DELETE" });
     if (res.ok) {
-      load();
+      await load();
       if (editingId === id) cancelEdit();
     } else setError(await res.text());
+  };
+
+  const saveDraft = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(""); /* already persisted */
   };
 
   const apply = async (e: React.FormEvent) => {
@@ -77,39 +139,31 @@ export default function TargetsPage() {
       setError("Target URL required");
       return;
     }
-    if (!draft.rules) draft.rules = { country_allow: [], utm_overrides: {} };
+    const body = {
+      target_url: draft.target_url,
+      weight: Number(draft.weight) || 1,
+      rules: draft.rules || {},
+    };
     try {
-      let res,
-        body = {
-          target_url: draft.target_url,
-          weight: Number(draft.weight) || 1,
-          rules: draft.rules,
-        };
-      if (editingId) {
+      let res;
+      if (editingId)
         res = await authFetch(`/api/targets/${editingId}`, {
           method: "PATCH",
           body: JSON.stringify(body),
         });
-      } else {
+      else
         res = await authFetch(`/api/targets/link/${linkId}`, {
           method: "POST",
           body: JSON.stringify(body),
         });
-      }
       if (res.ok) {
-        resetDraft();
-        setEditingId(null);
         await load();
-      } else {
-        setError(await res.text());
-      }
+        resetDraft();
+      } else setError(await res.text());
     } catch (err: any) {
       setError(err?.message || "Failed to save target");
     }
   };
-
-  const setDraftField = (k: string, v: any) =>
-    setDraft((prev) => ({ ...prev, [k]: v }));
 
   if (hasSession === false) {
     return (
@@ -122,41 +176,56 @@ export default function TargetsPage() {
   return (
     <div className="max-w-5xl mx-auto px-6 py-8">
       <h1 className="text-2xl font-bold mb-4">Targets for Link #{linkId}</h1>
+
       <form
-        onSubmit={apply}
+        onSubmit={saveDraft}
         className="bg-white p-4 rounded border mb-6 space-y-4"
       >
         <div>
           <label className="block text-sm">Target URL</label>
           <input
             value={draft.target_url}
-            onChange={(e) => setDraftField("target_url", e.target.value)}
+            onChange={(e) =>
+              dispatch({
+                type: "set_field",
+                key: "target_url",
+                value: e.target.value,
+              })
+            }
             className="w-full border p-2 rounded"
             required
           />
         </div>
         <WeightSlider
           value={draft.weight}
-          onChange={(v) => setDraftField("weight", v)}
+          onChange={(v) =>
+            dispatch({ type: "set_field", key: "weight", value: v })
+          }
         />
         <RuleTabs
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
           rules={draft.rules}
-          setRules={(updatesOrObj) =>
-            typeof updatesOrObj === "function"
-              ? setDraft((d) => ({
-                  ...d,
-                  rules: { ...d.rules, ...updatesOrObj(d.rules) },
-                }))
-              : setDraft((d) => ({
-                  ...d,
-                  rules: { ...d.rules, ...updatesOrObj },
-                }))
-          }
+          setRules={(next) => {
+            if (typeof next === "function") {
+              const merged = next(draft.rules);
+              dispatch({ type: "merge_rules", value: merged });
+            } else {
+              dispatch({ type: "merge_rules", value: next });
+            }
+          }}
         />
         {error && <div className="text-red-600 text-sm">{error}</div>}
         <div className="flex gap-3">
           <button
             type="submit"
+            className="bg-gray-100 border px-4 py-2 rounded"
+          >
+            Save Draft
+          </button>
+          <button
+            type="button"
+            onClick={apply}
             className="bg-indigo-600 text-white px-4 py-2 rounded"
           >
             {editingId ? "Apply Changes" : "Add Target"}
@@ -172,6 +241,7 @@ export default function TargetsPage() {
           )}
         </div>
       </form>
+
       <div className="bg-white rounded border">
         <table className="w-full text-sm">
           <thead>
@@ -184,7 +254,7 @@ export default function TargetsPage() {
             </tr>
           </thead>
           <tbody>
-            {items.map((t) => (
+            {items.map((t: any) => (
               <tr key={t.id} className="border-t">
                 <td className="p-2">{t.id}</td>
                 <td className="p-2">{t.target_url}</td>
