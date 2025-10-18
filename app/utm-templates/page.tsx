@@ -133,7 +133,7 @@ export default function UTMTemplatesPage() {
                   )}
                   <div className="mt-1 flex gap-2 flex-wrap text-xs text-muted-foreground">
                     {template.is_global ? (
-                      <span className="px-2 py-1 bg-gray-100 rounded">
+                      <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">
                         Global
                       </span>
                     ) : template.campaigns && template.campaigns.length ? (
@@ -147,7 +147,7 @@ export default function UTMTemplatesPage() {
                       ))
                     ) : (
                       <span className="px-2 py-1 bg-gray-100 rounded">
-                        No campaigns
+                        No campaigns assigned
                       </span>
                     )}
                   </div>

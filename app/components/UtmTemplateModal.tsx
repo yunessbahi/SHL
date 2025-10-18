@@ -139,19 +139,22 @@ export function UtmTemplateModal({
           {!form.is_global && (
             <div>
               <label className="block text-sm font-medium mb-2">
-                Assign to Campaigns
+                Assign to Campaign
               </label>
               <select
                 className="w-full border p-2 rounded"
-                multiple
-                value={form.campaign_ids.map(String)}
+                value={form.campaign_ids.length > 0 ? form.campaign_ids[0] : ""}
                 onChange={(e) => {
-                  const vals = Array.from(e.target.selectedOptions).map((opt) =>
-                    Number(opt.value),
-                  );
-                  setForm({ ...form, campaign_ids: vals });
+                  const campaignId = e.target.value
+                    ? Number(e.target.value)
+                    : null;
+                  setForm({
+                    ...form,
+                    campaign_ids: campaignId ? [campaignId] : [],
+                  });
                 }}
               >
+                <option value="">Select a campaign...</option>
                 {campaigns.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}

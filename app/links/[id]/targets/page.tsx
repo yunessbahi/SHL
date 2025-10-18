@@ -127,6 +127,18 @@ export default function TargetsPage() {
     loadTemplates();
   }, [draft.campaign_id]);
 
+  // Update template preview when template is selected
+  useEffect(() => {
+    if (draft.utm_template_id) {
+      const template = templates.find((t) => t.id === draft.utm_template_id);
+      if (template) {
+        setTemplatePreview(template.utm_params);
+      }
+    } else {
+      setTemplatePreview({});
+    }
+  }, [draft.utm_template_id, templates]);
+
   useEffect(() => {
     // Persist draft
     try {
@@ -244,7 +256,7 @@ export default function TargetsPage() {
           />
         </div>
         <div>
-          <label className="block text-sm mb-2">Campaign</label>
+          <label className="block text-sm mb-2">Campaign (Optional)</label>
           <select
             value={draft.campaign_id || ""}
             onChange={(e) =>
@@ -255,9 +267,8 @@ export default function TargetsPage() {
               })
             }
             className="w-full border p-2 rounded"
-            required
           >
-            <option value="">Select...</option>
+            <option value="">Select campaign...</option>
             {campaigns.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
@@ -267,15 +278,17 @@ export default function TargetsPage() {
         </div>
         <div>
           <div className="flex items-center gap-2">
-            <label className="block text-sm mb-2">UTM Template</label>
+            <label className="block text-sm mb-2">
+              UTM Template (Optional)
+            </label>
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={() => {
                 setModalInitial({
-                  campaign_ids: [draft.campaign_id] || [],
-                  is_global: false,
+                  campaign_ids: draft.campaign_id ? [draft.campaign_id] : [],
+                  is_global: !draft.campaign_id,
                   utm_params: {
                     utm_source: "",
                     utm_medium: "",
@@ -300,8 +313,6 @@ export default function TargetsPage() {
               })
             }
             className="w-full border p-2 rounded"
-            disabled={!draft.campaign_id}
-            required={!!draft.campaign_id}
           >
             <option value="">Select template...</option>
             {templates.map((tpl) => (
@@ -327,6 +338,28 @@ export default function TargetsPage() {
             </Button>
           )}
         </div>
+
+        {/* UTM Preview Section */}
+        {draft.utm_template_id && (
+          <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+            <h4 className="text-sm font-medium mb-2">
+              Inherited UTM Parameters:
+            </h4>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              {Object.entries(templatePreview)
+                .filter(([key, value]) => value)
+                .map(([key, value]) => (
+                  <div key={key} className="bg-white p-2 rounded border">
+                    <span className="font-medium">
+                      {key.replace("utm_", "")}:
+                    </span>
+                    <span className="ml-1">{String(value)}</span>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
+
         <WeightSlider
           value={draft.weight}
           onChange={(v) =>

@@ -4,6 +4,12 @@ import { Button } from "@/app/components/ui/button";
 import { Plus, Link, X, Edit, Trash2, Info, ChevronDown } from "lucide-react";
 import { authFetch } from "@/lib/api";
 import { UtmTemplateModal } from "@/app/components/UtmTemplateModal";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/app/components/ui/dialog";
 
 interface Campaign {
   id: number;
@@ -37,6 +43,7 @@ export default function CampaignsPage() {
   );
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editTemplate, setEditTemplate] = useState<UTMTemplate | null>(null);
+  const [showCampaignModal, setShowCampaignModal] = useState(false);
 
   // Fetch all campaigns and templates for assignment
   useEffect(() => {
@@ -114,7 +121,13 @@ export default function CampaignsPage() {
   if (loading) return <div>Loading...</div>;
   return (
     <div className="max-w-4xl mx-auto px-6 py-8">
-      <h1 className="text-2xl font-bold mb-4">Campaigns</h1>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-2xl font-bold">Campaigns</h1>
+        <Button onClick={() => setShowCampaignModal(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Add Campaign
+        </Button>
+      </div>
       <div className="bg-white rounded border">
         <table className="w-full text-sm">
           <thead>
@@ -132,22 +145,9 @@ export default function CampaignsPage() {
                 <td className="p-2">{c.id}</td>
                 <td className="p-2 font-semibold">{c.name}</td>
                 <td className="p-2">
-                  {c.templates && c.templates.length > 0 ? (
-                    <div className="flex gap-1 flex-wrap">
-                      {c.templates.map((t: any) => (
-                        <span
-                          key={t.id}
-                          className="inline-block px-2 py-1 bg-gray-100 rounded cursor-pointer"
-                          title={t.description}
-                          onClick={() => showTemplateDetail(t)}
-                        >
-                          {t.name}
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <span className="text-xs text-zinc-400">No templates</span>
-                  )}
+                  <span className="text-sm text-gray-600">
+                    {c.templates ? c.templates.length : 0} templates
+                  </span>
                 </td>
                 <td className="p-2">
                   {c.created_at
@@ -161,7 +161,7 @@ export default function CampaignsPage() {
                     onClick={() => openTemplatesModal(c)}
                   >
                     <Link className="h-4 w-4 mr-1 inline" />
-                    Templates
+                    {c.templates ? c.templates.length : 0} Templates
                   </Button>
                 </td>
               </tr>
@@ -182,14 +182,21 @@ export default function CampaignsPage() {
             <h2 className="text-lg font-bold mb-4">
               Templates for {activeCampaign.name}
             </h2>
-            <div className="mb-4">
+            <div className="mb-4 flex gap-2">
               <Button
                 variant="secondary"
-                onClick={() => setShowCreateModal(true)}
+                onClick={openAssignModal}
                 className="mr-2"
               >
                 <Plus className="h-4 w-4 mr-1" />
-                Create Template
+                Add Existing Templates
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowCreateModal(true)}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Create New Template
               </Button>
             </div>
             <table className="w-full text-sm mb-4">
@@ -404,6 +411,108 @@ export default function CampaignsPage() {
         }}
         campaigns={campaigns}
       />
+
+      {/* Campaign Creation Modal */}
+      <Dialog open={showCampaignModal} onOpenChange={setShowCampaignModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Campaign</DialogTitle>
+          </DialogHeader>
+          <CampaignForm
+            onSave={async (values) => {
+              const res = await authFetch("/api/campaigns/", {
+                method: "POST",
+                body: JSON.stringify(values),
+              });
+              if (res.ok) {
+                const cRes = await authFetch("/api/campaigns/");
+                if (cRes.ok) setCampaigns(await cRes.json());
+                setShowCampaignModal(false);
+              }
+            }}
+            onCancel={() => setShowCampaignModal(false)}
+          />
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+// Campaign Form Component
+function CampaignForm({
+  onSave,
+  onCancel,
+}: {
+  onSave: (values: any) => void;
+  onCancel: () => void;
+}) {
+  const [form, setForm] = useState({
+    name: "",
+    description: "",
+    default_utm: {
+      utm_source: "",
+      utm_medium: "",
+      utm_campaign: "",
+      utm_term: "",
+      utm_content: "",
+    },
+  });
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium mb-2">
+          Campaign Name *
+        </label>
+        <input
+          type="text"
+          value={form.name}
+          onChange={(e) => setForm({ ...form, name: e.target.value })}
+          className="w-full border p-2 rounded"
+          required
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium mb-2">Description</label>
+        <textarea
+          value={form.description}
+          onChange={(e) => setForm({ ...form, description: e.target.value })}
+          className="w-full border p-2 rounded"
+          rows={3}
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium mb-2">
+          Default UTM Parameters
+        </label>
+        <div className="grid grid-cols-2 gap-2">
+          {Object.entries(form.default_utm).map(([key, value]) => (
+            <div key={key}>
+              <label className="block text-xs text-gray-600 mb-1">
+                {key.replace("utm_", "").toUpperCase()}
+              </label>
+              <input
+                type="text"
+                value={value}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    default_utm: { ...form.default_utm, [key]: e.target.value },
+                  })
+                }
+                className="w-full border p-2 rounded text-sm"
+                placeholder={`Enter ${key.replace("utm_", "")}...`}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="flex gap-2 pt-4">
+        <Button onClick={() => onSave(form)}>Create Campaign</Button>
+        <Button variant="outline" onClick={onCancel}>
+          Cancel
+        </Button>
+      </div>
     </div>
   );
 }
