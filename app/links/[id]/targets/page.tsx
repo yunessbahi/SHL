@@ -122,7 +122,7 @@ export default function TargetsPage() {
       setTemplates([]);
     }
   };
-  
+
   useEffect(() => {
     loadTemplates();
   }, [draft.campaign_id]);
