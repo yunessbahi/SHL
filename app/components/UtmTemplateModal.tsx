@@ -20,6 +20,18 @@ interface UTMTemplateFormProps {
   loading?: boolean;
 }
 
+function getUtmParams(obj: any) {
+  let utm = obj?.utm_params;
+  if (utm && typeof utm === "string") {
+    try {
+      utm = JSON.parse(utm);
+    } catch {
+      utm = {};
+    }
+  }
+  return utm || {};
+}
+
 export function UtmTemplateModal({
   open,
   onOpenChange,
@@ -78,7 +90,7 @@ export function UtmTemplateModal({
       !form.utm_params.utm_medium //||
       //!form.utm_params.utm_campaign
     ) {
-      setError("Name, source, medium, and campaign fields are required");
+      setError("Name, source, and medium fields are required");
       return;
     }
     setSaving(true);
@@ -187,7 +199,9 @@ export function UtmTemplateModal({
                 <input
                   type="text"
                   value={
-                    form.utm_params[key as keyof typeof form.utm_params] || ""
+                    getUtmParams(form)?.[
+                      key as keyof ReturnType<typeof getUtmParams>
+                    ] || ""
                   }
                   onChange={(e) =>
                     updateUTMParam(key as string, e.target.value)
