@@ -4,7 +4,12 @@ import { useState, useEffect } from "react";
 import { Button } from "@/app/components/ui/button";
 import { Plus, Edit, Trash2 } from "lucide-react";
 import { authFetch } from "@/lib/api";
+import { UtmTemplateModal } from "@/app/components/UtmTemplateModal";
 
+interface Campaign {
+  id: number;
+  name: string;
+}
 interface UTMTemplate {
   id: number;
   name: string;
@@ -16,143 +21,73 @@ interface UTMTemplate {
     utm_term?: string;
     utm_content?: string;
   };
+  is_global: boolean;
+  campaigns: Campaign[];
   created_at: string;
 }
 
 export default function UTMTemplatesPage() {
   const [templates, setTemplates] = useState<UTMTemplate[]>([]);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [editingTemplate, setEditingTemplate] = useState<UTMTemplate | null>(
-    null,
-  );
-  const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    utm_params: {
-      utm_source: "",
-      utm_medium: "",
-      utm_campaign: "",
-      utm_term: "",
-      utm_content: "",
-    },
-  });
-
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<UTMTemplate | null>(null);
+  const [modalInitial, setModalInitial] = useState<any>(null);
+  // Fetch campaigns for dropdown
+  const loadCampaigns = async () => {
+    const res = await authFetch("/api/campaigns/");
+    if (res.ok) setCampaigns(await res.json());
+  };
   const loadTemplates = async () => {
     try {
       const response = await authFetch("/api/utm-templates/");
-      if (response.ok) {
-        const data = await response.json();
-        setTemplates(data);
-      }
+      if (response.ok) setTemplates(await response.json());
     } catch (error) {
       console.error("Failed to load UTM templates:", error);
     } finally {
       setLoading(false);
     }
   };
-
   useEffect(() => {
     loadTemplates();
+    loadCampaigns();
   }, []);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.name.trim()) return;
-
-    try {
-      const url = editingTemplate
-        ? `/api/utm-templates/${editingTemplate.id}`
-        : "/api/utm-templates/";
-      const method = editingTemplate ? "PATCH" : "POST";
-
-      const response = await authFetch(url, {
-        method,
-        body: JSON.stringify(formData),
-      });
-
-      if (response.ok) {
-        await loadTemplates();
-        setShowForm(false);
-        setEditingTemplate(null);
-        setFormData({
-          name: "",
-          description: "",
-          utm_params: {
-            utm_source: "",
-            utm_medium: "",
-            utm_campaign: "",
-            utm_term: "",
-            utm_content: "",
-          },
-        });
-      }
-    } catch (error) {
-      console.error("Failed to save UTM template:", error);
-    }
+  // Launch create
+  const openCreate = () => {
+    setModalInitial(undefined);
+    setEditing(null);
+    setModalOpen(true);
   };
-
+  // Launch edit
   const handleEdit = (template: UTMTemplate) => {
-    setEditingTemplate(template);
-    setFormData({
-      name: template.name,
-      description: template.description,
-      utm_params: {
-        utm_source: template.utm_params.utm_source || "",
-        utm_medium: template.utm_params.utm_medium || "",
-        utm_campaign: template.utm_params.utm_campaign || "",
-        utm_term: template.utm_params.utm_term || "",
-        utm_content: template.utm_params.utm_content || "",
-      },
+    setModalInitial({
+      ...template,
+      campaign_ids: template.campaigns?.map((c) => c.id) || [],
     });
-    setShowForm(true);
+    setEditing(template);
+    setModalOpen(true);
   };
-
+  // Save logic (create or edit)
+  const handleSave = async (values: any) => {
+    let url = "/api/utm-templates/";
+    let method: "POST" | "PATCH" = "POST";
+    if (editing) {
+      url = `/api/utm-templates/${editing.id}`;
+      method = "PATCH";
+    }
+    const res = await authFetch(url, { method, body: JSON.stringify(values) });
+    if (!res.ok) throw new Error(await res.text());
+    await loadTemplates();
+    setEditing(null);
+  };
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure you want to delete this UTM template?")) return;
-
-    try {
-      const response = await authFetch(`/api/utm-templates/${id}`, {
-        method: "DELETE",
-      });
-      if (response.ok) {
-        await loadTemplates();
-      }
-    } catch (error) {
-      console.error("Failed to delete UTM template:", error);
-    }
-  };
-
-  const handleCancel = () => {
-    setShowForm(false);
-    setEditingTemplate(null);
-    setFormData({
-      name: "",
-      description: "",
-      utm_params: {
-        utm_source: "",
-        utm_medium: "",
-        utm_campaign: "",
-        utm_term: "",
-        utm_content: "",
-      },
+    const response = await authFetch(`/api/utm-templates/${id}`, {
+      method: "DELETE",
     });
+    if (response.ok) await loadTemplates();
   };
-
-  const updateUTMParam = (key: string, value: string) => {
-    setFormData({
-      ...formData,
-      utm_params: {
-        ...formData.utm_params,
-        [key]: value,
-      },
-    });
-  };
-
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
+  if (loading) return <div>Loading...</div>;
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -162,139 +97,25 @@ export default function UTMTemplatesPage() {
             Create reusable UTM parameter sets for consistent tracking.
           </p>
         </div>
-        <Button onClick={() => setShowForm(true)}>
+        <Button onClick={openCreate}>
           <Plus className="h-4 w-4 mr-2" />
           New Template
         </Button>
       </div>
-
-      {showForm && (
-        <div className="bg-card p-6 rounded-lg border">
-          <h2 className="text-lg font-semibold mb-4">
-            {editingTemplate ? "Edit UTM Template" : "Create New UTM Template"}
-          </h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Name</label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border rounded-md"
-                  placeholder="Enter template name"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  Description
-                </label>
-                <input
-                  type="text"
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border rounded-md"
-                  placeholder="Enter template description"
-                />
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-sm font-medium mb-3">UTM Parameters</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Source
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.utm_params.utm_source}
-                    onChange={(e) =>
-                      updateUTMParam("utm_source", e.target.value)
-                    }
-                    className="w-full px-3 py-2 border rounded-md"
-                    placeholder="e.g., google, facebook"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Medium
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.utm_params.utm_medium}
-                    onChange={(e) =>
-                      updateUTMParam("utm_medium", e.target.value)
-                    }
-                    className="w-full px-3 py-2 border rounded-md"
-                    placeholder="e.g., cpc, email, social"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Campaign
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.utm_params.utm_campaign}
-                    onChange={(e) =>
-                      updateUTMParam("utm_campaign", e.target.value)
-                    }
-                    className="w-full px-3 py-2 border rounded-md"
-                    placeholder="e.g., summer_sale"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Term</label>
-                  <input
-                    type="text"
-                    value={formData.utm_params.utm_term}
-                    onChange={(e) => updateUTMParam("utm_term", e.target.value)}
-                    className="w-full px-3 py-2 border rounded-md"
-                    placeholder="e.g., running shoes"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium mb-2">
-                    Content
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.utm_params.utm_content}
-                    onChange={(e) =>
-                      updateUTMParam("utm_content", e.target.value)
-                    }
-                    className="w-full px-3 py-2 border rounded-md"
-                    placeholder="e.g., logolink, textlink"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-2">
-              <Button type="submit">
-                {editingTemplate ? "Update Template" : "Create Template"}
-              </Button>
-              <Button type="button" variant="outline" onClick={handleCancel}>
-                Cancel
-              </Button>
-            </div>
-          </form>
-        </div>
-      )}
-
+      <UtmTemplateModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        initialValues={modalInitial}
+        onSave={handleSave}
+        campaigns={campaigns}
+      />
       <div className="grid gap-4">
         {templates.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">
               No UTM templates created yet.
             </p>
-            <Button onClick={() => setShowForm(true)} className="mt-4">
+            <Button onClick={openCreate} className="mt-4">
               <Plus className="h-4 w-4 mr-2" />
               Create Your First Template
             </Button>
@@ -310,6 +131,26 @@ export default function UTMTemplatesPage() {
                       {template.description}
                     </p>
                   )}
+                  <div className="mt-1 flex gap-2 flex-wrap text-xs text-muted-foreground">
+                    {template.is_global ? (
+                      <span className="px-2 py-1 bg-gray-100 rounded">
+                        Global
+                      </span>
+                    ) : template.campaigns && template.campaigns.length ? (
+                      template.campaigns.map((c) => (
+                        <span
+                          key={c.id}
+                          className="px-2 py-1 bg-gray-100 rounded"
+                        >
+                          {c.name}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="px-2 py-1 bg-gray-100 rounded">
+                        No campaigns
+                      </span>
+                    )}
+                  </div>
                   <div className="mt-3">
                     <h4 className="text-sm font-medium mb-2">
                       UTM Parameters:

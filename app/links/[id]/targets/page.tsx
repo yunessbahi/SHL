@@ -2,11 +2,30 @@
 import React, { useEffect, useMemo, useReducer, useState } from "react";
 import { useParams } from "next/navigation";
 import { authFetch } from "@/lib/api";
-import { createClient } from "@/lib/supabase/client";
 import WeightSlider from "@/app/components/WeightSlider";
 import RuleTabs from "@/app/components/RuleTabs";
-import TargetMetadataSelector from "@/app/components/TargetMetadataSelector";
+import { Button } from "@/app/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/app/components/ui/dialog";
+import { Info, Plus } from "lucide-react";
+import { UtmTemplateModal } from "@/app/components/UtmTemplateModal";
 
+interface UTMTemplate {
+  id: number;
+  name: string;
+  description: string;
+  is_global: boolean;
+  utm_params: any;
+  campaigns?: any[];
+}
+interface Campaign {
+  id: number;
+  name: string;
+}
 type Draft = {
   id: number | null;
   target_url: string;
@@ -50,63 +69,82 @@ function draftReducer(state: Draft, action: Action): Draft {
       return state;
   }
 }
-
 export default function TargetsPage() {
   const params = useParams();
   const linkId = Number(params?.id);
   const storageKey = useMemo(() => `targets_draft_link_${linkId}`, [linkId]);
-
   const [items, setItems] = useState<any[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [error, setError] = useState("");
   const [hasSession, setHasSession] = useState<boolean | null>(null);
   const [activeTab, setActiveTab] = useState<string>("audience");
-
   const [draft, dispatch] = useReducer(draftReducer, initialDraft);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [templates, setTemplates] = useState<UTMTemplate[]>([]);
+  const [templateModal, setTemplateModal] = useState<UTMTemplate | null>(null);
+  const [showCreateTemplate, setShowCreateTemplate] = useState(false);
+  const [templatePreview, setTemplatePreview] = useState<any>({});
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [modalInitial, setModalInitial] = useState<any>(null);
 
-  // Load session
+  // Session, campaigns, items
   useEffect(() => {
+    // Session
     const run = async () => {
-      const supabase = createClient();
+      const supabase = (await import("@/lib/supabase/client")).createClient();
       const { data } = await supabase.auth.getSession();
       setHasSession(!!data.session?.access_token);
     };
     run();
   }, []);
-
-  // Load persisted draft
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(storageKey);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        dispatch({ type: "load", value: { ...initialDraft, ...parsed } });
-        setEditingId(parsed?.id ?? null);
-      }
-    } catch {}
-  }, [storageKey]);
-
-  // Persist draft
-  useEffect(() => {
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(draft));
-    } catch {}
-  }, [storageKey, draft]);
-
-  // Fetch targets
+    if (linkId && hasSession) load();
+  }, [linkId, hasSession]);
   const load = async () => {
     const res = await authFetch(`/api/targets/link/${linkId}`);
     if (res.ok) setItems(await res.json());
   };
   useEffect(() => {
-    if (linkId && hasSession) load();
-  }, [linkId, hasSession]);
+    (async () => {
+      const cRes = await authFetch("/api/campaigns/");
+      if (cRes.ok) setCampaigns(await cRes.json());
+    })();
+  }, []);
+  // Load templates for selected campaign
+  useEffect(() => {
+    (async () => {
+      if (draft.campaign_id) {
+        const tRes = await authFetch(
+          `/api/utm-templates?campaign_id=${draft.campaign_id}`,
+        );
+        if (tRes.ok) setTemplates(await tRes.json());
+      } else {
+        setTemplates([]);
+      }
+    })();
+  }, [draft.campaign_id]);
+
+  useEffect(() => {
+    // Persist draft
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(draft));
+    } catch {}
+  }, [storageKey, draft]);
+
+  // Target preview logic (always updates on campaign/template/rules change)
+  useEffect(() => {
+    // Find the selected template and merge values with rules.utm_overrides
+    const tpl = templates.find((t) => t.id === draft.utm_template_id);
+    const merged = tpl?.utm_params
+      ? { ...tpl.utm_params, ...(draft.rules?.utm_overrides || {}) }
+      : { ...(draft.rules?.utm_overrides || {}) };
+    setTemplatePreview(merged);
+  }, [templates, draft.utm_template_id, draft.rules?.utm_overrides]);
 
   const resetDraft = () => {
     dispatch({ type: "reset" });
     setEditingId(null);
   };
-
   const editTarget = (target: any) => {
     setEditingId(target.id);
     dispatch({
@@ -122,11 +160,9 @@ export default function TargetsPage() {
       },
     });
   };
-
   const cancelEdit = () => {
     resetDraft();
   };
-
   const deleteTarget = async (id: number) => {
     if (!window.confirm("Remove this target?")) return;
     setError("");
@@ -136,12 +172,10 @@ export default function TargetsPage() {
       if (editingId === id) cancelEdit();
     } else setError(await res.text());
   };
-
   const saveDraft = (e: React.FormEvent) => {
     e.preventDefault();
     setError(""); /* already persisted */
   };
-
   const apply = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -177,7 +211,6 @@ export default function TargetsPage() {
       setError(err?.message || "Failed to save target");
     }
   };
-
   if (hasSession === false) {
     return (
       <div className="max-w-5xl mx-auto px-6 py-8">
@@ -185,11 +218,9 @@ export default function TargetsPage() {
       </div>
     );
   }
-
   return (
     <div className="max-w-5xl mx-auto px-6 py-8">
       <h1 className="text-2xl font-bold mb-4">Targets for Link #{linkId}</h1>
-
       <form
         onSubmit={saveDraft}
         className="bg-white p-4 rounded border mb-6 space-y-4"
@@ -209,23 +240,89 @@ export default function TargetsPage() {
             required
           />
         </div>
-
         <div>
-          <label className="block text-sm mb-3">Metadata</label>
-          <TargetMetadataSelector
-            campaignId={draft.campaign_id ?? undefined}
-            groupId={draft.group_id ?? undefined}
-            utmTemplateId={draft.utm_template_id ?? undefined}
-            onCampaignChange={(id) =>
-              dispatch({ type: "set_field", key: "campaign_id", value: id })
+          <label className="block text-sm mb-2">Campaign</label>
+          <select
+            value={draft.campaign_id || ""}
+            onChange={(e) =>
+              dispatch({
+                type: "set_field",
+                key: "campaign_id",
+                value: e.target.value ? Number(e.target.value) : null,
+              })
             }
-            onGroupChange={(id) =>
-              dispatch({ type: "set_field", key: "group_id", value: id })
+            className="w-full border p-2 rounded"
+            required
+          >
+            <option value="">Select...</option>
+            {campaigns.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <div className="flex items-center gap-2">
+            <label className="block text-sm mb-2">UTM Template</label>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setModalInitial({
+                  campaign_ids: [draft.campaign_id] || [],
+                  is_global: false,
+                  utm_params: {
+                    utm_source: "",
+                    utm_medium: "",
+                    utm_campaign: "",
+                    utm_term: "",
+                    utm_content: "",
+                  },
+                });
+                setCreateModalOpen(true);
+              }}
+            >
+              <Plus className="h-3 w-3 mr-1" /> Create New Template
+            </Button>
+          </div>
+          <select
+            value={draft.utm_template_id || ""}
+            onChange={(e) =>
+              dispatch({
+                type: "set_field",
+                key: "utm_template_id",
+                value: e.target.value ? Number(e.target.value) : null,
+              })
             }
-            onUTMTemplateChange={(id) =>
-              dispatch({ type: "set_field", key: "utm_template_id", value: id })
-            }
-          />
+            className="w-full border p-2 rounded"
+            disabled={!draft.campaign_id}
+            required={!!draft.campaign_id}
+          >
+            <option value="">Select template...</option>
+            {templates.map((tpl) => (
+              <option key={tpl.id} value={tpl.id}>
+                {tpl.name} {tpl.is_global ? "(global)" : ""}
+              </option>
+            ))}
+          </select>
+          {/* Template detail/preview button for selected template */}
+          {draft.utm_template_id && (
+            <Button
+              type="button"
+              variant="ghost"
+              className="ml-2"
+              onClick={() => {
+                const tpl = templates.find(
+                  (t) => t.id === draft.utm_template_id,
+                );
+                setTemplateModal(tpl || null);
+              }}
+            >
+              <Info className="h-4 w-4" />
+            </Button>
+          )}
         </div>
         <WeightSlider
           value={draft.weight}
@@ -246,33 +343,32 @@ export default function TargetsPage() {
             }
           }}
         />
+        {/* Live UTM Param Preview */}
+        <div className="py-2">
+          <label className="block text-xs text-muted-foreground mb-1 font-semibold">
+            Final UTM Params (inherited + overridden)
+          </label>
+          <pre className="bg-gray-50 border rounded p-2 text-xs overflow-x-auto">
+            {JSON.stringify(templatePreview, null, 2)}
+          </pre>
+        </div>
         {error && <div className="text-red-600 text-sm">{error}</div>}
         <div className="flex gap-3">
-          <button
-            type="submit"
-            className="bg-gray-100 border px-4 py-2 rounded"
-          >
+          <Button type="submit" variant="secondary">
             Save Draft
-          </button>
-          <button
-            type="button"
-            onClick={apply}
-            className="bg-indigo-600 text-white px-4 py-2 rounded"
-          >
-            {editingId ? "Apply Changes" : "Add Target"}
-          </button>
+          </Button>
+          <Button type="button" onClick={apply}>
+            {" "}
+            {editingId ? "Apply Changes" : "Add Target"}{" "}
+          </Button>
           {editingId && (
-            <button
-              type="button"
-              className="bg-gray-100 border px-4 py-2 rounded"
-              onClick={cancelEdit}
-            >
+            <Button type="button" variant="outline" onClick={cancelEdit}>
               Cancel
-            </button>
+            </Button>
           )}
         </div>
       </form>
-
+      {/* Target List Table (unchanged, but styled with shadcn if further DRY needed) */}
       <div className="bg-white rounded border">
         <table className="w-full text-sm">
           <thead>
@@ -294,24 +390,106 @@ export default function TargetsPage() {
                   {JSON.stringify(t.rules)}
                 </td>
                 <td className="p-2">
-                  <button
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => editTarget(t)}
-                    className="text-indigo-600 underline mr-4"
                   >
                     Edit
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => deleteTarget(t.id)}
-                    className="text-red-600 underline"
+                    className="ml-2"
                   >
                     Delete
-                  </button>
+                  </Button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+      {/* Template Detail Modal */}
+      <Dialog
+        open={!!templateModal}
+        onOpenChange={(o) => {
+          if (!o) setTemplateModal(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>UTM Template: {templateModal?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="mb-2 text-muted-foreground">
+            {templateModal?.description}
+          </div>
+          <div className="flex gap-2 flex-wrap mb-2">
+            {templateModal?.is_global && (
+              <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs">
+                Global
+              </span>
+            )}
+            {templateModal?.campaigns && templateModal.campaigns.length
+              ? templateModal.campaigns.map((c) => (
+                  <span
+                    key={c.id}
+                    className="bg-gray-100 px-2 py-1 rounded text-xs"
+                  >
+                    {c.name}
+                  </span>
+                ))
+              : null}
+          </div>
+          <div className="mt-2 mb-2">
+            <strong>UTM Params:</strong>
+            <div className="grid grid-cols-2 gap-2 mt-1 text-sm">
+              {templateModal?.utm_params &&
+                Object.entries(templateModal.utm_params).map(
+                  ([key, value]) =>
+                    value && (
+                      <div key={key} className="bg-muted p-2 rounded">
+                        <span className="font-medium">
+                          {key.replace("utm_", "")}:
+                        </span>
+                        <span className="ml-1">{value}</span>
+                      </div>
+                    ),
+                )}
+            </div>
+          </div>
+          <div className="mt-4 text-xs text-zinc-500">
+            Created{" "}
+            {templateModal?.created_at
+              ? new Date(templateModal.created_at).toLocaleString()
+              : ""}
+          </div>
+        </DialogContent>
+      </Dialog>
+      {/* Create UTM Template Modal - stub: should import and reuse utm template creation modal */}
+      <UtmTemplateModal
+        open={createModalOpen}
+        onOpenChange={setCreateModalOpen}
+        initialValues={modalInitial}
+        campaigns={campaigns}
+        onSave={async (values) => {
+          const res = await authFetch("/api/utm-templates/", {
+            method: "POST",
+            body: JSON.stringify(values),
+          });
+          if (res.ok) {
+            const tpl = await res.json();
+            await loadTemplates();
+            dispatch({
+              type: "set_field",
+              key: "utm_template_id",
+              value: tpl.id,
+            });
+            setCreateModalOpen(false);
+          }
+        }}
+      />
     </div>
   );
 }
