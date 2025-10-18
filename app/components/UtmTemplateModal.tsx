@@ -45,16 +45,25 @@ export function UtmTemplateModal({
   const [error, setError] = useState("");
 
   useEffect(() => {
+    let utmParams: any = initialValues?.utm_params;
+    if (utmParams && typeof utmParams === "string") {
+      try {
+        utmParams = JSON.parse(utmParams);
+      } catch {
+        utmParams = {};
+      }
+    }
+    utmParams = utmParams || {
+      utm_source: "",
+      utm_medium: "",
+      utm_campaign: "",
+      utm_term: "",
+      utm_content: "",
+    };
     setForm({
       name: initialValues?.name || "",
       description: initialValues?.description || "",
-      utm_params: initialValues?.utm_params || {
-        utm_source: "",
-        utm_medium: "",
-        utm_campaign: "",
-        utm_term: "",
-        utm_content: "",
-      },
+      utm_params: utmParams,
       is_global: initialValues?.is_global || false,
       campaign_ids: initialValues?.campaign_ids || [],
     });
