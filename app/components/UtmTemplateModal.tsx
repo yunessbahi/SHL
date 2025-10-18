@@ -75,8 +75,8 @@ export function UtmTemplateModal({
     if (
       !form.name.trim() ||
       !form.utm_params.utm_source ||
-      !form.utm_params.utm_medium ||
-      !form.utm_params.utm_campaign
+      !form.utm_params.utm_medium //||
+      //!form.utm_params.utm_campaign
     ) {
       setError("Name, source, medium, and campaign fields are required");
       return;
