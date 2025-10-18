@@ -88,6 +88,12 @@ export function UtmTemplateModal({
   const updateUTMParam = (key: string, value: string) => {
     setForm({ ...form, utm_params: { ...form.utm_params, [key]: value } });
   };
+  const paramFields = [
+    ["utm_source", "Source *", "e.g., google"],
+    ["utm_medium", "Medium *", "e.g., cpc"],
+    ["utm_term", "Term", "e.g., shoes"],
+    ["utm_content", "Content", "e.g., logolink"],
+  ];
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -141,36 +147,43 @@ export function UtmTemplateModal({
               <label className="block text-sm font-medium mb-2">
                 Assign to Campaign
               </label>
-              <select
-                className="w-full border p-2 rounded"
-                value={form.campaign_ids.length > 0 ? form.campaign_ids[0] : ""}
-                onChange={(e) => {
-                  const campaignId = e.target.value
-                    ? Number(e.target.value)
-                    : null;
-                  setForm({
-                    ...form,
-                    campaign_ids: campaignId ? [campaignId] : [],
-                  });
-                }}
-              >
-                <option value="">Select a campaign...</option>
-                {campaigns.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
+              {form.campaign_ids.length === 1 && campaigns.length > 0 ? (
+                <input
+                  className="w-full border p-2 rounded bg-gray-100 text-gray-500"
+                  value={
+                    campaigns.find((c) => c.id === form.campaign_ids[0])
+                      ?.name || ""
+                  }
+                  disabled
+                />
+              ) : (
+                <select
+                  className="w-full border p-2 rounded"
+                  value={
+                    form.campaign_ids.length > 0 ? form.campaign_ids[0] : ""
+                  }
+                  onChange={(e) => {
+                    const campaignId = e.target.value
+                      ? Number(e.target.value)
+                      : null;
+                    setForm({
+                      ...form,
+                      campaign_ids: campaignId ? [campaignId] : [],
+                    });
+                  }}
+                >
+                  <option value="">Select a campaign...</option>
+                  {campaigns.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
           )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[
-              ["utm_source", "Source *", "e.g., google"],
-              ["utm_medium", "Medium *", "e.g., cpc"],
-              ["utm_campaign", "Campaign *", "e.g., spring_sale"],
-              ["utm_term", "Term", "e.g., shoes"],
-              ["utm_content", "Content", "e.g., logolink"],
-            ].map(([key, label, placeholder]) => (
+            {paramFields.map(([key, label, placeholder]) => (
               <div key={key as string}>
                 <label className="block text-sm font-medium mb-2">
                   {label}
@@ -190,6 +203,21 @@ export function UtmTemplateModal({
               </div>
             ))}
           </div>
+          {form.campaign_ids.length === 1 && campaigns.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Campaign *
+              </label>
+              <input
+                className="w-full border p-2 rounded bg-gray-100 text-gray-500"
+                value={
+                  campaigns.find((c) => c.id === form.campaign_ids[0])?.name ||
+                  ""
+                }
+                disabled
+              />
+            </div>
+          )}
           {error && <div className="text-red-600 text-xs mt-2">{error}</div>}
           <div className="flex gap-2 mt-2">
             <Button type="submit" disabled={saving}>

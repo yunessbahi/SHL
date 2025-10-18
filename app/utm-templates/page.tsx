@@ -78,6 +78,7 @@ export default function UTMTemplatesPage() {
     const res = await authFetch(url, { method, body: JSON.stringify(values) });
     if (!res.ok) throw new Error(await res.text());
     await loadTemplates();
+    await loadCampaigns(); // Reload campaigns after save
     setEditing(null);
   };
   const handleDelete = async (id: number) => {
@@ -156,17 +157,16 @@ export default function UTMTemplatesPage() {
                       UTM Parameters:
                     </h4>
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-sm">
-                      {Object.entries(template.utm_params).map(
-                        ([key, value]) =>
-                          value && (
-                            <div key={key} className="bg-muted p-2 rounded">
-                              <span className="font-medium">
-                                {key.replace("utm_", "")}:
-                              </span>
-                              <span className="ml-1">{value}</span>
-                            </div>
-                          ),
-                      )}
+                      {Object.entries(template.utm_params || {})
+                        .filter(([_, v]) => v && typeof v === "string")
+                        .map(([key, value]) => (
+                          <div key={key} className="bg-muted p-2 rounded">
+                            <span className="font-medium">
+                              {key.replace("utm_", "")}:
+                            </span>
+                            <span className="ml-1">{value}</span>
+                          </div>
+                        ))}
                     </div>
                   </div>
                   <p className="text-sm text-muted-foreground mt-3">
