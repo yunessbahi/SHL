@@ -21,6 +21,7 @@ interface UTMTemplate {
   is_global: boolean;
   utm_params: any;
   campaigns?: any[];
+  created_at?: string;
 }
 interface Campaign {
   id: number;
@@ -111,17 +112,19 @@ export default function TargetsPage() {
     })();
   }, []);
   // Load templates for selected campaign
+  const loadTemplates = async () => {
+    if (draft.campaign_id) {
+      const tRes = await authFetch(
+        `/api/utm-templates?campaign_id=${draft.campaign_id}`,
+      );
+      if (tRes.ok) setTemplates(await tRes.json());
+    } else {
+      setTemplates([]);
+    }
+  };
+  
   useEffect(() => {
-    (async () => {
-      if (draft.campaign_id) {
-        const tRes = await authFetch(
-          `/api/utm-templates?campaign_id=${draft.campaign_id}`,
-        );
-        if (tRes.ok) setTemplates(await tRes.json());
-      } else {
-        setTemplates([]);
-      }
-    })();
+    loadTemplates();
   }, [draft.campaign_id]);
 
   useEffect(() => {
@@ -414,7 +417,7 @@ export default function TargetsPage() {
       {/* Template Detail Modal */}
       <Dialog
         open={!!templateModal}
-        onOpenChange={(o) => {
+        onOpenChange={(o: boolean) => {
           if (!o) setTemplateModal(null);
         }}
       >
@@ -446,24 +449,23 @@ export default function TargetsPage() {
             <strong>UTM Params:</strong>
             <div className="grid grid-cols-2 gap-2 mt-1 text-sm">
               {templateModal?.utm_params &&
-                Object.entries(templateModal.utm_params).map(
-                  ([key, value]) =>
-                    value && (
-                      <div key={key} className="bg-muted p-2 rounded">
-                        <span className="font-medium">
-                          {key.replace("utm_", "")}:
-                        </span>
-                        <span className="ml-1">{value}</span>
-                      </div>
-                    ),
-                )}
+                Object.entries(templateModal.utm_params)
+                  .filter(([key, value]) => value)
+                  .map(([key, value]) => (
+                    <div key={key} className="bg-muted p-2 rounded">
+                      <span className="font-medium">
+                        {key.replace("utm_", "")}:
+                      </span>
+                      <span className="ml-1">{String(value)}</span>
+                    </div>
+                  ))}
             </div>
           </div>
           <div className="mt-4 text-xs text-zinc-500">
             Created{" "}
             {templateModal?.created_at
               ? new Date(templateModal.created_at).toLocaleString()
-              : ""}
+              : "Unknown"}
           </div>
         </DialogContent>
       </Dialog>

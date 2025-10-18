@@ -134,7 +134,7 @@ export default function CampaignsPage() {
                 <td className="p-2">
                   {c.templates && c.templates.length > 0 ? (
                     <div className="flex gap-1 flex-wrap">
-                      {c.templates.map((t) => (
+                      {c.templates.map((t: any) => (
                         <span
                           key={t.id}
                           className="inline-block px-2 py-1 bg-gray-100 rounded cursor-pointer"
@@ -337,17 +337,16 @@ export default function CampaignsPage() {
             <div className="mt-2 mb-2">
               <strong>UTM Params:</strong>
               <div className="grid grid-cols-2 gap-2 mt-1 text-sm">
-                {Object.entries(templateDetail.utm_params).map(
-                  ([key, value]) =>
-                    value && (
-                      <div key={key} className="bg-muted p-2 rounded">
-                        <span className="font-medium">
-                          {key.replace("utm_", "")}:
-                        </span>
-                        <span className="ml-1">{value}</span>
-                      </div>
-                    ),
-                )}
+                {Object.entries(templateDetail.utm_params)
+                  .filter(([key, value]) => value)
+                  .map(([key, value]) => (
+                    <div key={key} className="bg-muted p-2 rounded">
+                      <span className="font-medium">
+                        {key.replace("utm_", "")}:
+                      </span>
+                      <span className="ml-1">{String(value)}</span>
+                    </div>
+                  ))}
               </div>
             </div>
             <div className="mt-4 text-xs text-zinc-500">
