@@ -122,76 +122,89 @@ export default function UTMTemplatesPage() {
             </Button>
           </div>
         ) : (
-          templates.map((template) => (
-            <div key={template.id} className="bg-card p-6 rounded-lg border">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold">{template.name}</h3>
-                  {template.description && (
-                    <p className="text-muted-foreground mt-1">
-                      {template.description}
-                    </p>
-                  )}
-                  <div className="mt-1 flex gap-2 flex-wrap text-xs text-muted-foreground">
-                    {template.is_global ? (
-                      <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">
-                        Global
-                      </span>
-                    ) : template.campaigns && template.campaigns.length ? (
-                      template.campaigns.map((c) => (
-                        <span
-                          key={c.id}
-                          className="px-2 py-1 bg-gray-100 rounded"
-                        >
-                          {c.name}
-                        </span>
-                      ))
-                    ) : (
-                      <span className="px-2 py-1 bg-gray-100 rounded">
-                        No campaigns assigned
-                      </span>
+          templates.map((template) => {
+            let utmParams = template.utm_params;
+            if (utmParams && typeof utmParams === "string") {
+              try {
+                utmParams = JSON.parse(utmParams);
+              } catch {
+                utmParams = {};
+              }
+            }
+            utmParams = utmParams || {};
+            return (
+              <div key={template.id} className="bg-card p-6 rounded-lg border">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold">{template.name}</h3>
+                    {template.description && (
+                      <p className="text-muted-foreground mt-1">
+                        {template.description}
+                      </p>
                     )}
-                  </div>
-                  <div className="mt-3">
-                    <h4 className="text-sm font-medium mb-2">
-                      UTM Parameters:
-                    </h4>
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-sm">
-                      {Object.entries(template.utm_params || {})
-                        .filter(([_, v]) => v && typeof v === "string")
-                        .map(([key, value]) => (
-                          <div key={key} className="bg-muted p-2 rounded">
-                            <span className="font-medium">
-                              {key.replace("utm_", "")}:
-                            </span>
-                            <span className="ml-1">{value}</span>
-                          </div>
-                        ))}
+                    <div className="mt-1 flex gap-2 flex-wrap text-xs text-muted-foreground">
+                      {template.is_global ? (
+                        <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">
+                          Global
+                        </span>
+                      ) : template.campaigns &&
+                        template.campaigns.length > 0 ? (
+                        template.campaigns.map((c) => (
+                          <span
+                            key={c.id}
+                            className="px-2 py-1 bg-gray-100 rounded"
+                          >
+                            {c.name}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="px-2 py-1 bg-gray-100 rounded">
+                          No campaigns assigned
+                        </span>
+                      )}
                     </div>
+                    <div className="mt-3">
+                      <h4 className="text-sm font-medium mb-2">
+                        UTM Parameters:
+                      </h4>
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-sm">
+                        {Object.entries(utmParams)
+                          .filter(([_, v]) => v && typeof v === "string")
+                          .map(([key, value]) => (
+                            <div key={key} className="bg-muted p-2 rounded">
+                              <span className="font-medium">
+                                {key.replace("utm_", "")}:
+                              </span>
+                              <span className="ml-1">{value}</span>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-3">
+                      Created{" "}
+                      {new Date(template.created_at).toLocaleDateString()}
+                    </p>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-3">
-                    Created {new Date(template.created_at).toLocaleDateString()}
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleEdit(template)}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDelete(template.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEdit(template)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDelete(template.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>
