@@ -13,6 +13,7 @@ import {
 } from "@/app/components/ui/dialog";
 import { Info, Plus } from "lucide-react";
 import { UtmTemplateModal } from "@/app/components/UtmTemplateModal";
+import MultiSelect, { Option } from "@/app/components/MultiSelect";
 
 interface UTMTemplate {
   id: number;
@@ -70,6 +71,7 @@ function draftReducer(state: Draft, action: Action): Draft {
       return state;
   }
 }
+
 export default function TargetsPage() {
   const params = useParams();
   const linkId = Number(params?.id);
@@ -83,14 +85,12 @@ export default function TargetsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [templates, setTemplates] = useState<UTMTemplate[]>([]);
   const [templateModal, setTemplateModal] = useState<UTMTemplate | null>(null);
-  const [showCreateTemplate, setShowCreateTemplate] = useState(false);
   const [templatePreview, setTemplatePreview] = useState<any>({});
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [modalInitial, setModalInitial] = useState<any>(null);
 
-  // Session, campaigns, items
+  // Session check
   useEffect(() => {
-    // Session
     const run = async () => {
       const supabase = (await import("@/lib/supabase/client")).createClient();
       const { data } = await supabase.auth.getSession();
@@ -98,28 +98,42 @@ export default function TargetsPage() {
     };
     run();
   }, []);
+
+  // Load targets when session and linkId are ready
   useEffect(() => {
-    if (linkId && hasSession) load();
+    if (linkId && hasSession) loadTargets();
   }, [linkId, hasSession]);
-  const load = async () => {
+
+  const loadTargets = async () => {
     const res = await authFetch(`/api/targets/link/${linkId}`);
     if (res.ok) setItems(await res.json());
   };
+
+  // Load campaigns
   useEffect(() => {
     (async () => {
       const cRes = await authFetch("/api/campaigns/");
       if (cRes.ok) setCampaigns(await cRes.json());
     })();
   }, []);
+
   // Load templates for selected campaign
   const loadTemplates = async () => {
     if (draft.campaign_id) {
       const tRes = await authFetch(
         `/api/utm-templates?campaign_id=${draft.campaign_id}`,
       );
-      if (tRes.ok) setTemplates(await tRes.json());
+      if (tRes.ok) {
+        const campaignTemplates = await tRes.json();
+        // Include global templates
+        const globalRes = await authFetch("/api/utm-templates?is_global=true");
+        const globalTemplates = globalRes.ok ? await globalRes.json() : [];
+        setTemplates([...globalTemplates, ...campaignTemplates]);
+      }
     } else {
-      setTemplates([]);
+      const globalRes = await authFetch("/api/utm-templates?is_global=true");
+      const globalTemplates = globalRes.ok ? await globalRes.json() : [];
+      setTemplates(globalTemplates);
     }
   };
 
@@ -127,39 +141,28 @@ export default function TargetsPage() {
     loadTemplates();
   }, [draft.campaign_id]);
 
-  // Update template preview when template is selected
+  // Update template preview
   useEffect(() => {
     if (draft.utm_template_id) {
-      const template = templates.find((t) => t.id === draft.utm_template_id);
-      if (template) {
-        setTemplatePreview(template.utm_params);
-      }
+      const tpl = templates.find((t) => t.id === draft.utm_template_id);
+      setTemplatePreview(tpl?.utm_params || {});
     } else {
       setTemplatePreview({});
     }
   }, [draft.utm_template_id, templates]);
 
+  // Persist draft
   useEffect(() => {
-    // Persist draft
     try {
       localStorage.setItem(storageKey, JSON.stringify(draft));
     } catch {}
   }, [storageKey, draft]);
 
-  // Target preview logic (always updates on campaign/template/rules change)
-  useEffect(() => {
-    // Find the selected template and merge values with rules.utm_overrides
-    const tpl = templates.find((t) => t.id === draft.utm_template_id);
-    const merged = tpl?.utm_params
-      ? { ...tpl.utm_params, ...(draft.rules?.utm_overrides || {}) }
-      : { ...(draft.rules?.utm_overrides || {}) };
-    setTemplatePreview(merged);
-  }, [templates, draft.utm_template_id, draft.rules?.utm_overrides]);
-
   const resetDraft = () => {
     dispatch({ type: "reset" });
     setEditingId(null);
   };
+
   const editTarget = (target: any) => {
     setEditingId(target.id);
     dispatch({
@@ -175,22 +178,24 @@ export default function TargetsPage() {
       },
     });
   };
-  const cancelEdit = () => {
-    resetDraft();
-  };
+
+  const cancelEdit = () => resetDraft();
+
   const deleteTarget = async (id: number) => {
     if (!window.confirm("Remove this target?")) return;
     setError("");
     const res = await authFetch(`/api/targets/${id}`, { method: "DELETE" });
     if (res.ok) {
-      await load();
+      await loadTargets();
       if (editingId === id) cancelEdit();
     } else setError(await res.text());
   };
+
   const saveDraft = (e: React.FormEvent) => {
     e.preventDefault();
-    setError(""); /* already persisted */
+    setError("");
   };
+
   const apply = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -219,13 +224,14 @@ export default function TargetsPage() {
           body: JSON.stringify(body),
         });
       if (res.ok) {
-        await load();
+        await loadTargets();
         resetDraft();
       } else setError(await res.text());
     } catch (err: any) {
       setError(err?.message || "Failed to save target");
     }
   };
+
   if (hasSession === false) {
     return (
       <div className="max-w-5xl mx-auto px-6 py-8">
@@ -233,6 +239,7 @@ export default function TargetsPage() {
       </div>
     );
   }
+
   return (
     <div className="max-w-5xl mx-auto px-6 py-8">
       <h1 className="text-2xl font-bold mb-4">Targets for Link #{linkId}</h1>
@@ -276,11 +283,11 @@ export default function TargetsPage() {
             ))}
           </select>
         </div>
+
+        {/* MultiSelect for UTM Template (single select) */}
         <div>
-          <div className="flex items-center gap-2">
-            <label className="block text-sm mb-2">
-              UTM Template (Optional)
-            </label>
+          <div className="flex items-center gap-2 mb-2">
+            <label className="block text-sm">UTM Template (Optional)</label>
             <Button
               type="button"
               variant="outline"
@@ -303,25 +310,26 @@ export default function TargetsPage() {
               <Plus className="h-3 w-3 mr-1" /> Create New Template
             </Button>
           </div>
-          <select
-            value={draft.utm_template_id || ""}
-            onChange={(e) =>
+
+          <MultiSelect
+            label="Select Template"
+            options={templates.map((t) => ({
+              label: `${t.name}${t.is_global ? " (Global)" : ""}`,
+              value: String(t.id),
+            }))}
+            values={
+              draft.utm_template_id ? [String(draft.utm_template_id)] : []
+            }
+            onChange={(vals: string[]) => {
+              // Keep only the first selected value for single-select behavior
               dispatch({
                 type: "set_field",
                 key: "utm_template_id",
-                value: e.target.value ? Number(e.target.value) : null,
-              })
-            }
-            className="w-full border p-2 rounded"
-          >
-            <option value="">Select template...</option>
-            {templates.map((tpl) => (
-              <option key={tpl.id} value={tpl.id}>
-                {tpl.name} {tpl.is_global ? "(global)" : ""}
-              </option>
-            ))}
-          </select>
-          {/* Template detail/preview button for selected template */}
+                value: vals.length ? Number(vals[0]) : null,
+              });
+            }}
+          />
+
           {draft.utm_template_id && (
             <Button
               type="button"
@@ -339,7 +347,7 @@ export default function TargetsPage() {
           )}
         </div>
 
-        {/* UTM Preview Section */}
+        {/* UTM Preview */}
         {draft.utm_template_id && (
           <div className="mt-4 p-4 bg-blue-50 rounded-lg">
             <h4 className="text-sm font-medium mb-2">
@@ -347,7 +355,7 @@ export default function TargetsPage() {
             </h4>
             <div className="grid grid-cols-2 gap-2 text-sm">
               {Object.entries(templatePreview)
-                .filter(([key, value]) => value)
+                .filter(([_, v]) => v)
                 .map(([key, value]) => (
                   <div key={key} className="bg-white p-2 rounded border">
                     <span className="font-medium">
@@ -366,20 +374,19 @@ export default function TargetsPage() {
             dispatch({ type: "set_field", key: "weight", value: v })
           }
         />
+
         <RuleTabs
           activeTab={activeTab}
           onTabChange={setActiveTab}
           rules={draft.rules}
           setRules={(next) => {
-            if (typeof next === "function") {
-              const merged = next(draft.rules);
-              dispatch({ type: "merge_rules", value: merged });
-            } else {
-              dispatch({ type: "merge_rules", value: next });
-            }
+            const merged =
+              typeof next === "function" ? next(draft.rules) : next;
+            dispatch({ type: "merge_rules", value: merged });
           }}
         />
-        {/* Live UTM Param Preview */}
+
+        {/* Live UTM Preview */}
         <div className="py-2">
           <label className="block text-xs text-muted-foreground mb-1 font-semibold">
             Final UTM Params (inherited + overridden)
@@ -388,14 +395,14 @@ export default function TargetsPage() {
             {JSON.stringify(templatePreview, null, 2)}
           </pre>
         </div>
+
         {error && <div className="text-red-600 text-sm">{error}</div>}
         <div className="flex gap-3">
           <Button type="submit" variant="secondary">
             Save Draft
           </Button>
           <Button type="button" onClick={apply}>
-            {" "}
-            {editingId ? "Apply Changes" : "Add Target"}{" "}
+            {editingId ? "Apply Changes" : "Add Target"}
           </Button>
           {editingId && (
             <Button type="button" variant="outline" onClick={cancelEdit}>
@@ -404,7 +411,8 @@ export default function TargetsPage() {
           )}
         </div>
       </form>
-      {/* Target List Table (unchanged, but styled with shadcn if further DRY needed) */}
+
+      {/* Target List Table */}
       <div className="bg-white rounded border">
         <table className="w-full text-sm">
           <thead>
@@ -447,12 +455,11 @@ export default function TargetsPage() {
           </tbody>
         </table>
       </div>
+
       {/* Template Detail Modal */}
       <Dialog
         open={!!templateModal}
-        onOpenChange={(o: boolean) => {
-          if (!o) setTemplateModal(null);
-        }}
+        onOpenChange={(o) => !o && setTemplateModal(null)}
       >
         <DialogContent>
           <DialogHeader>
@@ -467,23 +474,21 @@ export default function TargetsPage() {
                 Global
               </span>
             )}
-            {templateModal?.campaigns && templateModal.campaigns.length
-              ? templateModal.campaigns.map((c) => (
-                  <span
-                    key={c.id}
-                    className="bg-gray-100 px-2 py-1 rounded text-xs"
-                  >
-                    {c.name}
-                  </span>
-                ))
-              : null}
+            {templateModal?.campaigns?.map((c) => (
+              <span
+                key={c.id}
+                className="bg-gray-100 px-2 py-1 rounded text-xs"
+              >
+                {c.name}
+              </span>
+            ))}
           </div>
           <div className="mt-2 mb-2">
             <strong>UTM Params:</strong>
             <div className="grid grid-cols-2 gap-2 mt-1 text-sm">
               {templateModal?.utm_params &&
                 Object.entries(templateModal.utm_params)
-                  .filter(([key, value]) => value)
+                  .filter(([_, v]) => v)
                   .map(([key, value]) => (
                     <div key={key} className="bg-muted p-2 rounded">
                       <span className="font-medium">
@@ -502,7 +507,8 @@ export default function TargetsPage() {
           </div>
         </DialogContent>
       </Dialog>
-      {/* Create UTM Template Modal - stub: should import and reuse utm template creation modal */}
+
+      {/* Create UTM Template Modal */}
       <UtmTemplateModal
         open={createModalOpen}
         onOpenChange={setCreateModalOpen}
