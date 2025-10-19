@@ -24,10 +24,12 @@ interface UTMTemplate {
   campaigns?: any[];
   created_at?: string;
 }
+
 interface Campaign {
   id: number;
   name: string;
 }
+
 type Draft = {
   id: number | null;
   target_url: string;
@@ -119,22 +121,19 @@ export default function TargetsPage() {
 
   // Load templates for selected campaign
   const loadTemplates = async () => {
-    if (draft.campaign_id) {
-      const tRes = await authFetch(
-        `/api/utm-templates?campaign_id=${draft.campaign_id}`,
-      );
-      if (tRes.ok) {
-        const campaignTemplates = await tRes.json();
-        // Include global templates
-        const globalRes = await authFetch("/api/utm-templates?is_global=true");
-        const globalTemplates = globalRes.ok ? await globalRes.json() : [];
-        setTemplates([...globalTemplates, ...campaignTemplates]);
-      }
-    } else {
-      const globalRes = await authFetch("/api/utm-templates?is_global=true");
-      const globalTemplates = globalRes.ok ? await globalRes.json() : [];
-      setTemplates(globalTemplates);
-    }
+    const query = draft.campaign_id
+      ? `/api/utm-templates?campaign_id=${draft.campaign_id}`
+      : `/api/utm-templates?is_global=true`;
+
+    const tRes = await authFetch(query);
+    if (!tRes.ok) return;
+
+    const data: UTMTemplate[] = await tRes.json();
+
+    // Deduplicate templates in case some global template is also assigned to campaign
+    const unique = new Map<number, UTMTemplate>();
+    data.forEach((t) => unique.set(t.id, t));
+    setTemplates(Array.from(unique.values()));
   };
 
   useEffect(() => {
@@ -320,14 +319,13 @@ export default function TargetsPage() {
             values={
               draft.utm_template_id ? [String(draft.utm_template_id)] : []
             }
-            onChange={(vals: string[]) => {
-              // Keep only the first selected value for single-select behavior
+            onChange={(vals: string[]) =>
               dispatch({
                 type: "set_field",
                 key: "utm_template_id",
                 value: vals.length ? Number(vals[0]) : null,
-              });
-            }}
+              })
+            }
           />
 
           {draft.utm_template_id && (
@@ -483,6 +481,7 @@ export default function TargetsPage() {
               </span>
             ))}
           </div>
+
           <div className="mt-2 mb-2">
             <strong>UTM Params:</strong>
             <div className="grid grid-cols-2 gap-2 mt-1 text-sm">
