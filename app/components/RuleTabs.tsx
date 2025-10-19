@@ -5,11 +5,11 @@ import MultiSelect from "../components/MultiSelect";
 import DateTimePicker from "../components/DateTimePicker";
 
 const COUNTRY_OPTIONS = [
-  { label: "US", value: "US" },
-  { label: "FR", value: "FR" },
-  { label: "GB", value: "GB" },
-  { label: "DE", value: "DE" },
-  { label: "CA", value: "CA" },
+  { label: "United States", value: "US" },
+  { label: "France", value: "FR" },
+  { label: "United Kingdom", value: "GB" },
+  { label: "Germany", value: "DE" },
+  { label: "Canada", value: "CA" },
 ];
 
 type RuleTabsProps = {
@@ -38,7 +38,11 @@ export default function RuleTabs({
           <button
             key={t}
             onClick={() => changeTab(t)}
-            className={`px-3 py-2 text-sm ${tab === t ? "border-b-2 border-indigo-600 font-semibold" : "text-gray-600"}`}
+            className={`px-3 py-2 text-sm ${
+              tab === t
+                ? "border-b-2 border-indigo-600 font-semibold"
+                : "text-gray-600"
+            }`}
           >
             {t.toUpperCase()}
           </button>
@@ -47,14 +51,12 @@ export default function RuleTabs({
 
       {tab === "audience" && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <MultiSelect
-              label="Country allow"
-              options={COUNTRY_OPTIONS}
-              values={rules?.country_allow || []}
-              onChange={(vals) => setRules({ ...rules, country_allow: vals })}
-            />
-          </div>
+          <MultiSelect
+            label="Country allow"
+            options={COUNTRY_OPTIONS}
+            values={rules?.country_allow || []}
+            onChange={(vals) => setRules({ ...rules, country_allow: vals })}
+          />
           <div>
             <label className="block text-sm mb-1">Device allow</label>
             <select
@@ -97,13 +99,6 @@ export default function RuleTabs({
               })
             }
           />
-          <div className="md:col-span-2">
-            <DateTimePicker
-              label="Expires at (ISO)"
-              value={rules?.expires_at || ""}
-              onChange={(v) => setRules({ ...rules, expires_at: v })}
-            />
-          </div>
         </div>
       )}
 

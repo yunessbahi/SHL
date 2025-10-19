@@ -1,5 +1,20 @@
 "use client";
-import React from "react";
+import * as React from "react";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button, buttonVariants } from "@/components/ui/button";
+import {
+  Command,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 export type Option = { label: string; value: string };
 
@@ -14,29 +29,62 @@ export default function MultiSelect({
   values: string[];
   onChange: (values: string[]) => void;
 }) {
+  const [open, setOpen] = React.useState(false);
+
+  const handleSelect = (value: string) => {
+    const exists = values.includes(value);
+    const next = exists
+      ? values.filter((v) => v !== value)
+      : [...values, value];
+    onChange(next);
+  };
+
+  const selectedLabels = options
+    .filter((opt) => values.includes(opt.value))
+    .map((opt) => opt.label)
+    .join(", ");
+
   return (
-    <div>
+    <div className="space-y-1">
       {label && <label className="block text-sm mb-1">{label}</label>}
-      <div className="flex flex-wrap gap-2 border rounded p-2">
-        {options.map((opt) => {
-          const active = values.includes(opt.value);
-          return (
-            <button
-              key={opt.value}
-              onClick={(e) => {
-                e.preventDefault();
-                const next = active
-                  ? values.filter((v) => v !== opt.value)
-                  : [...values, opt.value];
-                onChange(next);
-              }}
-              className={`text-xs px-2 py-1 rounded border ${active ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-gray-700"}`}
-            >
-              {opt.label}
-            </button>
-          );
-        })}
-      </div>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="w-full justify-between"
+          >
+            {selectedLabels || "Select options"}
+            <ChevronsUpDown className="opacity-50 h-4 w-4 ml-2" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="p-0 w-full">
+          <Command>
+            <CommandInput placeholder="Search..." />
+            <CommandList>
+              <CommandGroup>
+                {options.map((opt) => (
+                  <CommandItem
+                    key={opt.value}
+                    onSelect={() => handleSelect(opt.value)}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        values.includes(opt.value)
+                          ? "opacity-100"
+                          : "opacity-0",
+                      )}
+                    />
+                    {opt.label}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }

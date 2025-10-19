@@ -6,6 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/app/components/ui/dialog";
+import MultiSelect from "../components/MultiSelect";
 
 interface Campaign {
   id: number;
@@ -166,31 +167,23 @@ export function UtmTemplateModal({
           </div>
           {!form.is_global && (
             <div>
-              <label className="block text-sm font-medium mb-2">
-                Assign to Campaign
-              </label>
-              <select
-                className="w-full border p-2 rounded"
-                value={form.campaign_ids.length > 0 ? form.campaign_ids[0] : ""}
-                onChange={(e) => {
-                  const campaignId = e.target.value
-                    ? Number(e.target.value)
-                    : null;
+              <MultiSelect
+                label="Assign to Campaigns"
+                options={campaigns.map((c) => ({
+                  label: c.name,
+                  value: String(c.id),
+                }))}
+                values={form.campaign_ids.map(String)}
+                onChange={(vals) =>
                   setForm({
                     ...form,
-                    campaign_ids: campaignId ? [campaignId] : [],
-                  });
-                }}
-              >
-                <option value="">Select a campaign...</option>
-                {campaigns.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
+                    campaign_ids: vals.map((v) => Number(v)),
+                  })
+                }
+              />
             </div>
           )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {paramFields.map(([key, label, placeholder]) => (
               <div key={key as string}>
