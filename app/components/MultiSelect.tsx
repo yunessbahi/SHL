@@ -2,13 +2,14 @@
 import * as React from "react";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   Command,
   CommandGroup,
   CommandInput,
   CommandItem,
   CommandList,
+  CommandEmpty,
 } from "@/components/ui/command";
 import {
   Popover,
@@ -23,11 +24,17 @@ export default function MultiSelect({
   options,
   values,
   onChange,
+  placeholder = "Select options",
+  emptyText = "No options available",
+  maxCount,
 }: {
   label?: string;
   options: Option[];
   values: string[];
   onChange: (values: string[]) => void;
+  placeholder?: string;
+  emptyText?: string;
+  maxCount?: number;
 }) {
   const [open, setOpen] = React.useState(false);
 
@@ -41,8 +48,16 @@ export default function MultiSelect({
 
   const selectedLabels = options
     .filter((opt) => values.includes(opt.value))
-    .map((opt) => opt.label)
-    .join(", ");
+    .map((opt) => opt.label);
+
+  const displayedText =
+    selectedLabels.length === 0
+      ? placeholder
+      : maxCount && selectedLabels.length > maxCount
+        ? `${selectedLabels.slice(0, maxCount).join(", ")} +${
+            selectedLabels.length - maxCount
+          } more`
+        : selectedLabels.join(", ");
 
   return (
     <div className="space-y-1">
@@ -53,16 +68,17 @@ export default function MultiSelect({
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className="w-full justify-between"
+            className="w-full justify-between text-sm"
           >
-            {selectedLabels || "Select options"}
-            <ChevronsUpDown className="opacity-50 h-4 w-4 ml-2" />
+            {displayedText}
+            <ChevronsUpDown className="opacity-50 h-4 w-4 ml-2 shrink-0" />
           </Button>
         </PopoverTrigger>
         <PopoverContent className="p-0 w-full">
           <Command>
             <CommandInput placeholder="Search..." />
             <CommandList>
+              <CommandEmpty>{emptyText}</CommandEmpty>
               <CommandGroup>
                 {options.map((opt) => (
                   <CommandItem

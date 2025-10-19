@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/app/components/ui/dialog";
+import MultiSelect from "@/app/components/MultiSelect";
 
 function getUtmParams(obj: any) {
   let utm = obj?.utm_params;
@@ -30,6 +31,7 @@ interface Campaign {
   created_at?: string;
   templates?: UTMTemplate[];
 }
+
 interface UTMTemplate {
   id: number;
   name: string;
@@ -102,11 +104,12 @@ export default function CampaignsPage() {
       method: "POST",
       body: JSON.stringify({ template_ids: assignSelected }),
     });
-    await openTemplatesModal(activeCampaign); // Refresh with updates
-    closeAssignModal();
-    // Notify other pages of campaign change
+    await openTemplatesModal(activeCampaign); // Refresh list
+    setShowAssignModal(false);
+    setAssignSelected([]);
     window.dispatchEvent(new CustomEvent("campaignChanged"));
   };
+
   // Remove mapping
   const handleUnlink = async (templateId: number) => {
     if (!activeCampaign) return;
@@ -240,13 +243,15 @@ export default function CampaignsPage() {
             </h2>
             <div className="mb-4 flex gap-2">
               <Button
-                variant="secondary"
-                onClick={openAssignModal}
-                className="mr-2"
+                variant={showAssignModal ? "default" : "secondary"}
+                onClick={() => setShowAssignModal((v) => !v)}
               >
                 <Plus className="h-4 w-4 mr-1" />
-                Add Existing Templates
+                {showAssignModal
+                  ? "Hide Template Assignment"
+                  : "Add Existing Templates"}
               </Button>
+
               <Button
                 variant="outline"
                 onClick={() => setShowCreateModal(true)}
@@ -318,47 +323,42 @@ export default function CampaignsPage() {
                   )}
               </tbody>
             </table>
+            {/* Inside Templates Modal — replace old showAssignModal section */}
             {showAssignModal && (
-              <div className="mb-4 border-t pt-4">
-                <h3 className="font-semibold mb-2">
-                  Assign Existing Templates
-                </h3>
-                <div className="flex items-center gap-2 mb-2">
-                  <select
-                    multiple
-                    className="w-full border px-2 py-1 rounded"
-                    value={assignSelected.map(String)}
-                    onChange={(e) => {
-                      const values = Array.from(e.target.selectedOptions).map(
-                        (opt) => Number(opt.value),
-                      );
-                      setAssignSelected(values);
-                    }}
-                  >
-                    {availableToAssign.length === 0 && (
-                      <option disabled>No assignable templates</option>
-                    )}
-                    {availableToAssign.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.name}
-                        {t.is_global ? " (global)" : ""}
-                      </option>
-                    ))}
-                  </select>
+              <div className="mt-4 border-t pt-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-semibold text-base">
+                    Assign Existing Templates
+                  </h3>
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
+                    onClick={() => setShowAssignModal(false)}
+                  >
+                    <X className="h-4 w-4 mr-1" /> Close
+                  </Button>
+                </div>
+
+                <MultiSelect
+                  label="Select Templates to Assign"
+                  options={availableToAssign.map((t) => ({
+                    label: `${t.name}${t.is_global ? " (Global)" : ""}`,
+                    value: String(t.id),
+                  }))}
+                  values={assignSelected.map(String)}
+                  onChange={(vals) => setAssignSelected(vals.map(Number))}
+                  placeholder="Choose one or more templates"
+                  emptyText="No templates available"
+                  maxCount={3}
+                />
+
+                <div className="flex justify-end mt-4">
+                  <Button
                     onClick={handleAssign}
                     disabled={assignSelected.length === 0}
+                    className="ml-auto"
                   >
-                    Assign
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={closeAssignModal}
-                  >
-                    Cancel
+                    Assign Templates
                   </Button>
                 </div>
               </div>
