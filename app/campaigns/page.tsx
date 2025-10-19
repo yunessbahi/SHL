@@ -11,6 +11,18 @@ import {
   DialogTitle,
 } from "@/app/components/ui/dialog";
 
+function getUtmParams(obj: any) {
+  let utm = obj?.utm_params;
+  if (utm && typeof utm === "string") {
+    try {
+      utm = JSON.parse(utm);
+    } catch {
+      utm = {};
+    }
+  }
+  return utm || {};
+}
+
 interface Campaign {
   id: number;
   name: string;
@@ -344,7 +356,7 @@ export default function CampaignsPage() {
             <div className="mt-2 mb-2">
               <strong>UTM Params:</strong>
               <div className="grid grid-cols-2 gap-2 mt-1 text-sm">
-                {Object.entries(templateDetail.utm_params)
+                {Object.entries(getUtmParams(templateDetail))
                   .filter(([key, value]) => value)
                   .map(([key, value]) => (
                     <div key={key} className="bg-muted p-2 rounded">

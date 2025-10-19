@@ -87,10 +87,10 @@ export function UtmTemplateModal({
     if (
       !form.name.trim() ||
       !form.utm_params.utm_source ||
-      !form.utm_params.utm_medium //||
-      //!form.utm_params.utm_campaign
+      !form.utm_params.utm_medium ||
+      !form.utm_params.utm_campaign
     ) {
-      setError("Name, source, and medium fields are required");
+      setError("Name, source, medium, and campaign fields are required");
       return;
     }
     setSaving(true);
@@ -112,6 +112,7 @@ export function UtmTemplateModal({
   const paramFields = [
     ["utm_source", "Source *", "e.g., google"],
     ["utm_medium", "Medium *", "e.g., cpc"],
+    ["utm_campaign", "Campaign *", "e.g., spring_sale"],
     ["utm_term", "Term", "e.g., shoes"],
     ["utm_content", "Content", "e.g., logolink"],
   ];
