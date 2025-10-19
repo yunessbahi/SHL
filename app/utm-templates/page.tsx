@@ -41,7 +41,10 @@ export default function UTMTemplatesPage() {
   const loadTemplates = async () => {
     try {
       const response = await authFetch("/api/utm-templates/");
-      if (response.ok) setTemplates(await response.json());
+      if (response.ok) {
+        const data = await response.json();
+        setTemplates(data);
+      }
     } catch (error) {
       console.error("Failed to load UTM templates:", error);
     } finally {
@@ -51,6 +54,16 @@ export default function UTMTemplatesPage() {
   useEffect(() => {
     loadTemplates();
     loadCampaigns();
+
+    // Listen for campaign changes from other pages
+    const handleCampaignChange = () => {
+      loadTemplates();
+      loadCampaigns();
+    };
+
+    window.addEventListener("campaignChanged", handleCampaignChange);
+    return () =>
+      window.removeEventListener("campaignChanged", handleCampaignChange);
   }, []);
   // Launch create
   const openCreate = () => {
@@ -89,6 +102,7 @@ export default function UTMTemplatesPage() {
     if (response.ok) await loadTemplates();
   };
   if (loading) return <div>Loading...</div>;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">

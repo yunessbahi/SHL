@@ -56,6 +56,7 @@ export default function CampaignsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editTemplate, setEditTemplate] = useState<UTMTemplate | null>(null);
   const [showCampaignModal, setShowCampaignModal] = useState(false);
+  const [editCampaign, setEditCampaign] = useState<Campaign | null>(null);
 
   // Fetch all campaigns and templates for assignment
   useEffect(() => {
@@ -103,6 +104,8 @@ export default function CampaignsPage() {
     });
     await openTemplatesModal(activeCampaign); // Refresh with updates
     closeAssignModal();
+    // Notify other pages of campaign change
+    window.dispatchEvent(new CustomEvent("campaignChanged"));
   };
   // Remove mapping
   const handleUnlink = async (templateId: number) => {
@@ -112,6 +115,8 @@ export default function CampaignsPage() {
       { method: "DELETE" },
     );
     await openTemplatesModal(activeCampaign);
+    // Notify other pages of campaign change
+    window.dispatchEvent(new CustomEvent("campaignChanged"));
   };
   // Open template detail modal
   const showTemplateDetail = (template: UTMTemplate) => {
@@ -119,6 +124,26 @@ export default function CampaignsPage() {
   };
 
   const closeTemplateModal = () => setTemplateDetail(null);
+
+  // Campaign edit/delete handlers
+  const handleDeleteCampaign = async (campaignId: number) => {
+    if (
+      !confirm(
+        "Are you sure you want to delete this campaign? This will also remove all template assignments.",
+      )
+    )
+      return;
+    const response = await authFetch(`/api/campaigns/${campaignId}`, {
+      method: "DELETE",
+    });
+    if (response.ok) {
+      // Refresh campaigns list
+      const cRes = await authFetch("/api/campaigns/");
+      if (cRes.ok) setCampaigns(await cRes.json());
+      // Notify other pages of campaign change
+      window.dispatchEvent(new CustomEvent("campaignChanged"));
+    }
+  };
 
   // Compute templates that can be assigned (user/global not already mapped)
   const availableToAssign =
@@ -148,6 +173,7 @@ export default function CampaignsPage() {
               <th className="p-2">Name</th>
               <th className="p-2">Templates</th>
               <th className="p-2">Created</th>
+              <th className="p-2">Actions</th>
               <th className="p-2"></th>
             </tr>
           </thead>
@@ -165,6 +191,24 @@ export default function CampaignsPage() {
                   {c.created_at
                     ? new Date(c.created_at).toLocaleDateString()
                     : ""}
+                </td>
+                <td className="p-2">
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditCampaign(c)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDeleteCampaign(c.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </td>
                 <td className="p-2">
                   <Button
@@ -440,9 +484,45 @@ export default function CampaignsPage() {
                 const cRes = await authFetch("/api/campaigns/");
                 if (cRes.ok) setCampaigns(await cRes.json());
                 setShowCampaignModal(false);
+                // Notify other pages of campaign change
+                window.dispatchEvent(new CustomEvent("campaignChanged"));
               }
             }}
             onCancel={() => setShowCampaignModal(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Campaign Edit Modal */}
+      <Dialog
+        open={!!editCampaign}
+        onOpenChange={(open) => {
+          if (!open) setEditCampaign(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Campaign</DialogTitle>
+          </DialogHeader>
+          <CampaignForm
+            initialValues={editCampaign || undefined}
+            onSave={async (values) => {
+              const res = await authFetch(
+                `/api/campaigns/${editCampaign!.id}`,
+                {
+                  method: "PATCH",
+                  body: JSON.stringify(values),
+                },
+              );
+              if (res.ok) {
+                const cRes = await authFetch("/api/campaigns/");
+                if (cRes.ok) setCampaigns(await cRes.json());
+                setEditCampaign(null);
+                // Notify other pages of campaign change
+                window.dispatchEvent(new CustomEvent("campaignChanged"));
+              }
+            }}
+            onCancel={() => setEditCampaign(null)}
           />
         </DialogContent>
       </Dialog>
@@ -454,13 +534,15 @@ export default function CampaignsPage() {
 function CampaignForm({
   onSave,
   onCancel,
+  initialValues,
 }: {
   onSave: (values: any) => void;
   onCancel: () => void;
+  initialValues?: Campaign;
 }) {
   const [form, setForm] = useState({
-    name: "",
-    description: "",
+    name: initialValues?.name || "",
+    description: initialValues?.description || "",
     default_utm: {
       utm_source: "",
       utm_medium: "",
@@ -469,6 +551,23 @@ function CampaignForm({
       utm_content: "",
     },
   });
+
+  // Update form when initialValues change
+  useEffect(() => {
+    if (initialValues) {
+      setForm({
+        name: initialValues.name || "",
+        description: initialValues.description || "",
+        default_utm: {
+          utm_source: "",
+          utm_medium: "",
+          utm_campaign: "",
+          utm_term: "",
+          utm_content: "",
+        },
+      });
+    }
+  }, [initialValues]);
 
   return (
     <div className="space-y-4">
@@ -520,7 +619,9 @@ function CampaignForm({
         </div>
       </div>
       <div className="flex gap-2 pt-4">
-        <Button onClick={() => onSave(form)}>Create Campaign</Button>
+        <Button onClick={() => onSave(form)}>
+          {initialValues ? "Update Campaign" : "Create Campaign"}
+        </Button>
         <Button variant="outline" onClick={onCancel}>
           Cancel
         </Button>
