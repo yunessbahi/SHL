@@ -6,7 +6,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/app/components/ui/dialog";
-import MultiSelect from "../components/MultiSelect";
+//import MultiSelect from "../components/MultiSelect";
+import { MultiSelect } from "@/components/multi-select";
 
 interface Campaign {
   id: number;
@@ -168,13 +169,13 @@ export function UtmTemplateModal({
           {!form.is_global && (
             <div>
               <MultiSelect
-                label="Assign to Campaigns"
+                placeholder="Assign to Campaigns"
                 options={campaigns.map((c) => ({
                   label: c.name,
                   value: String(c.id),
                 }))}
-                values={form.campaign_ids.map(String)}
-                onChange={(vals) =>
+                defaultValue={form.campaign_ids.map(String)}
+                onValueChange={(vals) =>
                   setForm({
                     ...form,
                     campaign_ids: vals.map((v) => Number(v)),

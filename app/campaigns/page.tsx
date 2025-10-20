@@ -10,7 +10,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/app/components/ui/dialog";
-import MultiSelect from "@/app/components/MultiSelect";
+//import MultiSelect from "@/app/components/MultiSelect";
+import { MultiSelect } from "@/components/multi-select";
 
 function getUtmParams(obj: any) {
   let utm = obj?.utm_params;
@@ -340,15 +341,15 @@ export default function CampaignsPage() {
                 </div>
 
                 <MultiSelect
-                  label="Select Templates to Assign"
+                  //placeholder="Select Templates to Assign"
                   options={availableToAssign.map((t) => ({
                     label: `${t.name}${t.is_global ? " (Global)" : ""}`,
                     value: String(t.id),
                   }))}
-                  values={assignSelected.map(String)}
-                  onChange={(vals) => setAssignSelected(vals.map(Number))}
+                  defaultValue={assignSelected.map(String)}
+                  onValueChange={(vals) => setAssignSelected(vals.map(Number))}
                   placeholder="Choose one or more templates"
-                  emptyText="No templates available"
+                  emptyIndicator="No templates available"
                   maxCount={3}
                 />
 

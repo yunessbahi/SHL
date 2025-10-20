@@ -1,7 +1,8 @@
 "use client";
 import React, { useMemo, useState } from "react";
 import JsonEditor from "../components/JsonEditor";
-import MultiSelect from "../components/MultiSelect";
+//import MultiSelect from "../components/MultiSelect";
+import { MultiSelect } from "@/components/multi-select";
 import DateTimePicker from "../components/DateTimePicker";
 
 const COUNTRY_OPTIONS = [
@@ -52,10 +53,12 @@ export default function RuleTabs({
       {tab === "audience" && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <MultiSelect
-            label="Country allow"
+            placeholder="Country allow"
             options={COUNTRY_OPTIONS}
-            values={rules?.country_allow || []}
-            onChange={(vals) => setRules({ ...rules, country_allow: vals })}
+            defaultValue={rules?.country_allow || []}
+            onValueChange={(vals) =>
+              setRules({ ...rules, country_allow: vals })
+            }
           />
           <div>
             <label className="block text-sm mb-1">Device allow</label>
