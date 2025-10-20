@@ -121,11 +121,11 @@ export default function TargetsPage() {
 
   // Load templates for selected campaign
   const loadTemplates = async () => {
-    const query = draft.campaign_id
-      ? `/api/utm-templates?campaign_id=${draft.campaign_id}`
-      : `/api/utm-templates?is_global=true`;
+      const query = draft.campaign_id
+          ? `/api/utm-templates/?campaign_id=${draft.campaign_id}`
+          : `/api/utm-templates/?is_global=true`;
 
-    const tRes = await authFetch(query);
+      const tRes = await authFetch(query);
     if (!tRes.ok) return;
 
     const data: UTMTemplate[] = await tRes.json();
