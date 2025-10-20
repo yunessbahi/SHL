@@ -92,18 +92,21 @@ export default function TargetsPage() {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [modalInitial, setModalInitial] = useState<any>(null);
 
-  // ✅ Compute merged UTM (template + overrides) for final preview
-  const mergedUTM = useMemo(() => {
-    const inherited = templatePreview || {};
-    const overrides = draft.rules?.utm_overrides || {};
-
-    // Only override keys that are actually set (non-empty)
-    const finalOverrides = Object.fromEntries(
-      Object.entries(overrides).filter(([_, v]) => v !== undefined && v !== ""),
-    );
-
-    return { ...inherited, ...finalOverrides };
-  }, [templatePreview, draft.rules?.utm_overrides]);
+  // ✅ Whenever templatePreview changes, inject it into utm_overrides if not set
+  useEffect(() => {
+    if (draft.utm_template_id && templatePreview) {
+      // Only inject if utm_overrides is empty
+      if (
+        !draft.rules?.utm_overrides ||
+        Object.keys(draft.rules.utm_overrides).length === 0
+      ) {
+        dispatch({
+          type: "merge_rules",
+          value: { utm_overrides: { ...templatePreview } },
+        });
+      }
+    }
+  }, [draft.utm_template_id, templatePreview]);
 
   // ✅ Check Supabase session
   useEffect(() => {
