@@ -13,7 +13,7 @@ import {
 } from "@/app/components/ui/dialog";
 import { Info, Plus } from "lucide-react";
 import { UtmTemplateModal } from "@/app/components/UtmTemplateModal";
-import MultiSelect, { Option } from "@/app/components/MultiSelect";
+import { MultiSelect } from "@/components/multi-select";
 
 interface UTMTemplate {
   id: number;
@@ -134,6 +134,7 @@ export default function TargetsPage() {
     const unique = new Map<number, UTMTemplate>();
     data.forEach((t) => unique.set(t.id, t));
     setTemplates(Array.from(unique.values()));
+    console.log("Loaded templates:", Array.from(unique.values()));
   };
 
   useEffect(() => {
@@ -311,15 +312,15 @@ export default function TargetsPage() {
           </div>
 
           <MultiSelect
-            label="Select Template"
+            placeholder="Select Template"
             options={templates.map((t) => ({
               label: `${t.name}${t.is_global ? " (Global)" : ""}`,
               value: String(t.id),
             }))}
-            values={
+            defaultValue={
               draft.utm_template_id ? [String(draft.utm_template_id)] : []
             }
-            onChange={(vals: string[]) =>
+            onValueChange={(vals: string[]) =>
               dispatch({
                 type: "set_field",
                 key: "utm_template_id",
