@@ -96,7 +96,13 @@ export default function TargetsPage() {
   const mergedUTM = useMemo(() => {
     const inherited = templatePreview || {};
     const overrides = draft.rules?.utm_overrides || {};
-    return { ...inherited, ...overrides };
+
+    // Only override keys that are actually set (non-empty)
+    const finalOverrides = Object.fromEntries(
+      Object.entries(overrides).filter(([_, v]) => v !== undefined && v !== ""),
+    );
+
+    return { ...inherited, ...finalOverrides };
   }, [templatePreview, draft.rules?.utm_overrides]);
 
   // ✅ Check Supabase session
