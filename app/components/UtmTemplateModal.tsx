@@ -1,38 +1,72 @@
-import React, { useEffect, useState } from "react";
-import { Button } from "@/app/components/ui/button";
+"use client";
+
+import React, { useEffect } from "react";
+import { z } from "zod";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/app/components/ui/dialog";
-//import MultiSelect from "../components/MultiSelect";
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { MultiSelect } from "@/components/multi-select";
 
 interface Campaign {
   id: number;
   name: string;
 }
-interface UTMTemplateFormProps {
+
+interface UtmTemplateModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  initialValues?: any;
-  onSave: (values: any) => Promise<void>;
+  initialValues?: {
+    name?: string;
+    description?: string;
+    utm_params?: Record<string, string>;
+    is_global?: boolean;
+    campaign_ids?: number[];
+  };
+  onSave: (values: UTMTemplateFormValues) => Promise<void>;
   campaigns: Campaign[];
   loading?: boolean;
 }
 
-function getUtmParams(obj: any) {
-  let utm = obj?.utm_params;
-  if (utm && typeof utm === "string") {
-    try {
-      utm = JSON.parse(utm);
-    } catch {
-      utm = {};
-    }
-  }
-  return utm || {};
-}
+const utmKeys = [
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_term",
+  "utm_content",
+] as const;
+
+const schema = z.object({
+  name: z.string().min(1, "Name is required"),
+  description: z.string().optional(),
+  is_global: z.boolean(),
+  campaign_ids: z.array(z.number()),
+  utm_params: z.object({
+    utm_source: z.string().min(1, "Source is required"),
+    utm_medium: z.string().min(1, "Medium is required"),
+    utm_campaign: z.string().min(1, "Campaign is required"),
+    utm_term: z.string().optional(),
+    utm_content: z.string().optional(),
+  }),
+});
+
+export type UTMTemplateFormValues = z.infer<typeof schema>;
 
 export function UtmTemplateModal({
   open,
@@ -41,192 +75,222 @@ export function UtmTemplateModal({
   onSave,
   campaigns,
   loading,
-}: UTMTemplateFormProps) {
-  const [form, setForm] = useState({
-    name: initialValues?.name || "",
-    description: initialValues?.description || "",
-    utm_params: initialValues?.utm_params || {
-      utm_source: "",
-      utm_medium: "",
-      utm_campaign: "",
-      utm_term: "",
-      utm_content: "",
+}: UtmTemplateModalProps) {
+  console.log("campaigns:", campaigns);
+  const defaultValues: UTMTemplateFormValues = {
+    name: initialValues?.name ?? "",
+    description: initialValues?.description ?? "",
+    is_global: initialValues?.is_global ?? false,
+    campaign_ids: initialValues?.campaign_ids ?? [],
+    utm_params: {
+      utm_source: initialValues?.utm_params?.utm_source ?? "",
+      utm_medium: initialValues?.utm_params?.utm_medium ?? "",
+      utm_campaign: initialValues?.utm_params?.utm_campaign ?? "",
+      utm_term: initialValues?.utm_params?.utm_term ?? "",
+      utm_content: initialValues?.utm_params?.utm_content ?? "",
     },
-    is_global: initialValues?.is_global || false,
-    campaign_ids: initialValues?.campaign_ids || [],
+  };
+
+  const form = useForm<UTMTemplateFormValues>({
+    resolver: zodResolver(schema),
+    defaultValues,
   });
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
 
+  const { control, handleSubmit, watch, formState, reset } = form;
+  const { isSubmitting, errors } = formState;
+
+  // Reset form when initialValues or open state changes
   useEffect(() => {
-    let utmParams: any = initialValues?.utm_params;
-    if (utmParams && typeof utmParams === "string") {
-      try {
-        utmParams = JSON.parse(utmParams);
-      } catch {
-        utmParams = {};
-      }
-    }
-    utmParams = utmParams || {
-      utm_source: "",
-      utm_medium: "",
-      utm_campaign: "",
-      utm_term: "",
-      utm_content: "",
-    };
-    setForm({
-      name: initialValues?.name || "",
-      description: initialValues?.description || "",
-      utm_params: utmParams,
-      is_global: initialValues?.is_global || false,
-      campaign_ids: initialValues?.campaign_ids || [],
-    });
-  }, [initialValues, open]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    if (
-      !form.name.trim() ||
-      !form.utm_params.utm_source ||
-      !form.utm_params.utm_medium ||
-      !form.utm_params.utm_campaign
-    ) {
-      setError("Name, source, medium, and campaign fields are required");
-      return;
-    }
-    setSaving(true);
-    try {
-      await onSave({
-        ...form,
-        campaign_ids: form.is_global ? [] : form.campaign_ids,
+    if (open && initialValues) {
+      reset({
+        name: initialValues.name ?? "",
+        description: initialValues.description ?? "",
+        is_global: initialValues.is_global ?? false,
+        campaign_ids: initialValues.campaign_ids ?? [], // number[] as expected by form
+        utm_params: {
+          utm_source: initialValues.utm_params?.utm_source ?? "",
+          utm_medium: initialValues.utm_params?.utm_medium ?? "",
+          utm_campaign: initialValues.utm_params?.utm_campaign ?? "",
+          utm_term: initialValues.utm_params?.utm_term ?? "",
+          utm_content: initialValues.utm_params?.utm_content ?? "",
+        },
       });
-      setSaving(false);
-      onOpenChange(false);
-    } catch (err) {
-      setError((err as any)?.message || "Save failed");
-      setSaving(false);
     }
+  }, [open, initialValues, reset]);
+
+  const watchIsGlobal = watch("is_global");
+
+  const onSubmit = async (values: UTMTemplateFormValues) => {
+    const payload = {
+      ...values,
+      campaign_ids: values.is_global ? [] : values.campaign_ids,
+    };
+    await onSave(payload);
+    onOpenChange(false);
   };
-  const updateUTMParam = (key: string, value: string) => {
-    setForm({ ...form, utm_params: { ...form.utm_params, [key]: value } });
-  };
-  const paramFields = [
-    ["utm_source", "Source *", "e.g., google"],
-    ["utm_medium", "Medium *", "e.g., cpc"],
-    ["utm_campaign", "Campaign *", "e.g., spring_sale"],
-    ["utm_term", "Term", "e.g., shoes"],
-    ["utm_content", "Content", "e.g., logolink"],
-  ];
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>
             {initialValues ? "Edit UTM Template" : "Create UTM Template"}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div>
-            <label className="block text-sm font-medium mb-2">Name *</label>
-            <input
-              type="text"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="w-full border p-2 rounded"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              Description
-            </label>
-            <input
-              type="text"
-              value={form.description}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
-              className="w-full border p-2 rounded"
-            />
-          </div>
-          <div className="flex items-center gap-2 mb-1">
-            <input
-              type="checkbox"
-              checked={form.is_global}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  is_global: e.target.checked,
-                  campaign_ids: [],
-                })
-              }
-            />
-            <label className="text-sm">
-              Global (available in all campaigns)
-            </label>
-          </div>
-          {!form.is_global && (
-            <div>
-              <MultiSelect
-                placeholder="Assign to Campaigns"
-                options={campaigns.map((c) => ({
-                  label: c.name,
-                  value: String(c.id),
-                }))}
-                defaultValue={form.campaign_ids.map(String)}
-                onValueChange={(vals) =>
-                  setForm({
-                    ...form,
-                    campaign_ids: vals.map((v) => Number(v)),
-                  })
-                }
-              />
-            </div>
-          )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {paramFields.map(([key, label, placeholder]) => (
-              <div key={key as string}>
-                <label className="block text-sm font-medium mb-2">
-                  {label}
-                </label>
-                <input
-                  type="text"
-                  value={
-                    getUtmParams(form)?.[
-                      key as keyof ReturnType<typeof getUtmParams>
-                    ] || ""
-                  }
-                  onChange={(e) =>
-                    updateUTMParam(key as string, e.target.value)
-                  }
-                  className="w-full border p-2 rounded"
-                  placeholder={placeholder as string}
-                  required={label.endsWith("*")}
+        <Form {...form}>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            {/* Name */}
+            <FormField
+              control={control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name *</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      placeholder="Template Name"
+                      disabled={isSubmitting || loading}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Description */}
+            <FormField
+              control={control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Description</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      placeholder="Optional description"
+                      disabled={isSubmitting || loading}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Global Checkbox */}
+            <FormField
+              control={control}
+              name="is_global"
+              render={({ field }) => (
+                <FormItem className="flex items-center space-x-2">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      disabled={isSubmitting || loading}
+                    />
+                  </FormControl>
+                  <FormLabel className="mb-0">
+                    Global (available in all campaigns)
+                  </FormLabel>
+                </FormItem>
+              )}
+            />
+
+            {/* Campaign MultiSelect - Using Controller to Avoid FormField Context Error */}
+            {!watchIsGlobal && (
+              <FormField
+                control={control}
+                name="campaign_ids"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Assign to Campaigns</FormLabel>
+                    <FormControl>
+                      {/*<MultiSelect
+                                                placeholder="Select campaigns"
+                                                // Label = name (what user sees), value = id as string (internal for MultiSelect)
+                                                options={campaigns.map((c) => ({ label: c.name, value: String(c.id) }))}
+                                                // field.value is number[], convert to string[] for MultiSelect
+                                                value={field.value.map(String)}
+
+                                                // Convert selected string[] back to number[] for form
+                                                onValueChange={(vals) => field.onChange(vals.map(Number))}
+                                                disabled={isSubmitting || loading}
+
+                                            />*/}
+                      <MultiSelect
+                        placeholder="Assign to Campaigns"
+                        options={campaigns.map((c) => ({
+                          label: c.name,
+                          value: String(c.id),
+                        }))}
+                        defaultValue={defaultValues.campaign_ids.map(String)}
+                        onValueChange={(vals) =>
+                          field.onChange(vals.map(Number))
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            {/* UTM fields */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {utmKeys.map((key) => (
+                <FormField
+                  key={key}
+                  control={control}
+                  name={`utm_params.${key}` as const}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        {key
+                          .replace("utm_", "")
+                          .replace(/_/g, " ")
+                          .replace(/\b\w/g, (c) => c.toUpperCase())}
+                        {["utm_source", "utm_medium", "utm_campaign"].includes(
+                          key,
+                        )
+                          ? " *"
+                          : ""}
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          placeholder={`e.g., ${key.replace("utm_", "")}`}
+                          disabled={isSubmitting || loading}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-            ))}
-          </div>
-          {error && <div className="text-red-600 text-xs mt-2">{error}</div>}
-          <div className="flex gap-2 mt-2">
-            <Button type="submit" disabled={saving}>
-              {saving
-                ? "Saving..."
-                : initialValues
-                  ? "Save Changes"
-                  : "Create Template"}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={saving}
-            >
-              Cancel
-            </Button>
-          </div>
-        </form>
+              ))}
+            </div>
+
+            {/* Buttons */}
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button type="submit" disabled={isSubmitting || loading}>
+                {isSubmitting || loading
+                  ? "Saving…"
+                  : initialValues
+                    ? "Save Changes"
+                    : "Create Template"}
+              </Button>
+              <Button
+                variant="outline"
+                type="button"
+                onClick={() => onOpenChange(false)}
+                disabled={isSubmitting || loading}
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

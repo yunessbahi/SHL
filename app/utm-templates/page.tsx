@@ -72,13 +72,18 @@ export default function UTMTemplatesPage() {
     setModalOpen(true);
   };
   // Launch edit
+  // Launch edit
   const handleEdit = (template: UTMTemplate) => {
     setModalInitial({
-      ...template,
+      name: template.name,
+      description: template.description,
+      utm_params: template.utm_params,
+      is_global: template.is_global,
       campaign_ids: template.campaigns?.map((c) => c.id) || [],
     });
     setEditing(template);
     setModalOpen(true);
+    console.log("template-camps", template.campaigns);
   };
   // Save logic (create or edit)
   const handleSave = async (values: any) => {
