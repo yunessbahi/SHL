@@ -12,8 +12,6 @@ export default function LoginPage() {
   const router = useRouter();
   const supabase = createClient();
 
-  const REDIRECT_URL = process.env.NEXT_PUBLIC_API_URL + "/dashboard";
-
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -45,7 +43,7 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: REDIRECT_URL,
+          redirectTo: `${window.location.origin}/dashboard`,
         },
       });
 
