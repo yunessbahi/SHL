@@ -57,8 +57,31 @@ export default async function RootLayout({
     data: { session },
   } = await supabase.auth.getSession();
 
+  // Get theme from cookies for server-side rendering
+  const theme = cookieStore.get("theme")?.value || "light";
+
   return (
-    <html lang="en" className={cn(`${roboto.variable} ${mono.variable}`, "")}>
+    <html
+      lang="en"
+      className={cn(
+        `${roboto.variable} ${mono.variable}`,
+        theme === "dark" ? "dark" : "",
+      )}
+    >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                const theme = localStorage.getItem('theme');
+                if (theme === 'dark') {
+                  document.documentElement.classList.add('dark');
+                }
+              } catch (e) {}
+            `,
+          }}
+        />
+      </head>
       <body className="font-inter">
         <Sidebar>
           <Header>
