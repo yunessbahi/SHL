@@ -210,10 +210,10 @@ export default function CampaignsPage() {
         </Button>
       </div>
 
-      <div className="bg-white rounded border">
+      <div className="rounded border">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-gray-50 text-left">
+            <tr className=" text-left">
               <th className="p-2">ID</th>
               <th className="p-2">Name</th>
               <th className="p-2">Templates</th>
@@ -280,7 +280,7 @@ export default function CampaignsPage() {
       {/* Templates Modal */}
       {showTemplatesModal && activeCampaign && (
         <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center">
-          <div className="bg-white p-8 rounded shadow-lg w-full max-w-2xl relative max-h-[90vh] overflow-y-auto">
+          <div className="p-8 rounded shadow-lg w-full max-w-2xl relative max-h-[90vh] overflow-y-auto">
             <button
               className="absolute right-4 top-4"
               onClick={() => {
@@ -315,7 +315,7 @@ export default function CampaignsPage() {
 
             <table className="w-full text-sm mb-4">
               <thead>
-                <tr className="bg-gray-50 text-left">
+                <tr className=" text-left">
                   <th className="p-2">Name</th>
                   <th className="p-2">Global</th>
                   <th className="p-2">Actions</th>

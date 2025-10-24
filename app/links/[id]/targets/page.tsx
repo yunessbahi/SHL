@@ -431,7 +431,7 @@ export default function TargetsPage() {
           <label className="block text-xs text-muted-foreground mb-1 font-semibold">
             Final UTM Params (inherited + overridden)
           </label>
-          <pre className="bg-gray-50 border rounded p-2 text-xs overflow-x-auto">
+          <pre className=" border rounded p-2 text-xs overflow-x-auto">
             {JSON.stringify(templatePreview, null, 2)}
           </pre>
         </div>
@@ -457,7 +457,7 @@ export default function TargetsPage() {
       <div className="bg-white rounded border">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-gray-50 text-left">
+            <tr className=" text-left">
               <th className="p-2">ID</th>
               <th className="p-2">URL</th>
               <th className="p-2">Weight</th>
@@ -864,7 +864,7 @@ export default function TargetsPage() {
 
   if (authLoading || hasSession === false) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen  flex items-center justify-center">
         <div className="text-center">
           <Spinner className="size-6 mx-auto" />
           <p className="mt-4 text-muted-foreground">Loading...</p>
@@ -1026,7 +1026,7 @@ export default function TargetsPage() {
           <label className="block text-xs text-muted-foreground mb-1 font-semibold">
             Final UTM Params (inherited + overridden)
           </label>
-          <pre className="bg-gray-50 border rounded p-2 text-xs overflow-x-auto">
+          <pre className=" border rounded p-2 text-xs overflow-x-auto">
             {JSON.stringify(templatePreview, null, 2)}
           </pre>
         </div>
@@ -1052,7 +1052,7 @@ export default function TargetsPage() {
       <div className="bg-white rounded border">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-gray-50 text-left">
+            <tr className=" text-left">
               <th className="p-2">ID</th>
               <th className="p-2">URL</th>
               <th className="p-2">Weight</th>

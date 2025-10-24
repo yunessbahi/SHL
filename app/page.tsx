@@ -15,7 +15,7 @@ export default function HomePage() {
         data: { session },
       } = await supabase.auth.getSession();
       if (session?.user) {
-        router.replace("/dashboard");
+        router.replace("/workspace");
       }
     };
     checkAuth();
@@ -70,7 +70,7 @@ export default function HomePage() {
             </Link>
             <Link
               href="/demo"
-              className="border border-gray-300 text-gray-700 px-8 py-3 rounded-lg text-lg font-medium hover:bg-gray-50 transition-colors"
+              className="border border-gray-300 text-gray-700 px-8 py-3 rounded-lg text-lg font-medium hover: transition-colors"
             >
               View Demo
             </Link>

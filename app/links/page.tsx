@@ -36,7 +36,7 @@ export default function LinksPage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen  flex items-center justify-center">
         <div className="text-center">
           <Spinner className="size-6 mx-auto" />
           <p className="mt-4 text-muted-foreground">Loading...</p>
@@ -50,7 +50,7 @@ export default function LinksPage() {
       <div className="bg-white rounded border">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-gray-50 text-left">
+            <tr className=" text-left">
               <th className="p-2">Short URL</th>
               <th className="p-2">Target URL</th>
               <th className="p-2">Expires</th>

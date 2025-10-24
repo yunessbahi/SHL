@@ -257,13 +257,6 @@ export default function UTMTemplatesPage() {
                       </Pill>
 
                       {template.is_global && (
-                        /*<Badge
-                                                                          variant="secondary"
-                                                                          className="bg-blue-100 text-blue-700 hover:bg-blue-100"
-                                                                        >
-                                                                          <Globe className="w-3 h-3 mr-1" />
-                                                                          Global
-                                                                        </Badge>*/
                         <Pill>
                           <PillStatus>
                             <CheckCircleIcon
@@ -332,7 +325,7 @@ export default function UTMTemplatesPage() {
 
                   {/* UTM Parameters with Horizontal Scroll */}
                   <div className="flex-1">
-                    <h4 className="text-xs text-muted-foreground font-medium mb-2">
+                    <h4 className="text-xs text-muted-foreground/70 font-medium mb-2">
                       UTM Parameters
                     </h4>
                     <ScrollArea className="flex-1 w-full whitespace-nowrap min-h-0 relative">
@@ -342,7 +335,7 @@ export default function UTMTemplatesPage() {
                           .map(([key, value]) => {
                             const Icon = Hash;
                             return (
-                              <Badge
+                              /*<Badge
                                 key={key}
                                 variant="secondary"
                                 className="flex font-mono font-light items-center gap-1 shrink-0"
@@ -354,7 +347,13 @@ export default function UTMTemplatesPage() {
                                   </span>
                                   {toTitleCase(value)}
                                 </span>
-                              </Badge>
+                              </Badge>*/
+                              <Pill id={key}>
+                                <PillStatus className="text-muted-foreground border-muted-foreground/40">
+                                  {toTitleCase(key.replace("utm_", ""))}
+                                </PillStatus>
+                                {toTitleCase(value)}
+                              </Pill>
                             );
                           })}
                       </div>
@@ -372,7 +371,9 @@ export default function UTMTemplatesPage() {
                 <CardFooter className="flex items-center justify-between pt-3">
                   {/* Campaigns Count with Hover Card */}
 
-                  <span className="text-xs">Assigned Campaigns</span>
+                  <span className="text-xs text-muted-foreground/70 font-light">
+                    Assigned Campaigns
+                  </span>
                   <HoverCard>
                     <HoverCardTrigger asChild>
                       <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
