@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/app/components/ui/button";
 import {
   Card,
@@ -14,8 +16,28 @@ import { Label } from "@/app/components/ui/label";
 import { Switch } from "@/app/components/ui/switch";
 import { Separator } from "@/app/components/ui/separator";
 import { Save, User, Bell, Shield, Palette } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 
 export default function SettingsPage() {
+  const [authLoading, setAuthLoading] = useState(true);
+  const router = useRouter();
+  const supabase = createClient();
+
+  // Check authentication on mount
+  useEffect(() => {
+    const checkUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        router.push("/auth/login?redirectedFrom=/settings");
+        return;
+      }
+      setAuthLoading(false);
+    };
+    checkUser();
+  }, [router, supabase]);
+
   const [settings, setSettings] = useState({
     name: "John Doe",
     email: "john@example.com",
@@ -39,13 +61,24 @@ export default function SettingsPage() {
     console.log("Settings saved:", settings);
   };
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Spinner className="size-6 mx-auto" />
+          <p className="mt-4 text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Settings</h1>
+      <div className={""}>
+        {/*<h1 className="text-3xl font-bold">Settings</h1>
         <p className="text-muted-foreground">
           Manage your account settings and preferences.
-        </p>
+        </p>*/}
       </div>
 
       <div className="grid gap-6">

@@ -1,12 +1,16 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { authFetch } from "@/lib/api";
+import { Spinner } from "@/components/ui/spinner";
 import TraceViewer from "@/app/components/TraceViewer";
 
 export default function PreviewPage() {
   const params = useParams();
   const linkId = Number(params?.id);
+  const router = useRouter();
+  const supabase = createClient();
   const [context, setContext] = useState({
     country: "",
     device_type: "",
@@ -15,6 +19,22 @@ export default function PreviewPage() {
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  // Check authentication on mount
+  useEffect(() => {
+    const checkUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        router.push(`/auth/login?redirectedFrom=/links/${linkId}/preview`);
+        return;
+      }
+      setAuthLoading(false);
+    };
+    checkUser();
+  }, [router, supabase, linkId]);
 
   const run = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -32,6 +52,17 @@ export default function PreviewPage() {
   useEffect(() => {
     if (linkId) run();
   }, [linkId]);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Spinner className="size-6 mx-auto" />
+          <p className="mt-4 text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-8 space-y-4">

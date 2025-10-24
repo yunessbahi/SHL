@@ -579,8 +579,10 @@ export default function TargetsPage() {
 */
 "use client";
 import React, { useEffect, useMemo, useReducer, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { authFetch } from "@/lib/api";
+import { Spinner } from "@/components/ui/spinner";
 import WeightSlider from "@/app/components/WeightSlider";
 import RuleTabs from "@/app/components/RuleTabs";
 import { Button } from "@/app/components/ui/button";
@@ -657,6 +659,8 @@ export default function TargetsPage() {
   const params = useParams();
   const linkId = Number(params?.id);
   const storageKey = useMemo(() => `targets_draft_link_${linkId}`, [linkId]);
+  const router = useRouter();
+  const supabase = createClient();
 
   const [items, setItems] = useState<any[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -670,6 +674,22 @@ export default function TargetsPage() {
   const [templatePreview, setTemplatePreview] = useState<any>({});
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [modalInitial, setModalInitial] = useState<any>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  // Check authentication on mount
+  useEffect(() => {
+    const checkUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        router.push(`/auth/login?redirectedFrom=/links/${linkId}/targets`);
+        return;
+      }
+      setAuthLoading(false);
+    };
+    checkUser();
+  }, [router, supabase, linkId]);
 
   // ✅ Whenever templatePreview changes, inject it into utm_overrides
   useEffect(() => {
@@ -842,10 +862,13 @@ export default function TargetsPage() {
     }
   };
 
-  if (hasSession === false) {
+  if (authLoading || hasSession === false) {
     return (
-      <div className="max-w-5xl mx-auto px-6 py-8">
-        Please sign in to manage targets.
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Spinner className="size-6 mx-auto" />
+          <p className="mt-4 text-muted-foreground">Loading...</p>
+        </div>
       </div>
     );
   }

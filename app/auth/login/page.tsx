@@ -1,3 +1,4 @@
+/*
 "use client";
 import React, { useState } from "react";
 import Link from "next/link";
@@ -180,6 +181,130 @@ export default function LoginPage() {
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+*/
+
+// app/auth/login/page.tsx
+"use client";
+
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
+import { useRouter, useSearchParams } from "next/navigation";
+
+export default function LoginPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const supabase = createClient();
+
+  const redirectedFrom =
+    searchParams.get("redirectedFrom")?.trim() || "/dashboard";
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) router.replace(redirectedFrom);
+    };
+    checkUser();
+  }, [router, supabase, redirectedFrom]);
+
+  const handleEmailLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) setError(error.message);
+      else router.replace(redirectedFrom);
+    } catch {
+      setError("An unexpected error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}${redirectedFrom}`,
+        },
+      });
+
+      if (error) {
+        setError(error.message);
+        setLoading(false);
+      }
+    } catch {
+      setError("An unexpected error occurred");
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+      <div className="max-w-md w-full space-y-8 bg-white p-6 rounded-lg shadow">
+        <h2 className="text-center text-3xl font-bold">Sign in</h2>
+        {error && <div className="text-red-600">{error}</div>}
+        <form onSubmit={handleEmailLogin} className="space-y-4">
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Email"
+            required
+            className="w-full px-3 py-2 border rounded"
+          />
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Password"
+            required
+            className="w-full px-3 py-2 border rounded"
+          />
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-2 bg-indigo-600 text-white rounded"
+          >
+            {loading ? "Signing in..." : "Sign in"}
+          </button>
+        </form>
+        <button
+          onClick={handleGoogleLogin}
+          disabled={loading}
+          className="w-full py-2 mt-2 border rounded"
+        >
+          Sign in with Google
+        </button>
+        <p className="text-center mt-4">
+          Or{" "}
+          <Link
+            href={`/auth/signup?redirectedFrom=${encodeURIComponent(redirectedFrom)}`}
+            className="text-indigo-600"
+          >
+            create an account
+          </Link>
+        </p>
       </div>
     </div>
   );

@@ -32,6 +32,7 @@ interface UTMTemplate {
   name: string;
   description: string;
   utm_params: any;
+  pinned: boolean;
 }
 
 interface TargetMetadataSelectorProps {
@@ -62,6 +63,7 @@ export default function TargetMetadataSelector({
   const [newTemplate, setNewTemplate] = useState({
     name: "",
     description: "",
+    pinned: false,
     utm_params: {
       utm_source: "",
       utm_medium: "",
@@ -141,6 +143,7 @@ export default function TargetMetadataSelector({
         setNewTemplate({
           name: "",
           description: "",
+          pinned: false,
           utm_params: {
             utm_source: "",
             utm_medium: "",

@@ -23,6 +23,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { MultiSelect } from "@/components/multi-select";
+import { Label } from "@/components/ui/label";
 
 interface Campaign {
   id: number;
@@ -37,6 +38,7 @@ interface UtmTemplateModalProps {
     description?: string;
     utm_params?: Record<string, string>;
     is_global?: boolean;
+    pinned?: boolean;
     campaign_ids?: number[];
   };
   onSave: (values: UTMTemplateFormValues) => Promise<void>;
@@ -56,6 +58,7 @@ const schema = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().optional(),
   is_global: z.boolean(),
+  pinned: z.boolean(),
   campaign_ids: z.array(z.number()),
   utm_params: z.object({
     utm_source: z.string().min(1, "Source is required"),
@@ -81,6 +84,7 @@ export function UtmTemplateModal({
     name: initialValues?.name ?? "",
     description: initialValues?.description ?? "",
     is_global: initialValues?.is_global ?? false,
+    pinned: initialValues?.pinned ?? false,
     campaign_ids: initialValues?.campaign_ids ?? [],
     utm_params: {
       utm_source: initialValues?.utm_params?.utm_source ?? "",
@@ -106,6 +110,7 @@ export function UtmTemplateModal({
         name: initialValues.name ?? "",
         description: initialValues.description ?? "",
         is_global: initialValues.is_global ?? false,
+        pinned: initialValues.pinned ?? false,
         campaign_ids: initialValues.campaign_ids ?? [], // number[] as expected by form
         utm_params: {
           utm_source: initialValues.utm_params?.utm_source ?? "",
@@ -183,7 +188,7 @@ export function UtmTemplateModal({
               control={control}
               name="is_global"
               render={({ field }) => (
-                <FormItem className="flex items-center space-x-2">
+                <FormItem className="flex items-end space-x-2">
                   <FormControl>
                     <Checkbox
                       checked={field.value}
@@ -191,8 +196,28 @@ export function UtmTemplateModal({
                       disabled={isSubmitting || loading}
                     />
                   </FormControl>
-                  <FormLabel className="mb-0">
+                  <FormLabel className="">
                     Global (available in all campaigns)
+                  </FormLabel>
+                </FormItem>
+              )}
+            />
+
+            {/* Pinned Checkbox */}
+            <FormField
+              control={control}
+              name="pinned"
+              render={({ field }) => (
+                <FormItem className="flex items-end space-x-2">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      disabled={isSubmitting || loading}
+                    />
+                  </FormControl>
+                  <FormLabel className="">
+                    Pinned (keep at top of list)
                   </FormLabel>
                 </FormItem>
               )}
@@ -207,18 +232,6 @@ export function UtmTemplateModal({
                   <FormItem>
                     <FormLabel>Assign to Campaigns</FormLabel>
                     <FormControl>
-                      {/*<MultiSelect
-                                                placeholder="Select campaigns"
-                                                // Label = name (what user sees), value = id as string (internal for MultiSelect)
-                                                options={campaigns.map((c) => ({ label: c.name, value: String(c.id) }))}
-                                                // field.value is number[], convert to string[] for MultiSelect
-                                                value={field.value.map(String)}
-
-                                                // Convert selected string[] back to number[] for form
-                                                onValueChange={(vals) => field.onChange(vals.map(Number))}
-                                                disabled={isSubmitting || loading}
-
-                                            />*/}
                       <MultiSelect
                         placeholder="Assign to Campaigns"
                         options={campaigns.map((c) => ({

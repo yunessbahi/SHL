@@ -1,24 +1,39 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/middleware";
+// middleware.ts
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { updateSession } from "./lib/supabase/middleware";
+import type { Session } from "@supabase/supabase-js";
+
+const PUBLIC_PATHS = ["/", "/auth/login", "/auth/signup", "/demo"];
 
 export async function middleware(request: NextRequest) {
-  const { supabase, response } = createClient(request);
+  const { pathname } = request.nextUrl;
 
-  // Refresh session if expired - required for Server Components
-  await supabase.auth.getSession();
+  // 1. Sync session if possible
+  const {
+    response,
+    session,
+  }: { response: NextResponse; session: Session | null } =
+    await updateSession(request);
 
+  // 2. If the route is public
+  const isPublic = PUBLIC_PATHS.some((path) => pathname.startsWith(path));
+  if (isPublic) {
+    // Allow access to public routes regardless of auth status
+    return response;
+  }
+
+  // 3. If protected route and no session → redirect to login with redirectedFrom
+  if (!session) {
+    const redirectUrl = new URL("/auth/login", request.url);
+    redirectUrl.searchParams.set("redirectedFrom", pathname);
+    return NextResponse.redirect(redirectUrl);
+  }
+
+  // 4. Signed-in user accessing protected route → allow
   return response;
 }
 
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * Feel free to modify this pattern to include more paths.
-     */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
-  ],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };

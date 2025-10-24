@@ -1,8 +1,8 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
@@ -12,7 +12,21 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
+
+  const redirectedFrom =
+    searchParams.get("redirectedFrom")?.trim() || "/dashboard";
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) router.replace(redirectedFrom);
+    };
+    checkUser();
+  }, [router, supabase, redirectedFrom]);
 
   const handleEmailSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,7 +50,7 @@ export default function SignupPage() {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/dashboard`,
+          emailRedirectTo: `${window.location.origin}${redirectedFrom}`,
         },
       });
 
@@ -60,7 +74,7 @@ export default function SignupPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/dashboard`,
+          redirectTo: `${window.location.origin}${redirectedFrom}`,
         },
       });
 
@@ -128,7 +142,7 @@ export default function SignupPage() {
           <p className="mt-2 text-center text-sm text-gray-600">
             Or{" "}
             <Link
-              href="/auth/login"
+              href={`/auth/login?redirectedFrom=${encodeURIComponent(redirectedFrom)}`}
               className="font-medium text-indigo-600 hover:text-indigo-500"
             >
               sign in to your existing account

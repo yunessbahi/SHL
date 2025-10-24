@@ -1,10 +1,31 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { authFetch } from "@/lib/api";
+import { Spinner } from "@/components/ui/spinner";
 import Link from "next/link";
 
 export default function LinksPage() {
   const [items, setItems] = useState<any[]>([]);
+  const [authLoading, setAuthLoading] = useState(true);
+  const router = useRouter();
+  const supabase = createClient();
+
+  // Check authentication on mount
+  useEffect(() => {
+    const checkUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        router.push("/auth/login?redirectedFrom=/links");
+        return;
+      }
+      setAuthLoading(false);
+    };
+    checkUser();
+  }, [router, supabase]);
 
   useEffect(() => {
     (async () => {
@@ -13,9 +34,19 @@ export default function LinksPage() {
     })();
   }, []);
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Spinner className="size-6 mx-auto" />
+          <p className="mt-4 text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-4xl mx-auto px-6 py-8">
-      <h1 className="text-2xl font-bold mb-4">Links</h1>
+    <div className="">
       <div className="bg-white rounded border">
         <table className="w-full text-sm">
           <thead>

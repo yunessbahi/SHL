@@ -2,6 +2,8 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { authFetch } from "@/lib/api";
+import { Spinner } from "@/components/ui/spinner";
 
 interface LinkData {
   short_url: string;
@@ -10,36 +12,13 @@ interface LinkData {
   created_at: string;
 }
 
-// --------- authFetch helper ---------
-const authFetch = async (endpoint: string, init?: RequestInit) => {
-  const supabase = createClient();
-  const {
-    data: { session },
-    error,
-  } = await supabase.auth.getSession();
-
-  if (error || !session) throw new Error("No active session");
-
-  const token = session.access_token;
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "") || "";
-  const fullUrl = `${baseUrl}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
-
-  return fetch(fullUrl, {
-    ...init,
-    headers: {
-      ...(init?.headers || {}),
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-  });
-};
-
 export default function Dashboard() {
   const [url, setUrl] = useState("");
   const [links, setLinks] = useState<LinkData[]>([]);
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [error, setError] = useState("");
+  const [authLoading, setAuthLoading] = useState(true);
   const router = useRouter();
   const supabase = createClient();
 
@@ -50,10 +29,11 @@ export default function Dashboard() {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) {
-        router.push("/auth/login");
+        router.push("/auth/login?redirectedFrom=/dashboard");
         return;
       }
       setUser(user);
+      setAuthLoading(false);
       await loadLinks();
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -74,10 +54,10 @@ export default function Dashboard() {
     }
   };
 
-  const handleSignOut = async () => {
+  /*  const handleSignOut = async () => {
     await supabase.auth.signOut();
     router.push("/");
-  };
+  };*/
 
   const createLink = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,10 +105,21 @@ export default function Dashboard() {
     return new Date(expiresAt) < new Date();
   };
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Spinner className="size-6 mx-auto" />
+          <p className="mt-4 text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
+      {/*      <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-3">
@@ -136,7 +127,7 @@ export default function Dashboard() {
                 <span className="text-white font-bold text-sm">SL</span>
               </div>
               <span className="text-xl font-bold text-gray-900">
-                Smart Link Hub
+                Linker
               </span>
             </div>
 
@@ -153,7 +144,7 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
-      </header>
+      </header>*/}
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Cards */}

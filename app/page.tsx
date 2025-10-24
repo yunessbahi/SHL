@@ -1,6 +1,25 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
 export default function HomePage() {
+  const router = useRouter();
+  const supabase = createClient();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session?.user) {
+        router.replace("/dashboard");
+      }
+    };
+    checkAuth();
+  }, [router, supabase]);
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
@@ -10,9 +29,7 @@ export default function HomePage() {
             <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-sm">SL</span>
             </div>
-            <span className="text-xl font-bold text-gray-900">
-              Smart Link Hub
-            </span>
+            <span className="text-xl font-bold text-gray-900">Linker</span>
           </div>
           <div className="flex items-center space-x-4">
             <Link
@@ -143,10 +160,7 @@ export default function HomePage() {
       <footer className="bg-white border-t border-gray-200 mt-20">
         <div className="max-w-7xl mx-auto px-6 py-8">
           <div className="text-center text-gray-600">
-            <p>
-              &copy; 2025 Smart Link Hub. Built with Next.js, FastAPI &
-              Supabase.
-            </p>
+            <p>&copy; 2025 Linker. Built with Next.js, FastAPI & Supabase.</p>
           </div>
         </div>
       </footer>

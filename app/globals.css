@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /*--font-mono: "Geist Mono", "Geist Mono Fallback", ui-monospace, SFMono-Regular, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;*/
+  /*--font-mono: "Geist Mono", "Geist Mono Fallback";*/
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -32,9 +37,10 @@
   }
 
   .dark {
-    --background: 0 0% 3.9%;
+    /*--background: 0 0% 3.9%;*/
+    --background: 0, 0%, 6%;
     --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
+    --card: 0, 0%, 9%;
     --card-foreground: 0 0% 98%;
     --popover: 0 0% 3.9%;
     --popover-foreground: 0 0% 98%;

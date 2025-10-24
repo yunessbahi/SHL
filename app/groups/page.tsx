@@ -1,9 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/app/components/ui/button";
 import { Plus, Edit, Trash2 } from "lucide-react";
 import { authFetch } from "@/lib/api";
+import { Spinner } from "@/components/ui/spinner";
 
 interface Group {
   id: number;
@@ -18,6 +21,24 @@ export default function GroupsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingGroup, setEditingGroup] = useState<Group | null>(null);
   const [formData, setFormData] = useState({ name: "", description: "" });
+  const [authLoading, setAuthLoading] = useState(true);
+  const router = useRouter();
+  const supabase = createClient();
+
+  // Check authentication on mount
+  useEffect(() => {
+    const checkUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        router.push("/auth/login?redirectedFrom=/groups");
+        return;
+      }
+      setAuthLoading(false);
+    };
+    checkUser();
+  }, [router, supabase]);
 
   const loadGroups = async () => {
     try {
@@ -90,18 +111,25 @@ export default function GroupsPage() {
     setFormData({ name: "", description: "" });
   };
 
-  if (loading) {
-    return <div>Loading...</div>;
+  if (authLoading || loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Spinner className="size-6 mx-auto" />
+          <p className="mt-4 text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Groups</h1>
+          {/*<h1 className="text-3xl font-bold">Groups</h1>
           <p className="text-muted-foreground">
             Organize your links into groups for better management and analytics.
-          </p>
+          </p>*/}
         </div>
         <Button onClick={() => setShowForm(true)}>
           <Plus className="h-4 w-4 mr-2" />

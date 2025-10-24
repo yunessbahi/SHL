@@ -1,13 +1,13 @@
-import { createClient } from "@/lib/supabase/client";
+// lib/api.ts
+import { createClient as createBrowserClient } from "@/lib/supabase/client";
 
 export async function authFetch(url: string, options: RequestInit = {}) {
-  const supabase = createClient();
+  // Always use browser client since this is called from client components
+  const supabase = createBrowserClient();
   const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
+  const token = data.session?.access_token ?? null;
 
-  if (!token) {
-    throw new Error("No authenticated session. Please sign in.");
-  }
+  if (!token) throw new Error("No authenticated session. Please sign in.");
 
   const headers = new Headers(options.headers || {});
   headers.set("Authorization", `Bearer ${token}`);
@@ -16,10 +16,6 @@ export async function authFetch(url: string, options: RequestInit = {}) {
 
   const base = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/+$/, "");
   const path = url.startsWith("/") ? url : `/${url}`;
-  const full = `${base}${path}`;
 
-  return fetch(full, {
-    ...options,
-    headers,
-  });
+  return fetch(`${base}${path}`, { ...options, headers });
 }
