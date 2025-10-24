@@ -99,8 +99,13 @@ export default function Sidebar({ children }: SidebarProps) {
     );
   }
 
-  // If on root page or not authenticated, don't show sidebar
-  if (pathname === "/" || !isAuthenticated) {
+  // If on root page, don't show sidebar
+  if (pathname === "/") {
+    return <>{children}</>;
+  }
+
+  // If not authenticated, show loading state until auth is determined
+  if (!isAuthenticated && !isLoading) {
     return <>{children}</>;
   }
 

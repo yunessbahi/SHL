@@ -265,8 +265,13 @@ export default function Header({ children, items }: HeaderProps) {
     );
   }
 
-  // If on root page or not authenticated, don't show header
-  if (pathname === "/" || !user) {
+  // If on root page, don't show header
+  if (pathname === "/") {
+    return <>{children}</>;
+  }
+
+  // If not authenticated, show loading state until auth is determined
+  if (!user && !isLoading) {
     return <>{children}</>;
   }
 

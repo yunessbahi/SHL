@@ -60,15 +60,11 @@ export default async function RootLayout({
   return (
     <html lang="en" className={cn(`${roboto.variable} ${mono.variable}`, "")}>
       <body className="font-inter">
-        {session ? (
-          <Sidebar>
-            <Header>
-              <div className="p-4">{children}</div>
-            </Header>
-          </Sidebar>
-        ) : (
-          <div className="p-4">{children}</div>
-        )}
+        <Sidebar>
+          <Header>
+            <div className="p-4">{children}</div>
+          </Header>
+        </Sidebar>
       </body>
     </html>
   );
