@@ -234,7 +234,7 @@ export default function CampaignsPage() {
                 <td className="p-2">{c.id}</td>
                 <td className="p-2 font-semibold">{c.name}</td>
                 <td className="p-2">
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm">
                     {c.templates ? c.templates.length : 0} templates
                   </span>
                 </td>
@@ -285,7 +285,7 @@ export default function CampaignsPage() {
 
       {/* Templates Modal */}
       {showTemplatesModal && activeCampaign && (
-        <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="p-8 rounded shadow-lg w-full max-w-2xl relative max-h-[90vh] overflow-y-auto">
             <button
               className="absolute right-4 top-4"
@@ -331,14 +331,14 @@ export default function CampaignsPage() {
                 {(activeCampaign.templates || []).map((t) => (
                   <tr key={t.id} className="border-t">
                     <td
-                      className="p-2 font-semibold cursor-pointer hover:text-blue-600"
+                      className="p-2 font-semibold cursor-pointer hover:text-teal-700"
                       onClick={() => setTemplateDetail(t)}
                     >
                       {t.name}
                     </td>
                     <td className="p-2">
                       {t.is_global ? (
-                        <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs">
+                        <span className="text-teal-800 px-2 py-1 rounded text-xs">
                           Global
                         </span>
                       ) : null}
@@ -372,9 +372,7 @@ export default function CampaignsPage() {
                   activeCampaign.templates.length === 0 && (
                     <tr>
                       <td colSpan={3} className="p-4 text-center">
-                        <span className="text-sm text-zinc-400">
-                          No templates assigned.
-                        </span>
+                        <span className="text-sm">No templates assigned.</span>
                       </td>
                     </tr>
                   )}
@@ -424,7 +422,7 @@ export default function CampaignsPage() {
 
       {/* Template Detail Modal */}
       {templateDetail && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className=" p-8 rounded shadow-lg w-full max-w-lg relative">
             <button
               className="absolute right-4 top-4"
@@ -438,16 +436,13 @@ export default function CampaignsPage() {
             </div>
             <div className="flex gap-2 flex-wrap mb-2">
               {templateDetail.is_global && (
-                <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs">
+                <span className="bg-teal-900 px-2 py-1 rounded text-xs">
                   Global
                 </span>
               )}
               {templateDetail.campaigns && templateDetail.campaigns.length
                 ? templateDetail.campaigns.map((c) => (
-                    <span
-                      key={c.id}
-                      className="bg-gray-100 px-2 py-1 rounded text-xs"
-                    >
+                    <span key={c.id} className="px-2 py-1 rounded text-xs">
                       {c.name}
                     </span>
                   ))
