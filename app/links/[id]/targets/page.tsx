@@ -16,6 +16,7 @@ import {
 import { Info, Plus } from "lucide-react";
 import { UtmTemplateModal } from "@/app/components/UtmTemplateModal";
 import { MultiSelect } from "@/components/multi-select";
+//import { Group } from "next/dist/shared/lib/router/utils/route-regex";
 
 interface UTMTemplate {
   id: number;
@@ -28,6 +29,11 @@ interface UTMTemplate {
 }
 
 interface Campaign {
+  id: number;
+  name: string;
+}
+
+interface Group {
   id: number;
   name: string;
 }
@@ -90,6 +96,7 @@ export default function TargetsPage() {
   const [activeTab, setActiveTab] = useState<string>("audience");
   const [draft, dispatch] = useReducer(draftReducer, initialDraft);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [templates, setTemplates] = useState<UTMTemplate[]>([]);
   const [templateModal, setTemplateModal] = useState<UTMTemplate | null>(null);
   const [templatePreview, setTemplatePreview] = useState<any>({});
@@ -141,6 +148,14 @@ export default function TargetsPage() {
     const res = await authFetch(`/api/targets/link/${linkId}`);
     if (res.ok) setItems(await res.json());
   };
+
+  // ✅ Load groups
+  useEffect(() => {
+    (async () => {
+      const gRes = await authFetch("/api/groups/");
+      if (gRes.ok) setGroups(await gRes.json());
+    })();
+  }, []);
 
   // ✅ Load campaigns
   useEffect(() => {
@@ -313,6 +328,29 @@ export default function TargetsPage() {
             className="w-full border p-2 rounded"
             required
           />
+        </div>
+
+        {/* Group selection */}
+        <div>
+          <label className="block text-sm mb-2">Group (Optional)</label>
+          <select
+            value={draft.group_id || ""}
+            onChange={(e) =>
+              dispatch({
+                type: "set_field",
+                key: "group_id",
+                value: e.target.value ? Number(e.target.value) : null,
+              })
+            }
+            className="w-full border p-2 rounded"
+          >
+            <option value="">Select group...</option>
+            {groups.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* Campaign selection */}
