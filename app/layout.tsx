@@ -1,3 +1,4 @@
+//app/layout.tsx
 import "./globals.css";
 import type { Metadata } from "next";
 import Sidebar from "@/app/components/sidebar/Sidebar";
@@ -83,7 +84,7 @@ export default async function RootLayout({
         />
       </head>
       <body className="font-inter">
-        <Sidebar>
+        <Sidebar hasSession={!!session}>
           <Header>
             <div className="p-4">{children}</div>
           </Header>

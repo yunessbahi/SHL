@@ -30,7 +30,8 @@ export default function SettingsPage() {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) {
-        router.push("/auth/login?redirectedFrom=/settings");
+        // Middleware should handle this, but fallback just in case
+        router.replace("/auth/login?redirectedFrom=/settings");
         return;
       }
       setAuthLoading(false);
@@ -61,15 +62,9 @@ export default function SettingsPage() {
     console.log("Settings saved:", settings);
   };
 
+  // Prevent flash by not rendering anything until auth is checked
   if (authLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <Spinner className="size-6 mx-auto" />
-          <p className="mt-4 text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (

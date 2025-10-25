@@ -16,18 +16,14 @@ export async function middleware(request: NextRequest) {
   }: { response: NextResponse; session: Session | null } =
     await updateSession(request);
 
-  // 2. If the route is public
-  const isPublic = PUBLIC_PATHS.some((path) => pathname.startsWith(path));
-  if (isPublic) {
-    // Allow access to public routes regardless of auth status
-    return response;
-  }
-
-  // 3. If protected route and no session → redirect to login with redirectedFrom
+  // 2. If protected route and no session → redirect to login with redirectedFrom
   if (!session) {
-    const redirectUrl = new URL("/auth/login", request.url);
-    redirectUrl.searchParams.set("redirectedFrom", pathname);
-    return NextResponse.redirect(redirectUrl);
+    const isPublic = PUBLIC_PATHS.some((path) => pathname.startsWith(path));
+    if (!isPublic) {
+      const redirectUrl = new URL("/auth/login", request.url);
+      redirectUrl.searchParams.set("redirectedFrom", pathname);
+      return NextResponse.redirect(redirectUrl);
+    }
   }
 
   // 4. Signed-in user accessing protected route → allow

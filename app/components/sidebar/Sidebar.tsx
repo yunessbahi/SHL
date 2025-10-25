@@ -22,21 +22,22 @@ import {
 
 interface SidebarProps {
   children: React.ReactNode;
+  hasSession?: boolean;
 }
 
-export default function Sidebar({ children }: SidebarProps) {
+export default function Sidebar({
+  children,
+  hasSession = false,
+}: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(hasSession);
   const pathname = usePathname();
   const supabase = createClient();
 
-  // Public routes that don't need authentication
+  // Public routes that don't need sidebar
   const publicRoutes = ["/", "/auth/login", "/auth/signup", "/demo"];
-  const isPublicRoute = publicRoutes.some((route) =>
-    pathname.startsWith(route),
-  );
 
+  // Listen for auth changes (like Header does)
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -47,8 +48,6 @@ export default function Sidebar({ children }: SidebarProps) {
       } catch (error) {
         console.error("Auth check failed:", error);
         setIsAuthenticated(false);
-      } finally {
-        setIsLoading(false);
       }
     };
 
@@ -59,62 +58,32 @@ export default function Sidebar({ children }: SidebarProps) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsAuthenticated(!!session?.user);
-      setIsLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, [supabase]);
 
-  // Show loading state initially, then check auth
-  if (isLoading) {
-    return (
-      <div className="flex h-screen bg-background">
-        {/* Sidebar skeleton */}
-        <div className="flex flex-col border-r bg-card w-64">
-          <div className="flex items-center justify-between p-4 border-b">
-            <div className="h-8 w-32 bg-muted rounded animate-pulse" />
-            <div className="h-8 w-8 bg-muted rounded animate-pulse" />
-          </div>
-          <div className="flex-1 p-4 space-y-6">
-            <div className="space-y-2">
-              <div className="h-4 w-16 bg-muted rounded animate-pulse" />
-              <div className="space-y-2">
-                <div className="h-8 w-full bg-muted rounded animate-pulse" />
-                <div className="h-8 w-full bg-muted rounded animate-pulse" />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <div className="h-4 w-20 bg-muted rounded animate-pulse" />
-              <div className="space-y-2">
-                <div className="h-8 w-full bg-muted rounded animate-pulse" />
-                <div className="h-8 w-full bg-muted rounded animate-pulse" />
-                <div className="h-8 w-full bg-muted rounded animate-pulse" />
-              </div>
-            </div>
-          </div>
-        </div>
-        {/* Main content */}
-        <div className="flex-1 overflow-y-auto">{children}</div>
-      </div>
-    );
-  }
+  // Exact match for root, startsWith for others
+  const isPublicRoute =
+    pathname === "/" ||
+    publicRoutes.slice(1).some((route) => pathname.startsWith(route));
 
-  // If on root page, don't show sidebar
-  if (pathname === "/") {
+  // Show sidebar only when authenticated AND not on public route
+  const shouldShowSidebar = isAuthenticated && !isPublicRoute;
+
+  // If no sidebar needed, just render children
+  if (!shouldShowSidebar) {
     return <>{children}</>;
   }
 
-  // If not authenticated, show loading state until auth is determined
-  if (!isAuthenticated && !isLoading) {
-    return <>{children}</>;
-  }
-
+  // For protected routes, render sidebar
+  // Middleware ensures only authenticated users reach here
   return (
-    <div className="flex h-screen bg-white m-0 p-0">
+    <div className="flex h-screen  m-0 p-0">
       {/* Sidebar */}
       <div
         className={cn(
-          "flex flex-col border-r bg-background  transition-all duration-300",
+          "flex flex-col border-r bg-background transition-all duration-300",
           collapsed ? "w-16" : "w-64",
         )}
       >

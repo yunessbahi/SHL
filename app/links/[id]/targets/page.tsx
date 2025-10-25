@@ -284,7 +284,7 @@ export default function TargetsPage() {
 
       <form
         onSubmit={saveDraft}
-        className="bg-white p-4 rounded border mb-6 space-y-4"
+        className=" p-4 rounded border mb-6 space-y-4"
       >
         <div>
           <label className="block text-sm">Target URL</label>
@@ -397,7 +397,7 @@ export default function TargetsPage() {
               {Object.entries(templatePreview)
                 .filter(([_, v]) => v)
                 .map(([key, value]) => (
-                  <div key={key} className="bg-white p-2 rounded border">
+                  <div key={key} className=" p-2 rounded border">
                     <span className="font-medium">
                       {key.replace("utm_", "")}:
                     </span>
@@ -454,7 +454,7 @@ export default function TargetsPage() {
       </form>
 
       {/!* ✅ Target List *!/}
-      <div className="bg-white rounded border">
+      <div className=" rounded border">
         <table className="w-full text-sm">
           <thead>
             <tr className=" text-left">
@@ -877,10 +877,7 @@ export default function TargetsPage() {
     <div className="max-w-5xl mx-auto px-6 py-8">
       <h1 className="text-2xl font-bold mb-4">Targets for Link #{linkId}</h1>
 
-      <form
-        onSubmit={saveDraft}
-        className="bg-white p-4 rounded border mb-6 space-y-4"
-      >
+      <form onSubmit={saveDraft} className=" p-4 rounded border mb-6 space-y-4">
         <div>
           <label className="block text-sm">Target URL</label>
           <input
@@ -993,7 +990,7 @@ export default function TargetsPage() {
               {Object.entries(templatePreview)
                 .filter(([_, v]) => v)
                 .map(([key, value]) => (
-                  <div key={key} className="bg-white p-2 rounded border">
+                  <div key={key} className=" p-2 rounded border">
                     <span className="font-medium">
                       {key.replace("utm_", "")}:
                     </span>
@@ -1049,7 +1046,7 @@ export default function TargetsPage() {
       </form>
 
       {/* Target List */}
-      <div className="bg-white rounded border">
+      <div className=" rounded border">
         <table className="w-full text-sm">
           <thead>
             <tr className=" text-left">

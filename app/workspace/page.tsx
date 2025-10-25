@@ -17,7 +17,8 @@ export default function Workspace() {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) {
-        router.push("/auth/login?redirectedFrom=/workspace");
+        // Middleware should handle this, but fallback just in case
+        router.replace("/auth/login?redirectedFrom=/workspace");
         return;
       }
       setAuthLoading(false);
@@ -25,21 +26,15 @@ export default function Workspace() {
     checkUser();
   }, [router, supabase]);
 
+  // Prevent flash by not rendering anything until auth is checked
   if (authLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <Spinner className="size-6 mx-auto" />
-          <p className="mt-4 text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (
     <div className="min-h-screen ">
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white p-6 rounded-lg shadow-sm">
+        <div className=" p-6 rounded-lg shadow-sm">
           <h1 className="text-2xl font-semibold text-gray-900 mb-4">
             Workspace
           </h1>

@@ -32,7 +32,8 @@ export default function GroupsPage() {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) {
-        router.push("/auth/login?redirectedFrom=/groups");
+        // Middleware should handle this, but fallback just in case
+        router.replace("/auth/login?redirectedFrom=/groups");
         return;
       }
       setAuthLoading(false);
@@ -111,7 +112,12 @@ export default function GroupsPage() {
     setFormData({ name: "", description: "" });
   };
 
-  if (authLoading || loading) {
+  // Prevent flash by not rendering anything until auth is checked
+  if (authLoading) {
+    return null;
+  }
+
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">

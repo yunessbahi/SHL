@@ -92,7 +92,8 @@ export default function UTMTemplatesPage() {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) {
-        router.push("/auth/login?redirectedFrom=/utm-templates");
+        // Middleware should handle this, but fallback just in case
+        router.replace("/auth/login?redirectedFrom=/utm-templates");
         return;
       }
       setAuthLoading(false);
@@ -179,7 +180,12 @@ export default function UTMTemplatesPage() {
     });
     if (response.ok) await loadTemplates();
   };
-  if (authLoading || loading) {
+  // Prevent flash by not rendering anything until auth is checked
+  if (authLoading) {
+    return null;
+  }
+
+  if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">

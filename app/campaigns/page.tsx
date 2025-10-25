@@ -88,7 +88,8 @@ export default function CampaignsPage() {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) {
-        router.push("/auth/login?redirectedFrom=/campaigns");
+        // Middleware should handle this, but fallback just in case
+        router.replace("/auth/login?redirectedFrom=/campaigns");
         return;
       }
       setAuthLoading(false);
@@ -187,7 +188,12 @@ export default function CampaignsPage() {
       })) ||
     [];
 
-  if (authLoading || loading)
+  // Prevent flash by not rendering anything until auth is checked
+  if (authLoading) {
+    return null;
+  }
+
+  if (loading)
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -419,7 +425,7 @@ export default function CampaignsPage() {
       {/* Template Detail Modal */}
       {templateDetail && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
-          <div className="bg-white p-8 rounded shadow-lg w-full max-w-lg relative">
+          <div className=" p-8 rounded shadow-lg w-full max-w-lg relative">
             <button
               className="absolute right-4 top-4"
               onClick={() => setTemplateDetail(null)}

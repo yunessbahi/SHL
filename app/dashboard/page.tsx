@@ -24,20 +24,22 @@ export default function Dashboard() {
 
   // --------- Load user & links ---------
   useEffect(() => {
-    (async () => {
+    const checkAuth = async () => {
       const {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) {
-        router.push("/auth/login?redirectedFrom=/dashboard");
+        // Middleware should handle this, but fallback just in case
+        router.replace("/auth/login?redirectedFrom=/dashboard");
         return;
       }
       setUser(user);
       setAuthLoading(false);
       await loadLinks();
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    };
+
+    checkAuth();
+  }, [router, supabase]);
 
   const loadLinks = async () => {
     try {
@@ -105,21 +107,15 @@ export default function Dashboard() {
     return new Date(expiresAt) < new Date();
   };
 
+  // Prevent flash by not rendering anything until auth is checked
   if (authLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <Spinner className="size-6 mx-auto" />
-          <p className="mt-4 text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (
     <div className="min-h-screen ">
       {/* Header */}
-      {/*      <header className="bg-white shadow-sm border-b border-gray-200">
+      {/*      <header className=" shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-3">
@@ -149,7 +145,7 @@ export default function Dashboard() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-lg shadow-sm">
+          <div className=" p-6 rounded-lg shadow-sm">
             <div className="flex items-center">
               <div className="p-2 bg-indigo-100 rounded-lg">
                 <svg
@@ -175,7 +171,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-sm">
+          <div className=" p-6 rounded-lg shadow-sm">
             <div className="flex items-center">
               <div className="p-2 bg-green-100 rounded-lg">
                 <svg
@@ -203,7 +199,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-sm">
+          <div className=" p-6 rounded-lg shadow-sm">
             <div className="flex items-center">
               <div className="p-2 bg-yellow-100 rounded-lg">
                 <svg
@@ -233,7 +229,7 @@ export default function Dashboard() {
         </div>
 
         {/* Create Link Form */}
-        <div className="bg-white p-6 rounded-lg shadow-sm mb-8">
+        <div className=" p-6 rounded-lg shadow-sm mb-8">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
             Create New Link
           </h2>
@@ -266,7 +262,7 @@ export default function Dashboard() {
         </div>
 
         {/* Links List */}
-        <div className="bg-white rounded-lg shadow-sm">
+        <div className=" rounded-lg shadow-sm">
           <div className="px-6 py-4 border-b border-gray-200">
             <h2 className="text-lg font-semibold text-gray-900">Your Links</h2>
           </div>

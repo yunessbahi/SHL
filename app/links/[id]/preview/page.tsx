@@ -69,7 +69,7 @@ export default function PreviewPage() {
       <h1 className="text-2xl font-bold">Rules Preview for Link #{linkId}</h1>
       <form
         onSubmit={run}
-        className="bg-white p-4 rounded border grid grid-cols-1 md:grid-cols-3 gap-4"
+        className=" p-4 rounded border grid grid-cols-1 md:grid-cols-3 gap-4"
       >
         <div>
           <label className="block text-sm">Country (ISO2)</label>

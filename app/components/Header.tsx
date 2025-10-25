@@ -106,36 +106,6 @@ export default function Header({ children, items }: HeaderProps) {
     }
   };
 
-  // Remove unused variables
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        setUser(session?.user || null);
-      } catch (error) {
-        console.error("Auth check failed:", error);
-        setUser(null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    checkAuth();
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user || null);
-      setIsLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, [supabase]);
-
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     router.push("/");
@@ -250,28 +220,44 @@ export default function Header({ children, items }: HeaderProps) {
     },
   ];
 
-  // Show loading state initially, then check auth
-  if (isLoading) {
-    return (
-      <div className="flex flex-col h-screen bg-background">
-        <header className="flex items-center justify-between px-6 py-3 border-b bg-card">
-          <div className="flex items-center space-x-4">
-            <div className="w-[300px] h-10 bg-muted rounded animate-pulse" />
-          </div>
-          <div className="w-8 h-8 bg-muted rounded-full animate-pulse" />
-        </header>
-        <div className="flex-1 overflow-y-auto">{children}</div>
-      </div>
-    );
-  }
+  // Public routes that don't need authentication
+  const publicRoutes = ["/", "/auth/login", "/auth/signup", "/demo"];
 
-  // If on root page, don't show header
-  if (pathname === "/") {
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        setUser(session?.user || null);
+      } catch (error) {
+        console.error("Auth check failed:", error);
+        setUser(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAuth();
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+      setIsLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [supabase]);
+
+  // Don't show header on public routes
+  if (publicRoutes.includes(pathname)) {
     return <>{children}</>;
   }
 
-  // If not authenticated, show loading state until auth is determined
-  if (!user && !isLoading) {
+  // If not authenticated, don't show header
+  if (!user) {
     return <>{children}</>;
   }
 

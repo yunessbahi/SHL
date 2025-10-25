@@ -19,7 +19,8 @@ export default function LinksPage() {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) {
-        router.push("/auth/login?redirectedFrom=/links");
+        // Middleware should handle this, but fallback just in case
+        router.replace("/auth/login?redirectedFrom=/links");
         return;
       }
       setAuthLoading(false);
@@ -34,20 +35,14 @@ export default function LinksPage() {
     })();
   }, []);
 
+  // Prevent flash by not rendering anything until auth is checked
   if (authLoading) {
-    return (
-      <div className="min-h-screen  flex items-center justify-center">
-        <div className="text-center">
-          <Spinner className="size-6 mx-auto" />
-          <p className="mt-4 text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (
     <div className="">
-      <div className="bg-white rounded border">
+      <div className=" rounded border">
         <table className="w-full text-sm">
           <thead>
             <tr className=" text-left">
