@@ -513,7 +513,7 @@ export default function CampaignsPage() {
             ? {
                 name: editTemplate.name,
                 description: editTemplate.description,
-                utm_params: editTemplate.utm_params,
+                utm_params: getUtmParams(editTemplate), // Use the getUtmParams helper
                 is_global: editTemplate.is_global,
                 campaign_ids: editTemplate.campaigns?.map((c) => c.id) || [],
               }

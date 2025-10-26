@@ -62,12 +62,12 @@ interface UtmTemplateModalProps {
 
 // Default UTM parameter options
 const defaultUtmParams = [
-  { value: "source", label: "Source" },
-  { value: "medium", label: "Medium" },
-  { value: "campaign", label: "Campaign" },
-  { value: "term", label: "Term" },
-  { value: "content", label: "Content" },
-  { value: "id", label: "ID" },
+  { value: "utm_source", label: "Source" },
+  { value: "utm_medium", label: "Medium" },
+  { value: "utm_campaign", label: "Campaign" },
+  { value: "utm_term", label: "Term" },
+  { value: "utm_content", label: "Content" },
+  { value: "utm_id", label: "ID" },
 ];
 
 const paramSchema = z.object({
