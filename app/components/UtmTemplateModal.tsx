@@ -160,7 +160,7 @@ export function UtmTemplateModal({
       }
     }
   }, [open, initialValues, reset]);
-  console.log("initVal", initialValues);
+  //console.log("initVal", initialValues);
 
   const handleCreateNewParam = (newParamKey: string, index: number) => {
     // Remove utm_ prefix if user included it, for clean label generation
@@ -219,7 +219,9 @@ export function UtmTemplateModal({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {initialValues ? "Edit UTM Template" : "Create UTM Template"}
+            {initialValues?.utm_params
+              ? "Edit UTM Template"
+              : "Create UTM Template"}
           </DialogTitle>
         </DialogHeader>
 

@@ -184,6 +184,7 @@ export default function CampaignsPage() {
       allTemplates.filter((t) => {
         if (!activeCampaign.templates) return false;
         const already = activeCampaign.templates.some((at) => at.id === t.id);
+        //console.log(activeCampaign.templates)
         return !already;
       })) ||
     [];
@@ -286,7 +287,7 @@ export default function CampaignsPage() {
       {/* Templates Modal */}
       {showTemplatesModal && activeCampaign && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="p-8 rounded shadow-lg w-full max-w-2xl relative max-h-[90vh] overflow-y-auto">
+          <div className="p-8 rounded shadow-lg w-full max-w-2xl relative max-h-[90vh] overflow-y-auto bg-background">
             <button
               className="absolute right-4 top-4"
               onClick={() => {
@@ -423,7 +424,7 @@ export default function CampaignsPage() {
       {/* Template Detail Modal */}
       {templateDetail && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className=" p-8 rounded shadow-lg w-full max-w-lg relative">
+          <div className=" p-8 rounded shadow-lg w-full max-w-lg relative bg-background">
             <button
               className="absolute right-4 top-4"
               onClick={() => setTemplateDetail(null)}
@@ -480,13 +481,6 @@ export default function CampaignsPage() {
         initialValues={{
           campaign_ids: activeCampaign ? [activeCampaign.id] : [],
           is_global: false,
-          utm_params: {
-            utm_source: "",
-            utm_medium: "",
-            utm_campaign: "",
-            utm_term: "",
-            utm_content: "",
-          },
         }}
         onSave={async (values) => {
           await authFetch("/api/utm-templates/", {

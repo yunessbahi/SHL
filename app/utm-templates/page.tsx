@@ -157,7 +157,7 @@ export default function UTMTemplatesPage() {
     });
     setEditing(template);
     setModalOpen(true);
-    console.log("template", template);
+    //console.log("template", template);
   };
   // Save logic (create or edit)
   const handleSave = async (values: any) => {
