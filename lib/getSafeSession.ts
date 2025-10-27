@@ -40,27 +40,26 @@ export async function getSafeSession(
     });
 
     const {
-      data: { session },
+      data: { user },
       error,
-    } = await supabase.auth.getSession();
+    } = await supabase.auth.getUser();
 
     if (error) {
       console.error("Authentication error:", error);
       return null;
     }
 
-    if (!session) {
+    if (!user) {
       return null;
     }
 
     const safeUser: SafeUser = {
-      id: session.user.id,
-      email: session.user.email || "",
+      id: user.id,
+      email: user.email || "",
     };
 
     const sanitizedSession: SanitizedSession = {
       user: safeUser,
-      expires_at: session.expires_at,
     };
 
     return {

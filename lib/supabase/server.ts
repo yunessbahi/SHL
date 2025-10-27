@@ -2,7 +2,7 @@
 import { createServerClient } from "@supabase/ssr";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import type { Session } from "@supabase/supabase-js";
+import type { User } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!;
@@ -22,9 +22,7 @@ export function createServer(request: NextRequest, response: NextResponse) {
   });
 }
 
-export async function getSession(
-  request: NextRequest,
-): Promise<Session | null> {
+export async function getUser(request: NextRequest): Promise<User | null> {
   const response = NextResponse.next();
   const supabase = createServerClient(supabaseUrl, supabaseKey, {
     cookies: {
@@ -40,7 +38,7 @@ export async function getSession(
   });
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  return session;
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user;
 }

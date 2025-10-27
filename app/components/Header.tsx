@@ -263,12 +263,20 @@ export default function Header({
     console.log("[DEBUG] Header: Setting up auth state listener");
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("[DEBUG] Header: Auth state change", {
         event,
         hasSession: !!session,
       });
-      setUser(session?.user || null);
+      if (session) {
+        // Use getUser() to get fresh user data for UI display
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        setUser(user || null);
+      } else {
+        setUser(null);
+      }
       setIsLoading(false);
     });
 

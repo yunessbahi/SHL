@@ -250,14 +250,14 @@ export default function LoginPage() {
     // Check for existing session on mount
     const checkInitialSession = async () => {
       const {
-        data: { session },
+        data: { user },
         error,
-      } = await supabase.auth.getSession();
+      } = await supabase.auth.getUser();
       console.log("[DEBUG] Login page: Initial session check", {
-        session: !!session,
+        user: !!user,
         error,
       });
-      if (session) {
+      if (user) {
         console.log("[DEBUG] Login page: Redirecting to", redirectedFrom);
         router.replace(redirectedFrom);
       } else {

@@ -23,11 +23,11 @@ export default async function HomePage() {
   });
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+  } = await supabase.auth.getUser();
 
   // Redirect authenticated users to workspace
-  if (session?.user) {
+  if (user) {
     redirect("/workspace");
   }
 

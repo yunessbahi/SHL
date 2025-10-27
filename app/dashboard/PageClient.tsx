@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { authFetch } from "@/lib/api";
 import { Spinner } from "@/components/ui/spinner";
 import type { SafeUser } from "@/lib/getSafeSession";
@@ -18,6 +18,7 @@ export default function DashboardPage({ user }: { user: SafeUser }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const loadLinks = async () => {
     try {
@@ -47,8 +48,7 @@ export default function DashboardPage({ user }: { user: SafeUser }) {
     setError("");
 
     try {
-      const urlParams = new URLSearchParams(window.location.search);
-      const campaignId = urlParams.get("campaign");
+      const campaignId = searchParams.get("campaign");
 
       const payload: any = { target_url: url };
       if (campaignId) {
@@ -219,8 +219,7 @@ export default function DashboardPage({ user }: { user: SafeUser }) {
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
             Create New Link
             {(() => {
-              const urlParams = new URLSearchParams(window.location.search);
-              const campaignId = urlParams.get("campaign");
+              const campaignId = searchParams.get("campaign");
               return campaignId ? ` for Campaign #${campaignId}` : "";
             })()}
           </h2>

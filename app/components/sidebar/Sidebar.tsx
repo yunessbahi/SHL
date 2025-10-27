@@ -71,7 +71,7 @@ export default function Sidebar({
         event,
         hasSession: !!session,
       });
-      setIsAuthenticated(!!session?.user);
+      setIsAuthenticated(!!session);
     });
 
     return () => subscription.unsubscribe();

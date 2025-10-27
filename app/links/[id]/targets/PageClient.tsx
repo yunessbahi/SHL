@@ -142,8 +142,8 @@ export default function TargetsPage({ user, id }: TargetsPageProps) {
   useEffect(() => {
     const run = async () => {
       const supabase = (await import("@/lib/supabase/client")).createClient();
-      const { data } = await supabase.auth.getSession();
-      setHasSession(!!data.session?.access_token);
+      const { data } = await supabase.auth.getUser();
+      setHasSession(!!data.user);
     };
     run();
   }, []);

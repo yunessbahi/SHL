@@ -56,14 +56,14 @@ export default async function RootLayout({
   });
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+  } = await supabase.auth.getUser();
 
   // Extract safe user data
-  const safeUser: SafeUser | null = session
+  const safeUser: SafeUser | null = user
     ? {
-        id: session.user.id,
-        email: session.user.email || "",
+        id: user.id,
+        email: user.email || "",
       }
     : null;
 
@@ -93,7 +93,7 @@ export default async function RootLayout({
         />
       </head>
       <body className="font-inter">
-        <Sidebar hasSession={!!session} user={safeUser}>
+        <Sidebar hasSession={!!user} user={safeUser}>
           <Header user={safeUser}>
             <div className="p-4">{children}</div>
           </Header>

@@ -4,10 +4,14 @@ import { createClient as createBrowserClient } from "@/lib/supabase/client";
 export async function authFetch(url: string, options: RequestInit = {}) {
   // Always use browser client since this is called from client components
   const supabase = createBrowserClient();
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token ?? null;
 
-  if (!token) throw new Error("No authenticated session. Please sign in.");
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session) throw new Error("No authenticated session. Please sign in.");
+
+  const token = session.access_token;
 
   const headers = new Headers(options.headers || {});
   headers.set("Authorization", `Bearer ${token}`);
