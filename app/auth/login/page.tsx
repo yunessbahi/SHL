@@ -195,32 +195,106 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 
+function getSafeRedirect(redirectedFrom: string | null): string {
+  if (!redirectedFrom) return "/dashboard";
+
+  // Decode URI component if encoded
+  try {
+    redirectedFrom = decodeURIComponent(redirectedFrom);
+  } catch {
+    return "/dashboard";
+  }
+
+  // Trim whitespace
+  redirectedFrom = redirectedFrom.trim();
+
+  // Validate it's a safe relative path
+  if (!redirectedFrom.startsWith("/")) return "/dashboard";
+  if (redirectedFrom.includes("://")) return "/dashboard";
+  if (redirectedFrom.startsWith("//")) return "/dashboard";
+
+  // Whitelist allowed paths to prevent open redirect
+  const allowedPaths = [
+    "/dashboard",
+    "/campaigns",
+    "/links",
+    "/groups",
+    "/settings",
+    "/tags",
+    "/utm-templates",
+    "/workspace",
+  ];
+
+  if (!allowedPaths.some((path) => redirectedFrom.startsWith(path))) {
+    return "/dashboard";
+  }
+
+  return redirectedFrom;
+}
+
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [emailLoading, setEmailLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
 
-  const redirectedFrom =
-    searchParams.get("redirectedFrom")?.trim() || "/dashboard";
+  const redirectedFrom = getSafeRedirect(searchParams.get("redirectedFrom"));
 
   useEffect(() => {
-    const checkUser = async () => {
+    console.log("[DEBUG] Login page: Checking initial session");
+    // Check for existing session on mount
+    const checkInitialSession = async () => {
       const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) router.replace(redirectedFrom);
+        data: { session },
+        error,
+      } = await supabase.auth.getSession();
+      console.log("[DEBUG] Login page: Initial session check", {
+        session: !!session,
+        error,
+      });
+      if (session) {
+        console.log("[DEBUG] Login page: Redirecting to", redirectedFrom);
+        router.replace(redirectedFrom);
+      } else {
+        setIsCheckingAuth(false);
+      }
     };
-    checkUser();
+    checkInitialSession();
+
+    console.log("[DEBUG] Login page: Setting up onAuthStateChange listener");
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("[DEBUG] Login page: Auth state change", {
+        event,
+        hasSession: !!session,
+      });
+      // Handle multiple auth events that indicate successful authentication
+      if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && session) {
+        console.log(
+          "[DEBUG] Login page: Redirecting after auth event to",
+          redirectedFrom,
+        );
+        router.replace(redirectedFrom);
+      }
+    });
+
+    return () => {
+      console.log("[DEBUG] Login page: Cleaning up auth listener");
+      subscription.unsubscribe();
+    };
   }, [router, supabase, redirectedFrom]);
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setEmailLoading(true);
     setError("");
+    console.log("[DEBUG] Login page: Attempting email login for", email);
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -228,18 +302,30 @@ export default function LoginPage() {
         password,
       });
 
+      console.log("[DEBUG] Login page: Email login result", {
+        success: !error,
+        error: error?.message,
+      });
       if (error) setError(error.message);
-      else router.replace(redirectedFrom);
-    } catch {
+      else {
+        console.log(
+          "[DEBUG] Login page: Login successful, redirecting to",
+          redirectedFrom,
+        );
+        router.replace(redirectedFrom);
+      }
+    } catch (err) {
+      console.error("[DEBUG] Login page: Unexpected error during login", err);
       setError("An unexpected error occurred");
     } finally {
-      setLoading(false);
+      setEmailLoading(false);
     }
   };
 
   const handleGoogleLogin = async () => {
-    setLoading(true);
+    setGoogleLoading(true);
     setError("");
+    console.log("[DEBUG] Login page: Attempting Google OAuth login");
 
     try {
       const { error } = await supabase.auth.signInWithOAuth({
@@ -249,15 +335,35 @@ export default function LoginPage() {
         },
       });
 
+      console.log("[DEBUG] Login page: Google OAuth result", {
+        error: error?.message,
+      });
       if (error) {
         setError(error.message);
-        setLoading(false);
+        setGoogleLoading(false);
       }
-    } catch {
+    } catch (err) {
+      console.error(
+        "[DEBUG] Login page: Unexpected error during Google login",
+        err,
+      );
       setError("An unexpected error occurred");
-      setLoading(false);
+      setGoogleLoading(false);
     }
   };
+
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="max-w-md w-full space-y-8 p-6 rounded-lg shadow">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Checking authentication...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
@@ -283,18 +389,18 @@ export default function LoginPage() {
           />
           <button
             type="submit"
-            disabled={loading}
+            disabled={emailLoading}
             className="w-full py-2 bg-indigo-600 text-white rounded"
           >
-            {loading ? "Signing in..." : "Sign in"}
+            {emailLoading ? "Signing in..." : "Sign in"}
           </button>
         </form>
         <button
           onClick={handleGoogleLogin}
-          disabled={loading}
+          disabled={googleLoading}
           className="w-full py-2 mt-2 border rounded"
         >
-          Sign in with Google
+          {googleLoading ? "Signing in..." : "Sign in with Google"}
         </button>
         <p className="text-center mt-4">
           Or{" "}

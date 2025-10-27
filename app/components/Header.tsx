@@ -53,16 +53,22 @@ import {
   InputGroupInput,
 } from "@/components/ui/input-group";
 import { Kbd } from "@/components/ui/kbd";
+import type { SafeUser } from "@/lib/getSafeSession";
 
 interface HeaderProps {
   children: React.ReactNode;
   items?: { title: string };
+  user?: SafeUser | null;
 }
 
-export default function Header({ children, items }: HeaderProps) {
-  const [user, setUser] = useState<any>(null);
+export default function Header({
+  children,
+  items,
+  user: propUser,
+}: HeaderProps) {
+  const [user, setUser] = useState<any>(propUser || null);
   const [open, setOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!propUser);
   const [isDark, setIsDark] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
@@ -107,8 +113,14 @@ export default function Header({ children, items }: HeaderProps) {
   };
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.push("/");
+    console.log("[DEBUG] Header: Sign out initiated");
+    try {
+      const { error } = await supabase.auth.signOut();
+      console.log("[DEBUG] Header: Sign out result", { error: error?.message });
+      router.push("/");
+    } catch (err) {
+      console.error("[DEBUG] Header: Error during sign out", err);
+    }
   };
 
   const getInitials = (email: string) => {
@@ -223,13 +235,20 @@ export default function Header({ children, items }: HeaderProps) {
   // Public routes that don't need authentication
   const publicRoutes = ["/", "/auth/login", "/auth/signup", "/demo"];
 
+  // If user is passed as prop, use it and skip client-side fetching
   useEffect(() => {
+    if (propUser !== undefined) {
+      setUser(propUser);
+      setIsLoading(false);
+      return;
+    }
+
     const checkAuth = async () => {
       try {
         const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        setUser(session?.user || null);
+          data: { user },
+        } = await supabase.auth.getUser();
+        setUser(user || null);
       } catch (error) {
         console.error("Auth check failed:", error);
         setUser(null);
@@ -241,15 +260,20 @@ export default function Header({ children, items }: HeaderProps) {
     checkAuth();
 
     // Listen for auth changes
+    console.log("[DEBUG] Header: Setting up auth state listener");
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("[DEBUG] Header: Auth state change", {
+        event,
+        hasSession: !!session,
+      });
       setUser(session?.user || null);
       setIsLoading(false);
     });
 
     return () => subscription.unsubscribe();
-  }, [supabase]);
+  }, [supabase, propUser]);
 
   // Don't show header on public routes
   if (publicRoutes.includes(pathname)) {

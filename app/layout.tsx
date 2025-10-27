@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import localFont from "next/font/local";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import type { SafeUser } from "@/lib/getSafeSession";
 
 export const metadata: Metadata = {
   title: "Linker",
@@ -58,6 +59,14 @@ export default async function RootLayout({
     data: { session },
   } = await supabase.auth.getSession();
 
+  // Extract safe user data
+  const safeUser: SafeUser | null = session
+    ? {
+        id: session.user.id,
+        email: session.user.email || "",
+      }
+    : null;
+
   // Get theme from cookies for server-side rendering
   const theme = cookieStore.get("theme")?.value || "light";
 
@@ -84,8 +93,8 @@ export default async function RootLayout({
         />
       </head>
       <body className="font-inter">
-        <Sidebar hasSession={!!session}>
-          <Header>
+        <Sidebar hasSession={!!session} user={safeUser}>
+          <Header user={safeUser}>
             <div className="p-4">{children}</div>
           </Header>
         </Sidebar>

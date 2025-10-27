@@ -20,15 +20,18 @@ import {
   X,
   Workflow,
 } from "lucide-react";
+import type { SafeUser } from "@/lib/getSafeSession";
 
 interface SidebarProps {
   children: React.ReactNode;
   hasSession?: boolean;
+  user?: SafeUser | null;
 }
 
 export default function Sidebar({
   children,
   hasSession = false,
+  user: propUser,
 }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(hasSession);
@@ -38,14 +41,19 @@ export default function Sidebar({
   // Public routes that don't need sidebar
   const publicRoutes = ["/", "/auth/login", "/auth/signup", "/demo"];
 
-  // Listen for auth changes (like Header does)
+  // If user is passed as prop, use it and skip client-side fetching
   useEffect(() => {
+    if (propUser !== undefined) {
+      setIsAuthenticated(!!propUser);
+      return;
+    }
+
     const checkAuth = async () => {
       try {
         const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        setIsAuthenticated(!!session?.user);
+          data: { user },
+        } = await supabase.auth.getUser();
+        setIsAuthenticated(!!user);
       } catch (error) {
         console.error("Auth check failed:", error);
         setIsAuthenticated(false);
@@ -55,14 +63,19 @@ export default function Sidebar({
     checkAuth();
 
     // Listen for auth changes
+    console.log("[DEBUG] Sidebar: Setting up auth state listener");
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("[DEBUG] Sidebar: Auth state change", {
+        event,
+        hasSession: !!session,
+      });
       setIsAuthenticated(!!session?.user);
     });
 
     return () => subscription.unsubscribe();
-  }, [supabase]);
+  }, [supabase, propUser]);
 
   // Exact match for root, startsWith for others
   const isPublicRoute =

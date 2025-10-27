@@ -13,9 +13,17 @@ export default function SidebarFooter({ collapsed }: SidebarFooterProps) {
   const router = useRouter();
 
   const handleSignOut = async () => {
+    console.log("[DEBUG] SidebarFooter: Sign out initiated");
     const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/auth/login");
+    try {
+      const { error } = await supabase.auth.signOut();
+      console.log("[DEBUG] SidebarFooter: Sign out result", {
+        error: error?.message,
+      });
+      router.push("/auth/login");
+    } catch (err) {
+      console.error("[DEBUG] SidebarFooter: Error during sign out", err);
+    }
   };
 
   return (

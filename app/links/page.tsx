@@ -1,92 +1,20 @@
-"use client";
-import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
-import { authFetch } from "@/lib/api";
-import { Spinner } from "@/components/ui/spinner";
-import Link from "next/link";
+import { getSafeSession } from "@/lib/getSafeSession";
+import { redirect } from "next/navigation";
+import { headers } from "next/headers";
+import { NextRequest } from "next/server";
+import LinksPageClient from "./PageClient";
 
-export default function LinksPage() {
-  const [items, setItems] = useState<any[]>([]);
-  const [authLoading, setAuthLoading] = useState(true);
-  const router = useRouter();
-  const supabase = createClient();
+export default async function Links() {
+  const headersList = headers();
+  const request = new NextRequest(
+    `${headersList.get("x-forwarded-proto") || "http"}://${headersList.get("host")}`,
+    { headers: headersList },
+  );
+  const sessionResult = await getSafeSession(request);
 
-  // Check authentication on mount
-  useEffect(() => {
-    const checkUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
-        // Middleware should handle this, but fallback just in case
-        router.replace("/auth/login?redirectedFrom=/links");
-        return;
-      }
-      setAuthLoading(false);
-    };
-    checkUser();
-  }, [router, supabase]);
-
-  useEffect(() => {
-    (async () => {
-      const res = await authFetch("/api/links/");
-      if (res.ok) setItems(await res.json());
-    })();
-  }, []);
-
-  // Prevent flash by not rendering anything until auth is checked
-  if (authLoading) {
-    return null;
+  if (!sessionResult || !sessionResult.user) {
+    redirect("/auth/login?redirectedFrom=/links");
   }
 
-  return (
-    <div className="">
-      <div className=" rounded border">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className=" text-left">
-              <th className="p-2">Short URL</th>
-              <th className="p-2">Target URL</th>
-              <th className="p-2">Expires</th>
-              <th className="p-2">Created</th>
-              <th className="p-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((l: any) => (
-              <tr key={l.id} className="border-t">
-                <td className="p-2 text-indigo-600">{l.short_url}</td>
-                <td className="p-2">{l.target_url}</td>
-                <td className="p-2">
-                  {l.expires_at
-                    ? new Date(l.expires_at).toLocaleDateString()
-                    : "—"}
-                </td>
-                <td className="p-2">
-                  {new Date(l.created_at).toLocaleDateString()}
-                </td>
-                <td className="p-2">
-                  <div className="flex gap-2">
-                    <Link
-                      href={`/links/${l.id}/targets`}
-                      className="text-indigo-600 underline"
-                    >
-                      Targets
-                    </Link>
-                    <Link
-                      href={`/links/${l.id}/preview`}
-                      className="text-indigo-600 underline"
-                    >
-                      Preview
-                    </Link>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
+  return <LinksPageClient user={sessionResult.user} />;
 }
