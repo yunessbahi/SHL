@@ -15,6 +15,7 @@ import {
   Users,
   Settings,
   Target,
+  Tag,
   Menu,
   X,
   Workflow,
@@ -150,6 +151,9 @@ export default function Sidebar({
               collapsed={collapsed}
             >
               UTM Templates
+            </SidebarItem>
+            <SidebarItem href="/tags" icon={Tag} collapsed={collapsed}>
+              Tags
             </SidebarItem>
           </SidebarSection>
 

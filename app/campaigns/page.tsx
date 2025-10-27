@@ -5,11 +5,30 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
-import { Plus, Link, X, Edit, Trash2, Info } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import {
+  Plus,
+  Link,
+  X,
+  Edit,
+  Trash2,
+  Info,
+  Clock,
+  Infinity,
+  MoreHorizontal,
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { authFetch } from "@/lib/api";
 import { Spinner } from "@/components/ui/spinner";
 import { createClient } from "@/lib/supabase/client";
 import { UtmTemplateModal } from "@/app/components/UtmTemplateModal";
+import CampaignModal from "@/app/components/CampaignModal";
 import {
   Dialog,
   DialogContent,
@@ -46,6 +65,12 @@ interface Campaign {
   description?: string;
   created_at?: string;
   templates?: UTMTemplate[];
+  status: string;
+  lifecycle_attr: number;
+  default_link_ttl_days?: number;
+  campaign_start_date?: string;
+  campaign_end_date?: string;
+  tags?: { id: number; tag_name: string; color: string }[];
 }
 
 interface UTMTemplate {
@@ -179,6 +204,45 @@ export default function CampaignsPage() {
     }
   };
 
+  const handlePauseCampaign = async (campaignId: number) => {
+    const response = await authFetch(`/api/campaigns/${campaignId}/pause`, {
+      method: "POST",
+    });
+    if (response.ok) {
+      await refreshCampaigns();
+    }
+  };
+
+  const handleArchiveCampaign = async (campaignId: number) => {
+    const response = await authFetch(`/api/campaigns/${campaignId}/archive`, {
+      method: "POST",
+    });
+    if (response.ok) {
+      await refreshCampaigns();
+    }
+  };
+
+  const handleDuplicateCampaign = async (campaign: Campaign) => {
+    const duplicateData = {
+      name: `${campaign.name} (Copy)`,
+      description: campaign.description,
+      default_utm: {
+        utm_source: "",
+        utm_medium: "",
+        utm_campaign: "",
+        utm_term: "",
+        utm_content: "",
+      },
+    };
+    const response = await authFetch("/api/campaigns/", {
+      method: "POST",
+      body: JSON.stringify(duplicateData),
+    });
+    if (response.ok) {
+      await refreshCampaigns();
+    }
+  };
+
   const availableToAssign =
     (activeCampaign &&
       allTemplates.filter((t) => {
@@ -204,6 +268,39 @@ export default function CampaignsPage() {
       </div>
     );
 
+  const getLifecycleDisplay = (
+    lifecycle_attr: number,
+    ttl?: number,
+    status?: string,
+    endDate?: string,
+  ) => {
+    if (lifecycle_attr === 1) {
+      return `Always-on ⏱ TTL: ${ttl || 30}d`;
+    } else if (lifecycle_attr === 2) {
+      // One-off campaign
+      if (endDate && new Date(endDate) < new Date()) {
+        return "Expired";
+      }
+      return "One-off";
+    } else if (lifecycle_attr === 3) {
+      return "Infinite"; // Hide expiry hints for Infinite campaigns
+    }
+    return "";
+  };
+
+  const getStatusVariant = (status: string) => {
+    switch (status) {
+      case "active":
+        return "default";
+      case "paused":
+        return "secondary";
+      case "inactive": // archived
+        return "secondary"; // gray
+      default:
+        return "secondary";
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -217,38 +314,79 @@ export default function CampaignsPage() {
         </Button>
       </div>
 
-      <div className="rounded border">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className=" text-left">
-              <th className="p-2">ID</th>
-              <th className="p-2">Name</th>
-              <th className="p-2">Templates</th>
-              <th className="p-2">Created</th>
-              <th className="p-2">Actions</th>
-              <th className="p-2"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {campaigns.map((c) => (
-              <tr key={c.id} className="border-t">
-                <td className="p-2">{c.id}</td>
-                <td className="p-2 font-semibold">{c.name}</td>
-                <td className="p-2">
-                  <span className="text-sm">
-                    {c.templates ? c.templates.length : 0} templates
-                  </span>
-                </td>
-                <td className="p-2">
-                  {c.created_at
-                    ? new Date(c.created_at).toLocaleDateString()
-                    : ""}
-                </td>
-                <td className="p-2">
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {campaigns.map((c) => (
+          <Card key={c.id} className="relative">
+            <CardHeader className="pb-3">
+              <div className="flex items-start justify-between">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-lg truncate">{c.name}</h3>
+                  <div className="flex items-center gap-2 mt-2">
+                    <Badge
+                      variant={getStatusVariant(c.status)}
+                      className="text-xs"
+                    >
+                      {c.status.charAt(0).toUpperCase() + c.status.slice(1)}
+                    </Badge>
+                    {getLifecycleDisplay(
+                      c.lifecycle_attr,
+                      c.default_link_ttl_days,
+                      c.status,
+                      c.campaign_end_date,
+                    ) && (
+                      <Badge
+                        variant={
+                          getLifecycleDisplay(
+                            c.lifecycle_attr,
+                            c.default_link_ttl_days,
+                            c.status,
+                            c.campaign_end_date,
+                          ) === "Expired"
+                            ? "destructive"
+                            : "outline"
+                        }
+                        className="text-xs"
+                      >
+                        {getLifecycleDisplay(
+                          c.lifecycle_attr,
+                          c.default_link_ttl_days,
+                          c.status,
+                          c.campaign_end_date,
+                        )}
+                      </Badge>
+                    )}
+                  </div>
+                  {c.tags && c.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {c.tags.slice(0, 3).map((tag) => (
+                        <Badge
+                          key={tag.id}
+                          variant="secondary"
+                          className="text-xs"
+                          style={{
+                            backgroundColor: tag.color + "20",
+                            color: tag.color,
+                          }}
+                        >
+                          {tag.tag_name}
+                        </Badge>
+                      ))}
+                      {c.tags.length > 3 && (
+                        <Badge variant="secondary" className="text-xs">
+                          +{c.tags.length - 3}
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
                       onClick={() =>
                         setCampaignModalState({
                           open: true,
@@ -256,32 +394,77 @@ export default function CampaignsPage() {
                           campaign: c,
                         })
                       }
+                      disabled={c.status === "inactive"}
                     >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit Campaign
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleDuplicateCampaign(c)}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Duplicate Campaign
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handlePauseCampaign(c.id)}>
+                      <Clock className="h-4 w-4 mr-2" />
+                      Pause Campaign
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleArchiveCampaign(c.id)}
+                    >
+                      <Info className="h-4 w-4 mr-2" />
+                      Archive Campaign
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
                       onClick={() => handleDeleteCampaign(c.id)}
                     >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </td>
-                <td className="p-2">
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete Campaign
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <span>{c.templates ? c.templates.length : 0} templates</span>
+                  <span>
+                    {c.created_at
+                      ? new Date(c.created_at).toLocaleDateString()
+                      : ""}
+                  </span>
+                </div>
+                <div className="space-y-2">
                   <Button
                     variant="outline"
                     size="sm"
+                    className="w-full"
                     onClick={() => openTemplatesModal(c)}
                   >
-                    <Link className="h-4 w-4 mr-1 inline" />
-                    {c.templates ? c.templates.length : 0} Templates
+                    <Link className="h-4 w-4 mr-2" />
+                    Manage Templates
                   </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="w-full"
+                    disabled={c.status === "paused"}
+                    title={
+                      c.status === "paused"
+                        ? "Cannot create links for paused campaigns"
+                        : ""
+                    }
+                    onClick={() => router.push(`/links?campaign=${c.id}`)}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Link
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Templates Modal */}
@@ -525,51 +708,40 @@ export default function CampaignsPage() {
       />
 
       {/* Campaign Modal */}
-      <Dialog
+      <CampaignModal
         open={campaignModalState.open}
         onOpenChange={(open) => {
           if (!open) {
             setCampaignModalState({ open: false, mode: "create" });
           }
         }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {campaignModalState.mode === "create"
-                ? "Create New Campaign"
-                : "Edit Campaign"}
-            </DialogTitle>
-          </DialogHeader>
-          <CampaignForm
-            initialValues={campaignModalState.campaign}
-            onSave={async (values) => {
-              if (
-                campaignModalState.mode === "edit" &&
-                campaignModalState.campaign
-              ) {
-                await authFetch(
-                  `/api/campaigns/${campaignModalState.campaign.id}`,
-                  {
-                    method: "PATCH",
-                    body: JSON.stringify(values),
-                  },
-                );
-              } else {
-                await authFetch("/api/campaigns/", {
-                  method: "POST",
-                  body: JSON.stringify(values),
-                });
-              }
-              await refreshCampaigns();
-              setCampaignModalState({ open: false, mode: "create" });
-            }}
-            onCancel={() =>
-              setCampaignModalState({ open: false, mode: "create" })
-            }
-          />
-        </DialogContent>
-      </Dialog>
+        initialData={
+          campaignModalState.mode === "edit"
+            ? campaignModalState.campaign
+            : undefined
+        }
+        onSave={async (values) => {
+          if (
+            campaignModalState.mode === "edit" &&
+            campaignModalState.campaign
+          ) {
+            await authFetch(
+              `/api/campaigns/${campaignModalState.campaign.id}`,
+              {
+                method: "PATCH",
+                body: JSON.stringify(values),
+              },
+            );
+          } else {
+            await authFetch("/api/campaigns/", {
+              method: "POST",
+              body: JSON.stringify(values),
+            });
+          }
+          await refreshCampaigns();
+          setCampaignModalState({ open: false, mode: "create" });
+        }}
+      />
     </div>
   );
 }

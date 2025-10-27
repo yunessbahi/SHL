@@ -6,6 +6,7 @@ import {
   ChevronDown,
   XIcon,
   WandSparkles,
+  Plus,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -116,8 +117,9 @@ interface MultiSelectProps
     VariantProps<typeof multiSelectVariants> {
   /**
    * An array of option objects or groups to be displayed in the multi-select component.
+   * Not required if fetchTags is provided.
    */
-  options: MultiSelectOption[] | MultiSelectGroup[];
+  options?: MultiSelectOption[] | MultiSelectGroup[];
   /**
    * Callback function triggered when the selected values change.
    * Receives an array of the new selected values.
@@ -195,6 +197,27 @@ interface MultiSelectProps
    * Optional, defaults to false.
    */
   autoSize?: boolean;
+
+  /**
+   * Function to fetch tags dynamically based on search query.
+   * If provided, enables autocomplete functionality.
+   * Optional, if not provided, uses static options.
+   */
+  fetchTags?: (search?: string) => Promise<MultiSelectOption[]>;
+
+  /**
+   * Function to create a new tag.
+   * If provided, enables inline tag creation.
+   * Optional, if not provided, tag creation is disabled.
+   */
+  createTag?: (tagName: string) => Promise<MultiSelectOption>;
+
+  /**
+   * If true, shows "+ Create new tag" option when search doesn't match existing tags.
+   * Requires createTag function to be provided.
+   * Optional, defaults to false.
+   */
+  enableTagCreation?: boolean;
 
   /**
    * If true, shows badges in a single line with horizontal scroll.
@@ -331,6 +354,9 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
       deduplicateOptions = false,
       resetOnDefaultValueChange = true,
       closeOnSelect = false,
+      fetchTags,
+      createTag,
+      enableTagCreation = false,
       ...props
     },
     ref,
@@ -340,6 +366,11 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
     const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
     const [isAnimating, setIsAnimating] = React.useState(false);
     const [searchValue, setSearchValue] = React.useState("");
+    const [dynamicOptions, setDynamicOptions] = React.useState<
+      MultiSelectOption[]
+    >([]);
+    const [isLoadingTags, setIsLoadingTags] = React.useState(false);
+    const [showCreateOption, setShowCreateOption] = React.useState(false);
 
     const [politeMessage, setPoliteMessage] = React.useState("");
     const [assertiveMessage, setAssertiveMessage] = React.useState("");
@@ -528,17 +559,17 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
     };
 
     const getAllOptions = React.useCallback((): MultiSelectOption[] => {
-      if (options.length === 0) return [];
-      let allOptions: MultiSelectOption[];
-      if (isGroupedOptions(options)) {
-        allOptions = options.flatMap((group) => group.options);
-      } else {
-        allOptions = options;
-      }
+      const staticOptions = options
+        ? isGroupedOptions(options)
+          ? options.flatMap((group) => group.options)
+          : (options as MultiSelectOption[])
+        : [];
+      const dynamicOpts = fetchTags ? dynamicOptions : [];
+      const allOpts = [...staticOptions, ...dynamicOpts];
       const valueSet = new Set<string>();
       const duplicates: string[] = [];
       const uniqueOptions: MultiSelectOption[] = [];
-      allOptions.forEach((option) => {
+      allOpts.forEach((option) => {
         if (valueSet.has(option.value)) {
           duplicates.push(option.value);
           if (!deduplicateOptions) {
@@ -564,8 +595,14 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
             }`,
         );
       }
-      return deduplicateOptions ? uniqueOptions : allOptions;
-    }, [options, deduplicateOptions, isGroupedOptions]);
+      return deduplicateOptions ? uniqueOptions : allOpts;
+    }, [
+      options,
+      dynamicOptions,
+      fetchTags,
+      deduplicateOptions,
+      isGroupedOptions,
+    ]);
 
     const getOptionByValue = React.useCallback(
       (value: string): MultiSelectOption | undefined => {
@@ -580,11 +617,52 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
       [getAllOptions],
     );
 
+    // Fetch tags when search value changes or defaultValue changes
+    React.useEffect(() => {
+      const fetchDynamicTags = async () => {
+        if (!fetchTags || !searchable) return;
+
+        setIsLoadingTags(true);
+        try {
+          const fetchedTags = await fetchTags(searchValue);
+          setDynamicOptions(fetchedTags);
+        } catch (error) {
+          console.error("Failed to fetch tags:", error);
+          setDynamicOptions([]);
+        } finally {
+          setIsLoadingTags(false);
+        }
+      };
+
+      if (searchValue || fetchTags) {
+        fetchDynamicTags();
+      }
+    }, [searchValue, fetchTags, searchable, defaultValue]);
+
+    // Determine if we should show create option
+    React.useEffect(() => {
+      if (!enableTagCreation || !createTag || !searchValue.trim()) {
+        setShowCreateOption(false);
+        return;
+      }
+
+      const existingTag = getAllOptions().find(
+        (option) =>
+          option.label.toLowerCase() === searchValue.toLowerCase().trim(),
+      );
+      setShowCreateOption(!existingTag);
+    }, [searchValue, enableTagCreation, createTag, getAllOptions]);
+
     const filteredOptions = React.useMemo(() => {
-      if (!searchable || !searchValue) return options;
-      if (options.length === 0) return [];
-      if (isGroupedOptions(options)) {
-        return options
+      const staticOptions = options || [];
+      const dynamicOpts = fetchTags ? dynamicOptions : [];
+      const currentOptions = fetchTags ? dynamicOpts : staticOptions;
+
+      if (!searchable || !searchValue) return currentOptions || [];
+      if (!currentOptions || currentOptions.length === 0) return [];
+
+      if (isGroupedOptions(currentOptions)) {
+        return currentOptions
           .map((group) => ({
             ...group,
             options: group.options.filter(
@@ -597,12 +675,19 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
           }))
           .filter((group) => group.options.length > 0);
       }
-      return options.filter(
+      return currentOptions.filter(
         (option) =>
           option.label.toLowerCase().includes(searchValue.toLowerCase()) ||
           option.value.toLowerCase().includes(searchValue.toLowerCase()),
       );
-    }, [options, searchValue, searchable, isGroupedOptions]);
+    }, [
+      options,
+      dynamicOptions,
+      searchValue,
+      searchable,
+      isGroupedOptions,
+      fetchTags,
+    ]);
 
     const handleInputKeyDown = (
       event: React.KeyboardEvent<HTMLInputElement>,
@@ -630,6 +715,50 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
         setIsPopoverOpen(false);
       }
     };
+
+    const handleCreateTag = async () => {
+      if (!createTag || !searchValue.trim()) return;
+
+      try {
+        const newTag = await createTag(searchValue.trim());
+        // Add the new tag to dynamic options if using fetchTags
+        if (fetchTags) {
+          setDynamicOptions((prev) => [...prev, newTag]);
+        }
+        // Select the new tag
+        const newSelectedValues = [...selectedValues, newTag.value];
+        setSelectedValues(newSelectedValues);
+        onValueChange(newSelectedValues);
+        setSearchValue("");
+        setIsPopoverOpen(false);
+      } catch (error) {
+        console.error("Failed to create tag:", error);
+      }
+    };
+
+    // Initialize selected values from defaultValue when dynamic options are loaded
+    React.useEffect(() => {
+      if (
+        fetchTags &&
+        dynamicOptions.length > 0 &&
+        selectedValues.length === 0 &&
+        defaultValue.length > 0
+      ) {
+        const validValues = defaultValue.filter((val) =>
+          dynamicOptions.some((opt) => opt.value === val),
+        );
+        if (validValues.length > 0) {
+          setSelectedValues(validValues);
+          onValueChange(validValues);
+        }
+      }
+    }, [
+      dynamicOptions,
+      defaultValue,
+      fetchTags,
+      selectedValues.length,
+      onValueChange,
+    ]);
 
     const handleClear = () => {
       if (disabled) return;
@@ -917,7 +1046,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                                 }
                               }}
                               aria-label={`Remove ${option.label} from selection`}
-                              className="ml-2 h-4 w-4 cursor-pointer hover:/20 rounded-sm -m-0.5 focus:outline-none focus:ring-1 focus:ring-white/50"
+                              className="ml-2 h-4 w-4 cursor-pointer hover:bg-red-500/20 rounded-sm -m-0.5 focus:outline-none focus:ring-1 focus:ring-white/50"
                             >
                               <XCircle
                                 className={cn(
@@ -1052,7 +1181,16 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                 )}
               >
                 <CommandEmpty>
-                  {emptyIndicator || "No results found."}
+                  {isLoadingTags ? (
+                    <div className="flex items-center justify-center py-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                      <span className="ml-2 text-sm text-muted-foreground">
+                        Loading tags...
+                      </span>
+                    </div>
+                  ) : (
+                    emptyIndicator || "No results found."
+                  )}
                 </CommandEmpty>{" "}
                 {!hideSelectAll && !searchValue && (
                   <CommandGroup>
@@ -1092,10 +1230,57 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                     </CommandItem>
                   </CommandGroup>
                 )}
-                {isGroupedOptions(filteredOptions) ? (
-                  filteredOptions.map((group) => (
-                    <CommandGroup key={group.heading} heading={group.heading}>
-                      {group.options.map((option) => {
+                {filteredOptions &&
+                  (isGroupedOptions(filteredOptions) ? (
+                    filteredOptions.map((group) => (
+                      <CommandGroup key={group.heading} heading={group.heading}>
+                        {group.options.map((option) => {
+                          const isSelected = selectedValues.includes(
+                            option.value,
+                          );
+                          return (
+                            <CommandItem
+                              key={option.value}
+                              onSelect={() => toggleOption(option.value)}
+                              role="option"
+                              aria-selected={isSelected}
+                              aria-disabled={option.disabled}
+                              aria-label={`${option.label}${
+                                isSelected ? ", selected" : ", not selected"
+                              }${option.disabled ? ", disabled" : ""}`}
+                              className={cn(
+                                "cursor-pointer",
+                                option.disabled &&
+                                  "opacity-50 cursor-not-allowed",
+                              )}
+                              disabled={option.disabled}
+                            >
+                              <div
+                                className={cn(
+                                  "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                                  isSelected
+                                    ? "bg-primary text-primary-foreground"
+                                    : "opacity-50 [&_svg]:invisible",
+                                )}
+                                aria-hidden="true"
+                              >
+                                <CheckIcon className="h-4 w-4" />
+                              </div>
+                              {option.icon && (
+                                <option.icon
+                                  className="mr-2 h-4 w-4 text-muted-foreground"
+                                  aria-hidden="true"
+                                />
+                              )}
+                              <span>{option.label}</span>
+                            </CommandItem>
+                          );
+                        })}
+                      </CommandGroup>
+                    ))
+                  ) : (
+                    <CommandGroup>
+                      {filteredOptions.map((option) => {
                         const isSelected = selectedValues.includes(
                           option.value,
                         );
@@ -1138,49 +1323,20 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                         );
                       })}
                     </CommandGroup>
-                  ))
-                ) : (
-                  <CommandGroup>
-                    {filteredOptions.map((option) => {
-                      const isSelected = selectedValues.includes(option.value);
-                      return (
-                        <CommandItem
-                          key={option.value}
-                          onSelect={() => toggleOption(option.value)}
-                          role="option"
-                          aria-selected={isSelected}
-                          aria-disabled={option.disabled}
-                          aria-label={`${option.label}${
-                            isSelected ? ", selected" : ", not selected"
-                          }${option.disabled ? ", disabled" : ""}`}
-                          className={cn(
-                            "cursor-pointer",
-                            option.disabled && "opacity-50 cursor-not-allowed",
-                          )}
-                          disabled={option.disabled}
-                        >
-                          <div
-                            className={cn(
-                              "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
-                              isSelected
-                                ? "bg-primary text-primary-foreground"
-                                : "opacity-50 [&_svg]:invisible",
-                            )}
-                            aria-hidden="true"
-                          >
-                            <CheckIcon className="h-4 w-4" />
-                          </div>
-                          {option.icon && (
-                            <option.icon
-                              className="mr-2 h-4 w-4 text-muted-foreground"
-                              aria-hidden="true"
-                            />
-                          )}
-                          <span>{option.label}</span>
-                        </CommandItem>
-                      );
-                    })}
-                  </CommandGroup>
+                  ))}
+                {showCreateOption && (
+                  <>
+                    <CommandSeparator />
+                    <CommandGroup>
+                      <CommandItem
+                        onSelect={handleCreateTag}
+                        className="cursor-pointer text-primary hover:text-primary"
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Create new tag "{searchValue.trim()}"
+                      </CommandItem>
+                    </CommandGroup>
+                  </>
                 )}
                 <CommandSeparator />
                 <CommandGroup>

@@ -69,9 +69,17 @@ export default function Dashboard() {
     setError("");
 
     try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const campaignId = urlParams.get("campaign");
+
+      const payload: any = { target_url: url };
+      if (campaignId) {
+        payload.campaign_id = parseInt(campaignId);
+      }
+
       const res = await authFetch("/api/links/", {
         method: "POST",
-        body: JSON.stringify({ target_url: url }),
+        body: JSON.stringify(payload),
       });
 
       if (res.ok) {
@@ -232,6 +240,11 @@ export default function Dashboard() {
         <div className=" p-6 rounded-lg shadow-sm mb-8">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
             Create New Link
+            {(() => {
+              const urlParams = new URLSearchParams(window.location.search);
+              const campaignId = urlParams.get("campaign");
+              return campaignId ? ` for Campaign #${campaignId}` : "";
+            })()}
           </h2>
 
           {error && (
