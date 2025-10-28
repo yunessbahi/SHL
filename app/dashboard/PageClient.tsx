@@ -129,6 +129,26 @@ export default function DashboardPage({ user }: { user: SafeUser }) {
       </header>*/}
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Try New Workspace Banner */}
+        <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-6 rounded-lg shadow-sm mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-semibold mb-2">
+                Try the New Workspace
+              </h2>
+              <p className="text-indigo-100">
+                Experience advanced link creation with A/B testing,
+                geo-targeting, and more powerful features.
+              </p>
+            </div>
+            <a
+              href="/workspace"
+              className="bg-white text-indigo-600 px-6 py-2 rounded-md font-medium hover:bg-gray-50 transition-colors"
+            >
+              Get Started
+            </a>
+          </div>
+        </div>
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className=" p-6 rounded-lg shadow-sm">

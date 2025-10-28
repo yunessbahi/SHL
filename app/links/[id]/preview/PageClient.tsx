@@ -18,7 +18,7 @@ export default function PreviewPage({ user, id }: PreviewPageProps) {
   const [context, setContext] = useState({
     country: "",
     device_type: "",
-    referrer: "",
+    referer: "",
   });
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState("");
@@ -90,11 +90,11 @@ export default function PreviewPage({ user, id }: PreviewPageProps) {
           </select>
         </div>
         <div className="md:col-span-1">
-          <label className="block text-sm">Referrer</label>
+          <label className="block text-sm">Referer</label>
           <input
-            value={context.referrer}
+            value={context.referer}
             onChange={(e) =>
-              setContext({ ...context, referrer: e.target.value })
+              setContext({ ...context, referer: e.target.value })
             }
             className="w-full border p-2 rounded"
           />

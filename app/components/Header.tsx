@@ -131,7 +131,7 @@ export default function Header({
     const pathSegments = pathname.split("/").filter(Boolean);
     const items = [];
 
-    // Add Dashboard as first item if not on dashboard
+    // Add Workspace as first item if not on workspace
     if (pathname !== "/workspace") {
       items.push({
         label: "Workspace",
@@ -307,7 +307,7 @@ export default function Header({
           <Breadcrumb className={""}>
             <BreadcrumbList className={"text-xs"}>
               {getBreadcrumbItems().map((item, index) => (
-                <React.Fragment key={item.href}>
+                <React.Fragment key={`${item.href}-${index}`}>
                   {index > 0 && <BreadcrumbSeparator />}
                   <BreadcrumbItem>
                     {index === getBreadcrumbItems().length - 1 ? (

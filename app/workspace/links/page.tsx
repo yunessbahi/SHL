@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { NextRequest } from "next/server";
 import LinksPageClient from "./PageClient";
-import { Toaster } from "@/components/ui/sonner";
 
 export default async function Links() {
   const headersList = headers();
@@ -14,13 +13,8 @@ export default async function Links() {
   const sessionResult = await getSafeSession(request);
 
   if (!sessionResult || !sessionResult.user) {
-    redirect("/auth/login?redirectedFrom=/links");
+    redirect("/auth/login?redirectedFrom=/workspace/links");
   }
 
-  return (
-    <>
-      <LinksPageClient user={sessionResult.user} />
-      <Toaster />
-    </>
-  );
+  return <LinksPageClient user={sessionResult.user} />;
 }

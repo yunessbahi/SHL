@@ -2,10 +2,9 @@ import { getSafeSession } from "@/lib/getSafeSession";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { NextRequest } from "next/server";
-import LinksPageClient from "./PageClient";
-import { Toaster } from "@/components/ui/sonner";
+import EditPageClient from "./EditPageClient";
 
-export default async function Links() {
+export default async function EditPage({ params }: { params: { id: string } }) {
   const headersList = headers();
   const request = new NextRequest(
     `${headersList.get("x-forwarded-proto") || "http"}://${headersList.get("host")}`,
@@ -14,13 +13,10 @@ export default async function Links() {
   const sessionResult = await getSafeSession(request);
 
   if (!sessionResult || !sessionResult.user) {
-    redirect("/auth/login?redirectedFrom=/links");
+    redirect("/auth/login?redirectedFrom=/workspace/edit/" + params.id);
   }
 
   return (
-    <>
-      <LinksPageClient user={sessionResult.user} />
-      <Toaster />
-    </>
+    <EditPageClient user={sessionResult.user} linkId={parseInt(params.id)} />
   );
 }

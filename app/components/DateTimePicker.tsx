@@ -15,7 +15,7 @@ export default function DateTimePicker({
       {label && <label className="block text-sm mb-1">{label}</label>}
       <input
         type="datetime-local"
-        className="w-full border p-2 rounded"
+        className="w-full border p-3 rounded-md text-base touch-manipulation"
         value={value ? value.replace("Z", "") : ""}
         onChange={(e) =>
           onChange(e.target.value ? new Date(e.target.value).toISOString() : "")

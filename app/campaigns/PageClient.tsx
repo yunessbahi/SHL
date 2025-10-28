@@ -412,6 +412,42 @@ export default function CampaignsPage({ user }: CampaignsPageProps) {
             </CardHeader>
             <CardContent className="pt-0">
               <div className="space-y-3">
+                {/* Campaign Lifecycle and Dates */}
+                <div className="space-y-2">
+                  {c.campaign_start_date && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Start:</span>
+                      <span>
+                        {new Date(c.campaign_start_date).toLocaleDateString()}
+                      </span>
+                    </div>
+                  )}
+                  {c.campaign_end_date && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">End:</span>
+                      <span
+                        className={
+                          new Date(c.campaign_end_date) < new Date()
+                            ? "text-red-600 font-medium"
+                            : ""
+                        }
+                      >
+                        {new Date(c.campaign_end_date).toLocaleDateString()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Warning for ended campaigns with active links */}
+                {c.campaign_end_date &&
+                  new Date(c.campaign_end_date) < new Date() &&
+                  c.status === "active" && (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded p-2 text-xs text-yellow-800">
+                      ⚠️ Campaign has ended but is still active. Links may still
+                      be working.
+                    </div>
+                  )}
+
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
                   <span>{c.templates ? c.templates.length : 0} templates</span>
                   <span>
@@ -420,6 +456,21 @@ export default function CampaignsPage({ user }: CampaignsPageProps) {
                       : ""}
                   </span>
                 </div>
+
+                {/* Links count with click-through */}
+                <div className="text-sm">
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="p-0 h-auto text-sm text-blue-600 hover:text-blue-800"
+                    onClick={() =>
+                      router.push(`/workspace/links?campaign=${c.name}`)
+                    }
+                  >
+                    View Links (count pending)
+                  </Button>
+                </div>
+
                 <div className="space-y-2">
                   <Button
                     variant="outline"
@@ -467,8 +518,18 @@ export default function CampaignsPage({ user }: CampaignsPageProps) {
               <X className="h-5 w-5" />
             </button>
             <h2 className="text-lg font-bold mb-4">
-              Templates for {activeCampaign.name}
+              UTM Templates for {activeCampaign.name}
             </h2>
+            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded">
+              <h3 className="font-semibold text-sm mb-2">
+                Available Templates
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                These UTM templates are available for links created in this
+                campaign. Global templates are available to all campaigns, while
+                campaign-specific templates are only available here.
+              </p>
+            </div>
             <div className="mb-4 flex gap-2">
               <Button
                 variant={showAssignModal ? "default" : "secondary"}
