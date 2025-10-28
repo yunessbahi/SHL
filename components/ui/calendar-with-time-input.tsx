@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { ClockIcon } from "lucide-react";
 import { useId } from "react";
 import { Label } from "@/app/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 
 interface CalendarWithTimeInputProps {
   value?: Date;
@@ -89,7 +90,8 @@ export function CalendarWithTimeInput({
             onSelect={handleDateSelect}
             initialFocus
           />
-          <div className="flex items-center gap-2 border-b px-3 !pb-3">
+          <Separator orientation={"horizontal"} className="mb-3" />
+          <div className="flex items-center gap-2 px-3 !pb-3">
             <Label htmlFor={id} className="text-xs">
               Enter time
             </Label>
