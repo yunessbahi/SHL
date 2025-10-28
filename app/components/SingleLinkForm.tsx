@@ -57,6 +57,12 @@ export default function SingleLinkForm({
   const [utmTemplateId, setUtmTemplateId] = useState<number | null>(
     initialData?.targets?.[0]?.utm_template_id || null,
   );
+  const [targetStartDate, setTargetStartDate] = useState(
+    initialData?.targets?.[0]?.start_datetime || "",
+  );
+  const [targetEndDate, setTargetEndDate] = useState(
+    initialData?.targets?.[0]?.end_datetime || "",
+  );
 
   // Modal states
   const [showCampaignModal, setShowCampaignModal] = useState(false);
@@ -178,6 +184,9 @@ export default function SingleLinkForm({
               weight: weight,
               rules: rules,
               utm_template_id: utmTemplateId,
+              group_id: groupId,
+              start_datetime: targetStartDate || null,
+              end_datetime: targetEndDate || null,
             },
           ],
         };
@@ -206,6 +215,9 @@ export default function SingleLinkForm({
               weight: weight,
               rules: rules,
               utm_template_id: utmTemplateId,
+              group_id: groupId,
+              start_datetime: targetStartDate || null,
+              end_datetime: targetEndDate || null,
             },
           ],
           campaign_id: campaignId,
@@ -311,6 +323,10 @@ export default function SingleLinkForm({
           weight={weight}
           rules={rules}
           utmTemplateId={utmTemplateId}
+          startDate={targetStartDate}
+          endDate={targetEndDate}
+          inheritedStartDate={startDate}
+          inheritedEndDate={endDate}
           onTargetUrlChange={(value) => {
             setTargetUrl(value);
             if (errors.targetUrl) {
@@ -320,6 +336,8 @@ export default function SingleLinkForm({
           onWeightChange={setWeight}
           onRulesChange={setRules}
           onUtmTemplateChange={setUtmTemplateId}
+          onStartDateChange={setTargetStartDate}
+          onEndDateChange={setTargetEndDate}
           campaignUtmTemplates={selectedCampaign?.utm_templates || []}
           onCreateUtmTemplate={() => setShowUtmTemplateModal(true)}
         />

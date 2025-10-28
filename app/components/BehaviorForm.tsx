@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import DateTimePicker from "./DateTimePicker";
+import { CalendarWithTimeInput } from "@/components/ui/calendar-with-time-input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -23,6 +23,14 @@ interface BehaviorFormProps {
   campaignTtlDays?: number;
   campaignLifecycle?: number;
 }
+
+const convertStringToDate = (dateString: string): Date | undefined => {
+  return dateString ? new Date(dateString) : undefined;
+};
+
+const convertDateToString = (date: Date | undefined): string => {
+  return date ? date.toISOString() : "";
+};
 
 export default function BehaviorForm({
   startDate,
@@ -120,9 +128,11 @@ export default function BehaviorForm({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="start-date">Start Date & Time</Label>
-                <DateTimePicker
-                  value={startDate}
-                  onChange={onStartDateChange}
+                <CalendarWithTimeInput
+                  value={convertStringToDate(startDate)}
+                  onChange={(date) =>
+                    onStartDateChange(convertDateToString(date))
+                  }
                 />
                 {campaignStartDate && (
                   <p
@@ -137,7 +147,12 @@ export default function BehaviorForm({
 
               <div>
                 <Label htmlFor="end-date">End Date & Time</Label>
-                <DateTimePicker value={endDate} onChange={onEndDateChange} />
+                <CalendarWithTimeInput
+                  value={convertStringToDate(endDate)}
+                  onChange={(date) =>
+                    onEndDateChange(convertDateToString(date))
+                  }
+                />
                 {campaignEndDate && (
                   <p
                     className={`text-xs mt-1 ${isInheritedEndDate ? "text-blue-600" : "text-muted-foreground"}`}

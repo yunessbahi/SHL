@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, X, Trash2, Eye, EyeOff } from "lucide-react";
+import DateTimePicker from "./DateTimePicker";
 import {
   Card,
   CardContent,
@@ -30,10 +31,16 @@ interface TargetFormProps {
   weight: number;
   rules: any;
   utmTemplateId: number | null;
+  startDate?: string;
+  endDate?: string;
+  inheritedStartDate?: string;
+  inheritedEndDate?: string;
   onTargetUrlChange: (url: string) => void;
   onWeightChange: (weight: number) => void;
   onRulesChange: (rules: any) => void;
   onUtmTemplateChange: (id: number | null) => void;
+  onStartDateChange?: (date: string) => void;
+  onEndDateChange?: (date: string) => void;
   onRemove?: () => void;
   showRemove?: boolean;
   campaignUtmTemplates?: Array<{
@@ -49,10 +56,16 @@ export default function TargetForm({
   weight,
   rules,
   utmTemplateId,
+  startDate,
+  endDate,
+  inheritedStartDate,
+  inheritedEndDate,
   onTargetUrlChange,
   onWeightChange,
   onRulesChange,
   onUtmTemplateChange,
+  onStartDateChange,
+  onEndDateChange,
   onRemove,
   showRemove = false,
   campaignUtmTemplates = [],
@@ -124,6 +137,11 @@ export default function TargetForm({
     (t) => t.id === utmTemplateId,
   );
   const currentTemplate = selectedTemplate || campaignTemplate;
+
+  // Determine if dates are inherited
+  const isInheritedStartDate =
+    startDate === inheritedStartDate && inheritedStartDate;
+  const isInheritedEndDate = endDate === inheritedEndDate && inheritedEndDate;
 
   const getUtmPreview = () => {
     if (!currentTemplate) return null;
@@ -297,7 +315,12 @@ export default function TargetForm({
         <div>
           <Label>Audience Rules</Label>
           <div className="mt-2">
-            <RuleTabs rules={rules} setRules={onRulesChange} />
+            <RuleTabs
+              rules={rules}
+              setRules={onRulesChange}
+              inheritedStartDate={inheritedStartDate}
+              inheritedEndDate={inheritedEndDate}
+            />
           </div>
         </div>
       </CardContent>

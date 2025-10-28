@@ -20,6 +20,8 @@ interface Target {
   weight: number;
   rules: any;
   utmTemplateId: number | null;
+  startDate?: string;
+  endDate?: string;
 }
 
 interface SmartLinkFormProps {
@@ -63,6 +65,8 @@ export default function SmartLinkForm({
           weight: t.weight || 50,
           rules: t.rules || {},
           utmTemplateId: t.utm_template_id || null,
+          startDate: t.start_datetime || "",
+          endDate: t.end_datetime || "",
         }))
       : [
           {
@@ -71,6 +75,8 @@ export default function SmartLinkForm({
             weight: 50,
             rules: {},
             utmTemplateId: null,
+            startDate: "",
+            endDate: "",
           },
           {
             id: "2",
@@ -78,6 +84,8 @@ export default function SmartLinkForm({
             weight: 50,
             rules: {},
             utmTemplateId: null,
+            startDate: "",
+            endDate: "",
           },
         ],
   );
@@ -128,6 +136,8 @@ export default function SmartLinkForm({
       weight: Math.max(10, Math.floor(100 / (targets.length + 1))),
       rules: {},
       utmTemplateId: null,
+      startDate: "",
+      endDate: "",
     };
     setTargets([...targets, newTarget]);
 
@@ -278,6 +288,8 @@ export default function SmartLinkForm({
               weight: target.weight,
               rules: target.rules,
               utm_template_id: target.utmTemplateId,
+              start_datetime: target.startDate || null,
+              end_datetime: target.endDate || null,
             });
           } else {
             // Existing target (numeric ID)
@@ -287,6 +299,8 @@ export default function SmartLinkForm({
               weight: target.weight,
               rules: target.rules,
               utm_template_id: target.utmTemplateId,
+              start_datetime: target.startDate || null,
+              end_datetime: target.endDate || null,
             });
           }
         }
@@ -321,6 +335,8 @@ export default function SmartLinkForm({
             weight: target.weight,
             rules: target.rules,
             utm_template_id: target.utmTemplateId,
+            start_datetime: target.startDate || null,
+            end_datetime: target.endDate || null,
           })),
           campaign_id: campaignId,
           start_datetime: startDate || null,
@@ -447,6 +463,10 @@ export default function SmartLinkForm({
                   weight={target.weight}
                   rules={target.rules}
                   utmTemplateId={target.utmTemplateId}
+                  startDate={target.startDate}
+                  endDate={target.endDate}
+                  inheritedStartDate={startDate}
+                  inheritedEndDate={endDate}
                   onTargetUrlChange={(url) =>
                     updateTarget(target.id, { targetUrl: url })
                   }
@@ -456,6 +476,12 @@ export default function SmartLinkForm({
                   onRulesChange={(rules) => updateTarget(target.id, { rules })}
                   onUtmTemplateChange={(id) =>
                     updateTarget(target.id, { utmTemplateId: id })
+                  }
+                  onStartDateChange={(date) =>
+                    updateTarget(target.id, { startDate: date })
+                  }
+                  onEndDateChange={(date) =>
+                    updateTarget(target.id, { endDate: date })
                   }
                   onRemove={() => removeTarget(target.id)}
                   showRemove={targets.length > 2}

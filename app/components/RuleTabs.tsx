@@ -3,7 +3,9 @@ import React, { useMemo, useState } from "react";
 import JsonEditor from "../components/JsonEditor";
 //import MultiSelect from "../components/MultiSelect";
 import { MultiSelect } from "@/components/multi-select";
-import DateTimePicker from "../components/DateTimePicker";
+import { CalendarWithTimeInput } from "@/components/ui/calendar-with-time-input";
+import { Button } from "@/components/ui/button";
+import { RotateCcw, X } from "lucide-react";
 
 const COUNTRY_OPTIONS = [
   { label: "United States", value: "US" },
@@ -18,6 +20,16 @@ type RuleTabsProps = {
   setRules: (r: any) => void;
   activeTab?: string;
   onTabChange?: (tab: string) => void;
+  inheritedStartDate?: string;
+  inheritedEndDate?: string;
+};
+
+const convertStringToDate = (dateString: string): Date | undefined => {
+  return dateString ? new Date(dateString) : undefined;
+};
+
+const convertDateToString = (date: Date | undefined): string => {
+  return date ? date.toISOString() : "";
 };
 
 export default function RuleTabs({
@@ -25,6 +37,8 @@ export default function RuleTabs({
   setRules,
   activeTab,
   onTabChange,
+  inheritedStartDate,
+  inheritedEndDate,
 }: RuleTabsProps) {
   const [internalTab, setInternalTab] = useState("audience");
   const tab = activeTab ?? internalTab;
@@ -38,6 +52,7 @@ export default function RuleTabs({
         {["audience", "behavior", "utm", "json"].map((t) => (
           <button
             key={t}
+            type="button"
             onClick={() => changeTab(t)}
             className={`px-3 py-2 text-sm ${
               tab === t
@@ -82,26 +97,132 @@ export default function RuleTabs({
 
       {tab === "behavior" && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <DateTimePicker
-            label="Start (ISO)"
-            value={rules?.time_window?.start || ""}
-            onChange={(v) =>
-              setRules({
-                ...rules,
-                time_window: { ...(rules?.time_window || {}), start: v },
-              })
-            }
-          />
-          <DateTimePicker
-            label="End (ISO)"
-            value={rules?.time_window?.end || ""}
-            onChange={(v) =>
-              setRules({
-                ...rules,
-                time_window: { ...(rules?.time_window || {}), end: v },
-              })
-            }
-          />
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium">Start (ISO)</label>
+              <div className="flex gap-1">
+                {inheritedStartDate && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() =>
+                      setRules({
+                        ...rules,
+                        time_window: {
+                          ...(rules?.time_window || {}),
+                          start: inheritedStartDate,
+                        },
+                      })
+                    }
+                    className="h-6 px-2 text-xs"
+                    title="Restore to inherited date"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() =>
+                    setRules({
+                      ...rules,
+                      time_window: { ...(rules?.time_window || {}), start: "" },
+                    })
+                  }
+                  className="h-6 px-2 text-xs"
+                  title="Clear date"
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+            <CalendarWithTimeInput
+              value={convertStringToDate(
+                rules?.time_window?.start || inheritedStartDate || "",
+              )}
+              onChange={(date) =>
+                setRules({
+                  ...rules,
+                  time_window: {
+                    ...(rules?.time_window || {}),
+                    start: convertDateToString(date),
+                  },
+                })
+              }
+            />
+            {inheritedStartDate && (
+              <p className="text-xs text-blue-600 mt-1">
+                {rules?.time_window?.start === inheritedStartDate
+                  ? "Inherited from behavior settings"
+                  : `Behavior starts: ${new Date(inheritedStartDate).toLocaleString()}`}
+              </p>
+            )}
+          </div>
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium">End (ISO)</label>
+              <div className="flex gap-1">
+                {inheritedEndDate && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() =>
+                      setRules({
+                        ...rules,
+                        time_window: {
+                          ...(rules?.time_window || {}),
+                          end: inheritedEndDate,
+                        },
+                      })
+                    }
+                    className="h-6 px-2 text-xs"
+                    title="Restore to inherited date"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() =>
+                    setRules({
+                      ...rules,
+                      time_window: { ...(rules?.time_window || {}), end: "" },
+                    })
+                  }
+                  className="h-6 px-2 text-xs"
+                  title="Clear date"
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+            <CalendarWithTimeInput
+              value={convertStringToDate(
+                rules?.time_window?.end || inheritedEndDate || "",
+              )}
+              onChange={(date) =>
+                setRules({
+                  ...rules,
+                  time_window: {
+                    ...(rules?.time_window || {}),
+                    end: convertDateToString(date),
+                  },
+                })
+              }
+            />
+            {inheritedEndDate && (
+              <p className="text-xs text-blue-600 mt-1">
+                {rules?.time_window?.end === inheritedEndDate
+                  ? "Inherited from behavior settings"
+                  : `Behavior ends: ${new Date(inheritedEndDate).toLocaleString()}`}
+              </p>
+            )}
+          </div>
         </div>
       )}
 

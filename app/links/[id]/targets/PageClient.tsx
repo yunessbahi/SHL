@@ -459,6 +459,8 @@ export default function TargetsPage({ user, id }: TargetsPageProps) {
               typeof next === "function" ? next(draft.rules) : next;
             dispatch({ type: "merge_rules", value: merged });
           }}
+          inheritedStartDate={undefined}
+          inheritedEndDate={undefined}
         />
 
         {/* Final UTM Params - shows current state from utm_overrides */}

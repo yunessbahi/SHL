@@ -6,7 +6,7 @@ module.exports = {
     sourceType: "module",
     ecmaFeatures: { jsx: true },
   },
-  plugins: ["@typescript-eslint", "react"], // <-- remove "react-hooks" from here
+  plugins: ["@typescript-eslint", "react"],
   extends: [
     "next/core-web-vitals",
     "eslint:recommended",
