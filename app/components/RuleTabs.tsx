@@ -84,7 +84,11 @@ export default function RuleTabs({
       });
     } else if (isAlwaysOn) {
       // For always-on campaigns, set start to inheritedStartDate if not set or equal, and set end to null
-      if (inheritedStartDate && (!rules?.time_window?.start || rules?.time_window?.start === inheritedStartDate)) {
+      if (
+        inheritedStartDate &&
+        (!rules?.time_window?.start ||
+          rules?.time_window?.start === inheritedStartDate)
+      ) {
         setRules({
           ...rules,
           time_window: {
@@ -104,7 +108,11 @@ export default function RuleTabs({
       }
     } else {
       // For one-off campaigns, inherit dates
-      if (inheritedStartDate && (!rules?.time_window?.start || rules?.time_window?.start === inheritedStartDate)) {
+      if (
+        inheritedStartDate &&
+        (!rules?.time_window?.start ||
+          rules?.time_window?.start === inheritedStartDate)
+      ) {
         setRules({
           ...rules,
           time_window: {
@@ -113,7 +121,11 @@ export default function RuleTabs({
           },
         });
       }
-      if (inheritedEndDate && (!rules?.time_window?.end || rules?.time_window?.end === inheritedEndDate)) {
+      if (
+        inheritedEndDate &&
+        (!rules?.time_window?.end ||
+          rules?.time_window?.end === inheritedEndDate)
+      ) {
         setRules({
           ...rules,
           time_window: {
@@ -178,12 +190,14 @@ export default function RuleTabs({
         <div className="space-y-4">
           {!showTimeWindow && (
             <div className="text-sm text-muted-foreground">
-              Time window settings have been moved to Behavior Settings for centralization.
+              Time window settings have been moved to Behavior Settings for
+              centralization.
             </div>
           )}
           {showTimeWindow && (
             <div className="text-sm text-muted-foreground">
-              Time window controls have been deprecated. Use Behavior Settings for centralized time window management.
+              Time window controls have been deprecated. Use Behavior Settings
+              for centralized time window management.
             </div>
           )}
         </div>

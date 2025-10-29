@@ -79,7 +79,11 @@ export function CalendarWithTimeInput({
     }
   };
 
-  const displayValue = date ? (time ? format(date, "PPP 'at' p") : format(date, "PPP")) : placeholder;
+  const displayValue = date
+    ? time
+      ? format(date, "PPP 'at' p")
+      : format(date, "PPP")
+    : placeholder;
   const id = useId();
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>

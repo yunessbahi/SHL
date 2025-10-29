@@ -62,7 +62,7 @@ export default function BehaviorForm({
   const prevCampaignEndDate = useRef<string | undefined>();
 
   // Handle time_window changes
-  const handleTimeWindowChange = (key: 'start' | 'end', value: string) => {
+  const handleTimeWindowChange = (key: "start" | "end", value: string) => {
     if (onTimeWindowChange) {
       const newTimeWindow = { ...timeWindow, [key]: value };
       onTimeWindowChange(newTimeWindow);
@@ -82,23 +82,36 @@ export default function BehaviorForm({
   // Pre-fill dates based on campaign settings
   useEffect(() => {
     // Check if campaign dates have changed (campaign switched)
-    const campaignStartChanged = prevCampaignStartDate.current !== campaignStartDate;
+    const campaignStartChanged =
+      prevCampaignStartDate.current !== campaignStartDate;
     const campaignEndChanged = prevCampaignEndDate.current !== campaignEndDate;
 
     // For always-on campaigns, calculate dates based on TTL instead of inheriting campaign dates
     if (campaignLifecycle === 1 && campaignTtlDays) {
       const now = new Date();
-      const ttlEndDate = new Date(now.getTime() + campaignTtlDays * 24 * 60 * 60 * 1000);
+      const ttlEndDate = new Date(
+        now.getTime() + campaignTtlDays * 24 * 60 * 60 * 1000,
+      );
       if (!isFixedStartDate) {
         onStartDateChange(convertDateToString(now));
       }
       onEndDateChange(convertDateToString(ttlEndDate));
     } else {
       // For one-off campaigns, inherit campaign dates
-      if (campaignStartDate && (campaignStartChanged || !startDate || startDate === prevCampaignStartDate.current)) {
+      if (
+        campaignStartDate &&
+        (campaignStartChanged ||
+          !startDate ||
+          startDate === prevCampaignStartDate.current)
+      ) {
         onStartDateChange(campaignStartDate);
       }
-      if (campaignEndDate && (campaignEndChanged || !endDate || endDate === prevCampaignEndDate.current)) {
+      if (
+        campaignEndDate &&
+        (campaignEndChanged ||
+          !endDate ||
+          endDate === prevCampaignEndDate.current)
+      ) {
         onEndDateChange(campaignEndDate);
       }
     }
@@ -106,9 +119,16 @@ export default function BehaviorForm({
     // Update refs for next comparison
     prevCampaignStartDate.current = campaignStartDate;
     prevCampaignEndDate.current = campaignEndDate;
-  }, [campaignStartDate, campaignEndDate, campaignLifecycle, campaignTtlDays, isFixedStartDate]);
+  }, [
+    campaignStartDate,
+    campaignEndDate,
+    campaignLifecycle,
+    campaignTtlDays,
+    isFixedStartDate,
+  ]);
 
-  const isInheritedStartDate = startDate === campaignStartDate && campaignStartDate;
+  const isInheritedStartDate =
+    startDate === campaignStartDate && campaignStartDate;
   const isInheritedEndDate = endDate === campaignEndDate && campaignEndDate;
 
   return (
@@ -137,7 +157,10 @@ export default function BehaviorForm({
         <CollapsibleContent>
           <CardContent className="space-y-4">
             {/* Campaign Inheritance Badges */}
-            {(campaignTtlDays || (campaignStartDate && campaignEndDate && campaignLifecycle !== 1)) && (
+            {(campaignTtlDays ||
+              (campaignStartDate &&
+                campaignEndDate &&
+                campaignLifecycle !== 1)) && (
               <div className="flex flex-wrap gap-2">
                 {campaignTtlDays && (
                   <Badge
@@ -148,17 +171,19 @@ export default function BehaviorForm({
                     {campaignTtlDays}-day link TTL
                   </Badge>
                 )}
-                {campaignStartDate && campaignEndDate && campaignLifecycle !== 1 && (
-                  <Badge
-                    variant="secondary"
-                    className="flex items-center gap-1"
-                  >
-                    <Calendar className="h-3 w-3" />
-                    Campaign runs{" "}
-                    {new Date(campaignStartDate).toLocaleDateString()} -{" "}
-                    {new Date(campaignEndDate).toLocaleDateString()}
-                  </Badge>
-                )}
+                {campaignStartDate &&
+                  campaignEndDate &&
+                  campaignLifecycle !== 1 && (
+                    <Badge
+                      variant="secondary"
+                      className="flex items-center gap-1"
+                    >
+                      <Calendar className="h-3 w-3" />
+                      Campaign runs{" "}
+                      {new Date(campaignStartDate).toLocaleDateString()} -{" "}
+                      {new Date(campaignEndDate).toLocaleDateString()}
+                    </Badge>
+                  )}
                 {campaignLifecycle === 1 && campaignTtlDays && (
                   <Badge
                     variant="secondary"
@@ -180,7 +205,9 @@ export default function BehaviorForm({
                       <Checkbox
                         id="fixed-start-date"
                         checked={isFixedStartDate}
-                        onCheckedChange={(checked) => setIsFixedStartDate(checked as boolean)}
+                        onCheckedChange={(checked) =>
+                          setIsFixedStartDate(checked as boolean)
+                        }
                       />
                       <Label htmlFor="fixed-start-date" className="text-sm">
                         Fix start date/time
@@ -208,14 +235,14 @@ export default function BehaviorForm({
                   />
                 )}
                 {campaignStartDate && campaignLifecycle !== 1 && (
-                   <p
-                     className={`text-xs mt-1 ${isInheritedStartDate ? "text-blue-600" : "text-muted-foreground"}`}
-                   >
-                     {isInheritedStartDate
-                       ? "Inherited from campaign"
-                       : `Campaign starts: ${new Date(campaignStartDate).toLocaleString()}`}
-                   </p>
-                 )}
+                  <p
+                    className={`text-xs mt-1 ${isInheritedStartDate ? "text-blue-600" : "text-muted-foreground"}`}
+                  >
+                    {isInheritedStartDate
+                      ? "Inherited from campaign"
+                      : `Campaign starts: ${new Date(campaignStartDate).toLocaleString()}`}
+                  </p>
+                )}
               </div>
 
               {campaignLifecycle !== 1 && (
@@ -255,25 +282,25 @@ export default function BehaviorForm({
               )}
             </div>
 
-
-            {(campaignStartDate || campaignEndDate) && campaignLifecycle !== 1 && (
-              <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
-                <div className="flex items-start gap-2">
-                  <Calendar className="h-4 w-4 text-blue-600 mt-0.5" />
-                  <div className="text-sm">
-                    <p className="font-medium text-blue-900">
-                      Campaign Inheritance
-                    </p>
-                    <p className="text-blue-700">
-                      This link will inherit behavior settings from its
-                      associated campaign. The campaign's start/end dates will
-                      override these settings when active. You can override
-                      these values manually if needed.
-                    </p>
+            {(campaignStartDate || campaignEndDate) &&
+              campaignLifecycle !== 1 && (
+                <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+                  <div className="flex items-start gap-2">
+                    <Calendar className="h-4 w-4 text-blue-600 mt-0.5" />
+                    <div className="text-sm">
+                      <p className="font-medium text-blue-900">
+                        Campaign Inheritance
+                      </p>
+                      <p className="text-blue-700">
+                        This link will inherit behavior settings from its
+                        associated campaign. The campaign's start/end dates will
+                        override these settings when active. You can override
+                        these values manually if needed.
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
           </CardContent>
         </CollapsibleContent>
       </Card>

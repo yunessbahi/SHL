@@ -92,9 +92,10 @@ export default function SmartLinkForm({
   );
 
   // Time window for behavior settings
-  const [timeWindow, setTimeWindow] = useState<{ start?: string; end?: string }>(
-    initialData?.time_window || {}
-  );
+  const [timeWindow, setTimeWindow] = useState<{
+    start?: string;
+    end?: string;
+  }>(initialData?.time_window || {});
 
   // Modal states
   const [showCampaignModal, setShowCampaignModal] = useState(false);
@@ -141,7 +142,7 @@ export default function SmartLinkForm({
       // Always-on campaign: set endDate to null and lock it
       setEndDate(null);
       // Also update targets' end dates to null
-      setTargets(targets.map(target => ({ ...target, endDate: "" })));
+      setTargets(targets.map((target) => ({ ...target, endDate: "" })));
     }
   }, [selectedCampaign?.lifecycle_attr]);
 
@@ -528,7 +529,7 @@ export default function SmartLinkForm({
                   onRestoreInheritedDates={() => {
                     updateTarget(target.id, {
                       startDate: selectedCampaign?.campaign_start_date || "",
-                      endDate: selectedCampaign?.campaign_end_date || ""
+                      endDate: selectedCampaign?.campaign_end_date || "",
                     });
                   }}
                 />

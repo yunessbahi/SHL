@@ -66,9 +66,10 @@ export default function SingleLinkForm({
   );
 
   // Time window for behavior settings
-  const [timeWindow, setTimeWindow] = useState<{ start?: string; end?: string }>(
-    initialData?.time_window || {}
-  );
+  const [timeWindow, setTimeWindow] = useState<{
+    start?: string;
+    end?: string;
+  }>(initialData?.time_window || {});
 
   // Modal states
   const [showCampaignModal, setShowCampaignModal] = useState(false);
@@ -165,107 +166,132 @@ export default function SingleLinkForm({
     return Object.keys(errors).length === 0;
   }, [getValidationErrors]);
 
-  const handleSubmit = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
 
-    if (!isFormValid) {
-      return;
-    }
-
-    setLoading(true);
-    setSubmitError("");
-
-    try {
-      if (isEdit && linkId) {
-        // Update existing link
-        const updateData: any = {
-          name,
-          description,
-          start_datetime: startDate || null,
-          end_datetime: endDate || null,
-          expires_at: expiresAt || null,
-          campaign_id: campaignId,
-          targets_to_update: [
-            {
-              id: initialData?.targets?.[0]?.id,
-              target_url: targetUrl,
-              weight: weight,
-              rules: rules,
-              utm_template_id: utmTemplateId,
-              group_id: groupId,
-              campaign_id: campaignId,
-              start_datetime: targetStartDate || null,
-              end_datetime: targetEndDate || null,
-            },
-          ],
-        };
-
-        const res = await authFetch(`/api/workspace/links/${linkId}`, {
-          method: "PATCH",
-          body: JSON.stringify(updateData),
-        });
-
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({}));
-          throw new Error(errorData.message || "Failed to update link");
-        }
-
-        const updatedLink = await res.json();
-
-        // Update local state with server response to reflect changes immediately
-        if (updatedLink.expires_at) {
-          setExpiresAt(updatedLink.expires_at);
-        }
-
-        toast.success("Link updated successfully!");
-        router.push("/links");
-      } else {
-        // Create new link
-        const linkData = {
-          name,
-          description,
-          link_type: "redirect",
-          targets: [
-            {
-              target_url: targetUrl,
-              weight: weight,
-              rules: rules,
-              utm_template_id: utmTemplateId,
-              group_id: groupId,
-              start_datetime: targetStartDate || null,
-              end_datetime: targetEndDate || null,
-            },
-          ],
-          campaign_id: campaignId,
-          start_datetime: startDate || null,
-          end_datetime: endDate || null,
-          expires_at: expiresAt || null,
-          status: "active",
-        };
-
-        const res = await authFetch("/api/workspace/links", {
-          method: "POST",
-          body: JSON.stringify(linkData),
-        });
-
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({}));
-          throw new Error(errorData.message || "Failed to create single link");
-        }
-
-        toast.success("Link created successfully!");
-        router.push("/links");
+      if (!isFormValid) {
+        return;
       }
-    } catch (error) {
-      console.error("Failed to save single link:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "An unexpected error occurred";
-      setSubmitError(errorMessage);
-      toast.error("Failed to save link. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  }, [isFormValid, isEdit, linkId, name, description, startDate, endDate, initialData, targetUrl, weight, rules, utmTemplateId, groupId, targetStartDate, targetEndDate, campaignId, router]);
+
+      setLoading(true);
+      setSubmitError("");
+
+      try {
+        if (isEdit && linkId) {
+          // Update existing link
+          const updateData: any = {
+            name,
+            description,
+            start_datetime: startDate || null,
+            end_datetime: endDate || null,
+            expires_at: expiresAt || null,
+            campaign_id: campaignId,
+            targets_to_update: [
+              {
+                id: initialData?.targets?.[0]?.id,
+                target_url: targetUrl,
+                weight: weight,
+                rules: rules,
+                utm_template_id: utmTemplateId,
+                group_id: groupId,
+                campaign_id: campaignId,
+                start_datetime: targetStartDate || null,
+                end_datetime: targetEndDate || null,
+              },
+            ],
+          };
+
+          const res = await authFetch(`/api/workspace/links/${linkId}`, {
+            method: "PATCH",
+            body: JSON.stringify(updateData),
+          });
+
+          if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            throw new Error(errorData.message || "Failed to update link");
+          }
+
+          const updatedLink = await res.json();
+
+          // Update local state with server response to reflect changes immediately
+          if (updatedLink.expires_at) {
+            setExpiresAt(updatedLink.expires_at);
+          }
+
+          toast.success("Link updated successfully!");
+          router.push("/links");
+        } else {
+          // Create new link
+          const linkData = {
+            name,
+            description,
+            link_type: "redirect",
+            targets: [
+              {
+                target_url: targetUrl,
+                weight: weight,
+                rules: rules,
+                utm_template_id: utmTemplateId,
+                group_id: groupId,
+                start_datetime: targetStartDate || null,
+                end_datetime: targetEndDate || null,
+              },
+            ],
+            campaign_id: campaignId,
+            start_datetime: startDate || null,
+            end_datetime: endDate || null,
+            expires_at: expiresAt || null,
+            status: "active",
+          };
+
+          const res = await authFetch("/api/workspace/links", {
+            method: "POST",
+            body: JSON.stringify(linkData),
+          });
+
+          if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            throw new Error(
+              errorData.message || "Failed to create single link",
+            );
+          }
+
+          toast.success("Link created successfully!");
+          router.push("/links");
+        }
+      } catch (error) {
+        console.error("Failed to save single link:", error);
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred";
+        setSubmitError(errorMessage);
+        toast.error("Failed to save link. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [
+      isFormValid,
+      isEdit,
+      linkId,
+      name,
+      description,
+      startDate,
+      endDate,
+      initialData,
+      targetUrl,
+      weight,
+      rules,
+      utmTemplateId,
+      groupId,
+      targetStartDate,
+      targetEndDate,
+      campaignId,
+      router,
+    ],
+  );
 
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6">
@@ -292,12 +318,15 @@ export default function SingleLinkForm({
               description={description}
               campaignId={campaignId}
               groupId={groupId}
-              onNameChange={useCallback((value: string) => {
-                setName(value);
-                if (errors.name) {
-                  setErrors((prev) => ({ ...prev, name: "" }));
-                }
-              }, [errors.name])}
+              onNameChange={useCallback(
+                (value: string) => {
+                  setName(value);
+                  if (errors.name) {
+                    setErrors((prev) => ({ ...prev, name: "" }));
+                  }
+                },
+                [errors.name],
+              )}
               onDescriptionChange={setDescription}
               onCampaignChange={setCampaignId}
               onGroupChange={setGroupId}
@@ -313,18 +342,24 @@ export default function SingleLinkForm({
         <BehaviorForm
           startDate={startDate}
           endDate={endDate}
-          onStartDateChange={useCallback((value: string) => {
-            setStartDate(value);
-            if (errors.dates) {
-              setErrors((prev) => ({ ...prev, dates: "" }));
-            }
-          }, [errors.dates])}
-          onEndDateChange={useCallback((value: string) => {
-            setEndDate(value);
-            if (errors.dates) {
-              setErrors((prev) => ({ ...prev, dates: "" }));
-            }
-          }, [errors.dates])}
+          onStartDateChange={useCallback(
+            (value: string) => {
+              setStartDate(value);
+              if (errors.dates) {
+                setErrors((prev) => ({ ...prev, dates: "" }));
+              }
+            },
+            [errors.dates],
+          )}
+          onEndDateChange={useCallback(
+            (value: string) => {
+              setEndDate(value);
+              if (errors.dates) {
+                setErrors((prev) => ({ ...prev, dates: "" }));
+              }
+            },
+            [errors.dates],
+          )}
           expiresAt={expiresAt}
           onExpiresAtChange={setExpiresAt}
           campaignStartDate={selectedCampaign?.campaign_start_date}
@@ -349,12 +384,15 @@ export default function SingleLinkForm({
           endDate={targetEndDate}
           inheritedStartDate={startDate}
           inheritedEndDate={endDate}
-          onTargetUrlChange={useCallback((value: string) => {
-            setTargetUrl(value);
-            if (errors.targetUrl) {
-              setErrors((prev) => ({ ...prev, targetUrl: "" }));
-            }
-          }, [errors.targetUrl])}
+          onTargetUrlChange={useCallback(
+            (value: string) => {
+              setTargetUrl(value);
+              if (errors.targetUrl) {
+                setErrors((prev) => ({ ...prev, targetUrl: "" }));
+              }
+            },
+            [errors.targetUrl],
+          )}
           onWeightChange={setWeight}
           onRulesChange={setRules}
           onUtmTemplateChange={setUtmTemplateId}

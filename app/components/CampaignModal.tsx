@@ -231,8 +231,8 @@ export default function CampaignModal({
   // Clear dates when switching to always-on lifecycle
   useEffect(() => {
     if (watchedValues.lifecycle_attr === 1) {
-      form.setValue('campaign_start_date', undefined);
-      form.setValue('campaign_end_date', undefined);
+      form.setValue("campaign_start_date", undefined);
+      form.setValue("campaign_end_date", undefined);
     }
   }, [watchedValues.lifecycle_attr, form]);
 
@@ -260,8 +260,12 @@ export default function CampaignModal({
         description: initialData.description || "",
         lifecycle_attr: initialData.lifecycle_attr || 1,
         default_link_ttl_days: initialData.default_link_ttl_days || 30,
-        campaign_start_date: initialData.campaign_start_date ? new Date(initialData.campaign_start_date) : undefined,
-        campaign_end_date: initialData.campaign_end_date ? new Date(initialData.campaign_end_date) : undefined,
+        campaign_start_date: initialData.campaign_start_date
+          ? new Date(initialData.campaign_start_date)
+          : undefined,
+        campaign_end_date: initialData.campaign_end_date
+          ? new Date(initialData.campaign_end_date)
+          : undefined,
         status:
           (initialData.status as "active" | "inactive" | "paused") || "active",
         tags: initialData.tags?.map((t: any) => t.id) || [],
@@ -286,8 +290,12 @@ export default function CampaignModal({
       // Convert Date objects to ISO strings for backend
       const payload = {
         ...values,
-        campaign_start_date: values.campaign_start_date ? values.campaign_start_date.toISOString() : undefined,
-        campaign_end_date: values.campaign_end_date ? values.campaign_end_date.toISOString() : undefined,
+        campaign_start_date: values.campaign_start_date
+          ? values.campaign_start_date.toISOString()
+          : undefined,
+        campaign_end_date: values.campaign_end_date
+          ? values.campaign_end_date.toISOString()
+          : undefined,
       };
       await onSave(payload);
       onOpenChange(false);

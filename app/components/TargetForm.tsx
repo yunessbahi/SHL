@@ -335,30 +335,37 @@ export default function TargetForm({
         {(campaignStartDate || campaignEndDate) && !isAlwaysOn && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium">Target Date Overrides</Label>
-              {(hasOverriddenStartDate || hasOverriddenEndDate) && onRestoreInheritedDates && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={onRestoreInheritedDates}
-                  className="h-6 px-2 text-xs"
-                >
-                  <X className="h-3 w-3 mr-1" />
-                  Restore Inherited
-                </Button>
-              )}
+              <Label className="text-sm font-medium">
+                Target Date Overrides
+              </Label>
+              {(hasOverriddenStartDate || hasOverriddenEndDate) &&
+                onRestoreInheritedDates && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={onRestoreInheritedDates}
+                    className="h-6 px-2 text-xs"
+                  >
+                    <X className="h-3 w-3 mr-1" />
+                    Restore Inherited
+                  </Button>
+                )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="target-start-date" className="text-sm">Start Date & Time</Label>
+                <Label htmlFor="target-start-date" className="text-sm">
+                  Start Date & Time
+                </Label>
                 <DateTimePicker
                   value={startDate || ""}
                   onChange={(date) => onStartDateChange?.(date)}
                 />
                 {campaignStartDate && (
-                  <p className={`text-xs mt-1 ${isInheritedStartDate ? "text-blue-600" : "text-muted-foreground"}`}>
+                  <p
+                    className={`text-xs mt-1 ${isInheritedStartDate ? "text-blue-600" : "text-muted-foreground"}`}
+                  >
                     {isInheritedStartDate
                       ? "Inherited from campaign"
                       : `Campaign starts: ${new Date(campaignStartDate).toLocaleString()}`}
@@ -367,13 +374,17 @@ export default function TargetForm({
               </div>
 
               <div>
-                <Label htmlFor="target-end-date" className="text-sm">End Date & Time</Label>
+                <Label htmlFor="target-end-date" className="text-sm">
+                  End Date & Time
+                </Label>
                 <DateTimePicker
                   value={endDate || ""}
                   onChange={(date) => onEndDateChange?.(date)}
                 />
                 {campaignEndDate && (
-                  <p className={`text-xs mt-1 ${isInheritedEndDate ? "text-blue-600" : "text-muted-foreground"}`}>
+                  <p
+                    className={`text-xs mt-1 ${isInheritedEndDate ? "text-blue-600" : "text-muted-foreground"}`}
+                  >
                     {isInheritedEndDate
                       ? "Inherited from campaign"
                       : `Campaign ends: ${new Date(campaignEndDate).toLocaleString()}`}
