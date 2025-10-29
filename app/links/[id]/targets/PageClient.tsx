@@ -461,6 +461,8 @@ export default function TargetsPage({ user, id }: TargetsPageProps) {
           }}
           inheritedStartDate={undefined}
           inheritedEndDate={undefined}
+          isAlwaysOn={false}
+          showTimeWindow={false}
         />
 
         {/* Final UTM Params - shows current state from utm_overrides */}

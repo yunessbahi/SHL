@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangle } from "lucide-react";
@@ -45,6 +45,7 @@ export default function SingleLinkForm({
   // Behavior settings
   const [startDate, setStartDate] = useState(initialData?.start_datetime || "");
   const [endDate, setEndDate] = useState(initialData?.end_datetime || "");
+  const [expiresAt, setExpiresAt] = useState(initialData?.expires_at || "");
 
   // Target configuration
   const [targetUrl, setTargetUrl] = useState(
@@ -62,6 +63,11 @@ export default function SingleLinkForm({
   );
   const [targetEndDate, setTargetEndDate] = useState(
     initialData?.targets?.[0]?.end_datetime || "",
+  );
+
+  // Time window for behavior settings
+  const [timeWindow, setTimeWindow] = useState<{ start?: string; end?: string }>(
+    initialData?.time_window || {}
   );
 
   // Modal states
@@ -103,23 +109,23 @@ export default function SingleLinkForm({
   }, [campaignId, campaigns]);
 
   // Validation functions
-  const validateUrl = (url: string): boolean => {
+  const validateUrl = useCallback((url: string): boolean => {
     try {
       new URL(url);
       return true;
     } catch {
       return false;
     }
-  };
+  }, []);
 
-  const validateDates = (): boolean => {
+  const validateDates = useCallback((): boolean => {
     if (!startDate || !endDate) return true; // Optional dates
     const start = new Date(startDate);
     const end = new Date(endDate);
     return start < end;
-  };
+  }, [startDate, endDate]);
 
-  const getValidationErrors = (): Record<string, string> => {
+  const getValidationErrors = useCallback((): Record<string, string> => {
     const newErrors: Record<string, string> = {};
 
     // Name validation
@@ -140,26 +146,26 @@ export default function SingleLinkForm({
     }
 
     return newErrors;
-  };
+  }, [name, targetUrl, startDate, endDate, validateUrl, validateDates]);
 
   const isFormValid = React.useMemo(() => {
     const errors = getValidationErrors();
     return Object.keys(errors).length === 0;
-  }, [name, targetUrl, startDate, endDate]);
+  }, [getValidationErrors]);
 
-  const validateForm = (): boolean => {
+  const validateForm = useCallback((): boolean => {
     const newErrors = getValidationErrors();
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
+  }, [getValidationErrors]);
 
   // Memoized validation check for render-time usage
   const isValidForRender = React.useMemo(() => {
     const errors = getValidationErrors();
     return Object.keys(errors).length === 0;
-  }, [name, targetUrl, startDate, endDate]);
+  }, [getValidationErrors]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!isFormValid) {
@@ -172,11 +178,13 @@ export default function SingleLinkForm({
     try {
       if (isEdit && linkId) {
         // Update existing link
-        const updateData = {
+        const updateData: any = {
           name,
           description,
           start_datetime: startDate || null,
           end_datetime: endDate || null,
+          expires_at: expiresAt || null,
+          campaign_id: campaignId,
           targets_to_update: [
             {
               id: initialData?.targets?.[0]?.id,
@@ -185,6 +193,7 @@ export default function SingleLinkForm({
               rules: rules,
               utm_template_id: utmTemplateId,
               group_id: groupId,
+              campaign_id: campaignId,
               start_datetime: targetStartDate || null,
               end_datetime: targetEndDate || null,
             },
@@ -199,6 +208,13 @@ export default function SingleLinkForm({
         if (!res.ok) {
           const errorData = await res.json().catch(() => ({}));
           throw new Error(errorData.message || "Failed to update link");
+        }
+
+        const updatedLink = await res.json();
+
+        // Update local state with server response to reflect changes immediately
+        if (updatedLink.expires_at) {
+          setExpiresAt(updatedLink.expires_at);
         }
 
         toast.success("Link updated successfully!");
@@ -223,6 +239,7 @@ export default function SingleLinkForm({
           campaign_id: campaignId,
           start_datetime: startDate || null,
           end_datetime: endDate || null,
+          expires_at: expiresAt || null,
           status: "active",
         };
 
@@ -248,7 +265,7 @@ export default function SingleLinkForm({
     } finally {
       setLoading(false);
     }
-  };
+  }, [isFormValid, isEdit, linkId, name, description, startDate, endDate, initialData, targetUrl, weight, rules, utmTemplateId, groupId, targetStartDate, targetEndDate, campaignId, router]);
 
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6">
@@ -275,12 +292,12 @@ export default function SingleLinkForm({
               description={description}
               campaignId={campaignId}
               groupId={groupId}
-              onNameChange={(value) => {
+              onNameChange={useCallback((value: string) => {
                 setName(value);
                 if (errors.name) {
                   setErrors((prev) => ({ ...prev, name: "" }));
                 }
-              }}
+              }, [errors.name])}
               onDescriptionChange={setDescription}
               onCampaignChange={setCampaignId}
               onGroupChange={setGroupId}
@@ -296,22 +313,27 @@ export default function SingleLinkForm({
         <BehaviorForm
           startDate={startDate}
           endDate={endDate}
-          onStartDateChange={(value) => {
+          onStartDateChange={useCallback((value: string) => {
             setStartDate(value);
             if (errors.dates) {
               setErrors((prev) => ({ ...prev, dates: "" }));
             }
-          }}
-          onEndDateChange={(value) => {
+          }, [errors.dates])}
+          onEndDateChange={useCallback((value: string) => {
             setEndDate(value);
             if (errors.dates) {
               setErrors((prev) => ({ ...prev, dates: "" }));
             }
-          }}
+          }, [errors.dates])}
+          expiresAt={expiresAt}
+          onExpiresAtChange={setExpiresAt}
           campaignStartDate={selectedCampaign?.campaign_start_date}
           campaignEndDate={selectedCampaign?.campaign_end_date}
           campaignTtlDays={selectedCampaign?.default_link_ttl_days}
           campaignLifecycle={selectedCampaign?.lifecycle_attr}
+          hasCampaign={!!selectedCampaign}
+          timeWindow={timeWindow}
+          onTimeWindowChange={setTimeWindow}
         />
         {errors.dates && (
           <p className="text-sm text-red-600 mt-2">{errors.dates}</p>
@@ -327,12 +349,12 @@ export default function SingleLinkForm({
           endDate={targetEndDate}
           inheritedStartDate={startDate}
           inheritedEndDate={endDate}
-          onTargetUrlChange={(value) => {
+          onTargetUrlChange={useCallback((value: string) => {
             setTargetUrl(value);
             if (errors.targetUrl) {
               setErrors((prev) => ({ ...prev, targetUrl: "" }));
             }
-          }}
+          }, [errors.targetUrl])}
           onWeightChange={setWeight}
           onRulesChange={setRules}
           onUtmTemplateChange={setUtmTemplateId}
@@ -340,6 +362,17 @@ export default function SingleLinkForm({
           onEndDateChange={setTargetEndDate}
           campaignUtmTemplates={selectedCampaign?.utm_templates || []}
           onCreateUtmTemplate={() => setShowUtmTemplateModal(true)}
+          isAlwaysOn={selectedCampaign?.lifecycle_attr === 1}
+          showTimeWindow={false}
+          inheritedTimeWindow={timeWindow}
+          linkStartDate={startDate}
+          linkEndDate={endDate}
+          campaignStartDate={selectedCampaign?.campaign_start_date}
+          campaignEndDate={selectedCampaign?.campaign_end_date}
+          onRestoreInheritedDates={() => {
+            setTargetStartDate(selectedCampaign?.campaign_start_date || "");
+            setTargetEndDate(selectedCampaign?.campaign_end_date || "");
+          }}
         />
         {errors.targetUrl && (
           <p className="text-sm text-red-600 mt-2 ml-4">{errors.targetUrl}</p>

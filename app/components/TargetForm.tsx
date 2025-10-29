@@ -49,6 +49,14 @@ interface TargetFormProps {
     utm_params: Record<string, string>;
   }>;
   onCreateUtmTemplate?: () => void;
+  isAlwaysOn?: boolean;
+  showTimeWindow?: boolean;
+  inheritedTimeWindow?: { start?: string; end?: string };
+  linkStartDate?: string;
+  linkEndDate?: string;
+  campaignStartDate?: string;
+  campaignEndDate?: string;
+  onRestoreInheritedDates?: () => void;
 }
 
 export default function TargetForm({
@@ -70,6 +78,14 @@ export default function TargetForm({
   showRemove = false,
   campaignUtmTemplates = [],
   onCreateUtmTemplate,
+  isAlwaysOn = false,
+  showTimeWindow = true,
+  inheritedTimeWindow,
+  linkStartDate,
+  linkEndDate,
+  campaignStartDate,
+  campaignEndDate,
+  onRestoreInheritedDates,
 }: TargetFormProps) {
   const [utmTemplates, setUtmTemplates] = useState<UTMTemplate[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(true);
@@ -138,10 +154,14 @@ export default function TargetForm({
   );
   const currentTemplate = selectedTemplate || campaignTemplate;
 
-  // Determine if dates are inherited
+  // Determine if dates are inherited from campaign
   const isInheritedStartDate =
-    startDate === inheritedStartDate && inheritedStartDate;
-  const isInheritedEndDate = endDate === inheritedEndDate && inheritedEndDate;
+    startDate === campaignStartDate && campaignStartDate;
+  const isInheritedEndDate = endDate === campaignEndDate && campaignEndDate;
+
+  // Check if dates have been overridden
+  const hasOverriddenStartDate = startDate && startDate !== campaignStartDate;
+  const hasOverriddenEndDate = endDate && endDate !== campaignEndDate;
 
   const getUtmPreview = () => {
     if (!currentTemplate) return null;
@@ -311,6 +331,59 @@ export default function TargetForm({
           )}
         </div>
 
+        {/* Target Date Overrides */}
+        {(campaignStartDate || campaignEndDate) && !isAlwaysOn && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium">Target Date Overrides</Label>
+              {(hasOverriddenStartDate || hasOverriddenEndDate) && onRestoreInheritedDates && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={onRestoreInheritedDates}
+                  className="h-6 px-2 text-xs"
+                >
+                  <X className="h-3 w-3 mr-1" />
+                  Restore Inherited
+                </Button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="target-start-date" className="text-sm">Start Date & Time</Label>
+                <DateTimePicker
+                  value={startDate || ""}
+                  onChange={(date) => onStartDateChange?.(date)}
+                />
+                {campaignStartDate && (
+                  <p className={`text-xs mt-1 ${isInheritedStartDate ? "text-blue-600" : "text-muted-foreground"}`}>
+                    {isInheritedStartDate
+                      ? "Inherited from campaign"
+                      : `Campaign starts: ${new Date(campaignStartDate).toLocaleString()}`}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="target-end-date" className="text-sm">End Date & Time</Label>
+                <DateTimePicker
+                  value={endDate || ""}
+                  onChange={(date) => onEndDateChange?.(date)}
+                />
+                {campaignEndDate && (
+                  <p className={`text-xs mt-1 ${isInheritedEndDate ? "text-blue-600" : "text-muted-foreground"}`}>
+                    {isInheritedEndDate
+                      ? "Inherited from campaign"
+                      : `Campaign ends: ${new Date(campaignEndDate).toLocaleString()}`}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Audience Rules */}
         <div>
           <Label>Audience Rules</Label>
@@ -320,6 +393,11 @@ export default function TargetForm({
               setRules={onRulesChange}
               inheritedStartDate={inheritedStartDate}
               inheritedEndDate={inheritedEndDate}
+              isAlwaysOn={isAlwaysOn}
+              showTimeWindow={showTimeWindow}
+              inheritedTimeWindow={inheritedTimeWindow}
+              linkStartDate={linkStartDate}
+              linkEndDate={linkEndDate}
             />
           </div>
         </div>

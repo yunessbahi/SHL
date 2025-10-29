@@ -22,6 +22,11 @@ type RuleTabsProps = {
   onTabChange?: (tab: string) => void;
   inheritedStartDate?: string;
   inheritedEndDate?: string;
+  isAlwaysOn?: boolean;
+  showTimeWindow?: boolean;
+  inheritedTimeWindow?: { start?: string; end?: string };
+  linkStartDate?: string;
+  linkEndDate?: string;
 };
 
 const convertStringToDate = (dateString: string): Date | undefined => {
@@ -39,12 +44,86 @@ export default function RuleTabs({
   onTabChange,
   inheritedStartDate,
   inheritedEndDate,
+  isAlwaysOn = false,
+  showTimeWindow = true,
+  inheritedTimeWindow,
+  linkStartDate,
+  linkEndDate,
 }: RuleTabsProps) {
   const [internalTab, setInternalTab] = useState("audience");
   const tab = activeTab ?? internalTab;
   const changeTab = onTabChange ?? setInternalTab;
 
-  const jsonStr = useMemo(() => JSON.stringify(rules || {}, null, 2), [rules]);
+  // Reactive JSON that reflects the dynamic datetime fields
+  const jsonStr = useMemo(() => {
+    const reactiveRules = { ...rules };
+
+    // Always update time_window to reflect the current link-level dates
+    if (linkStartDate || linkEndDate) {
+      reactiveRules.time_window = {
+        ...(reactiveRules.time_window || {}),
+        start: linkStartDate || reactiveRules.time_window?.start,
+        end: linkEndDate || reactiveRules.time_window?.end,
+      };
+    }
+
+    return JSON.stringify(reactiveRules, null, 2);
+  }, [rules, linkStartDate, linkEndDate]);
+
+  // Auto-update time_window dates when inherited dates change
+  React.useEffect(() => {
+    if (inheritedTimeWindow) {
+      // Inherit from link-level time window (centralized approach)
+      setRules({
+        ...rules,
+        time_window: {
+          ...(rules?.time_window || {}),
+          start: inheritedTimeWindow.start || rules?.time_window?.start,
+          end: inheritedTimeWindow.end || rules?.time_window?.end,
+        },
+      });
+    } else if (isAlwaysOn) {
+      // For always-on campaigns, set start to inheritedStartDate if not set or equal, and set end to null
+      if (inheritedStartDate && (!rules?.time_window?.start || rules?.time_window?.start === inheritedStartDate)) {
+        setRules({
+          ...rules,
+          time_window: {
+            ...(rules?.time_window || {}),
+            start: inheritedStartDate,
+            end: null,
+          },
+        });
+      } else {
+        setRules({
+          ...rules,
+          time_window: {
+            ...(rules?.time_window || {}),
+            end: null,
+          },
+        });
+      }
+    } else {
+      // For one-off campaigns, inherit dates
+      if (inheritedStartDate && (!rules?.time_window?.start || rules?.time_window?.start === inheritedStartDate)) {
+        setRules({
+          ...rules,
+          time_window: {
+            ...(rules?.time_window || {}),
+            start: inheritedStartDate,
+          },
+        });
+      }
+      if (inheritedEndDate && (!rules?.time_window?.end || rules?.time_window?.end === inheritedEndDate)) {
+        setRules({
+          ...rules,
+          time_window: {
+            ...(rules?.time_window || {}),
+            end: inheritedEndDate,
+          },
+        });
+      }
+    }
+  }, [inheritedStartDate, inheritedEndDate, inheritedTimeWindow, isAlwaysOn]);
 
   return (
     <div className="space-y-4">
@@ -96,133 +175,17 @@ export default function RuleTabs({
       )}
 
       {tab === "behavior" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium">Start (ISO)</label>
-              <div className="flex gap-1">
-                {inheritedStartDate && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() =>
-                      setRules({
-                        ...rules,
-                        time_window: {
-                          ...(rules?.time_window || {}),
-                          start: inheritedStartDate,
-                        },
-                      })
-                    }
-                    className="h-6 px-2 text-xs"
-                    title="Restore to inherited date"
-                  >
-                    <RotateCcw className="h-3 w-3" />
-                  </Button>
-                )}
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() =>
-                    setRules({
-                      ...rules,
-                      time_window: { ...(rules?.time_window || {}), start: "" },
-                    })
-                  }
-                  className="h-6 px-2 text-xs"
-                  title="Clear date"
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </div>
+        <div className="space-y-4">
+          {!showTimeWindow && (
+            <div className="text-sm text-muted-foreground">
+              Time window settings have been moved to Behavior Settings for centralization.
             </div>
-            <CalendarWithTimeInput
-              value={convertStringToDate(
-                rules?.time_window?.start || inheritedStartDate || "",
-              )}
-              onChange={(date) =>
-                setRules({
-                  ...rules,
-                  time_window: {
-                    ...(rules?.time_window || {}),
-                    start: convertDateToString(date),
-                  },
-                })
-              }
-            />
-            {inheritedStartDate && (
-              <p className="text-xs text-blue-600 mt-1">
-                {rules?.time_window?.start === inheritedStartDate
-                  ? "Inherited from behavior settings"
-                  : `Behavior starts: ${new Date(inheritedStartDate).toLocaleString()}`}
-              </p>
-            )}
-          </div>
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium">End (ISO)</label>
-              <div className="flex gap-1">
-                {inheritedEndDate && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() =>
-                      setRules({
-                        ...rules,
-                        time_window: {
-                          ...(rules?.time_window || {}),
-                          end: inheritedEndDate,
-                        },
-                      })
-                    }
-                    className="h-6 px-2 text-xs"
-                    title="Restore to inherited date"
-                  >
-                    <RotateCcw className="h-3 w-3" />
-                  </Button>
-                )}
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() =>
-                    setRules({
-                      ...rules,
-                      time_window: { ...(rules?.time_window || {}), end: "" },
-                    })
-                  }
-                  className="h-6 px-2 text-xs"
-                  title="Clear date"
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </div>
+          )}
+          {showTimeWindow && (
+            <div className="text-sm text-muted-foreground">
+              Time window controls have been deprecated. Use Behavior Settings for centralized time window management.
             </div>
-            <CalendarWithTimeInput
-              value={convertStringToDate(
-                rules?.time_window?.end || inheritedEndDate || "",
-              )}
-              onChange={(date) =>
-                setRules({
-                  ...rules,
-                  time_window: {
-                    ...(rules?.time_window || {}),
-                    end: convertDateToString(date),
-                  },
-                })
-              }
-            />
-            {inheritedEndDate && (
-              <p className="text-xs text-blue-600 mt-1">
-                {rules?.time_window?.end === inheritedEndDate
-                  ? "Inherited from behavior settings"
-                  : `Behavior ends: ${new Date(inheritedEndDate).toLocaleString()}`}
-              </p>
-            )}
-          </div>
+          )}
         </div>
       )}
 

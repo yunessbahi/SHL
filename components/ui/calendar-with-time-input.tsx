@@ -39,6 +39,9 @@ export function CalendarWithTimeInput({
     if (value) {
       setDate(value);
       setTime(format(value, "HH:mm"));
+    } else {
+      setDate(undefined);
+      setTime("");
     }
   }, [value]);
 
@@ -51,21 +54,32 @@ export function CalendarWithTimeInput({
       }
       setDate(newDate);
       onChange?.(newDate);
+    } else {
+      setDate(undefined);
+      setTime("");
+      onChange?.(undefined);
     }
   };
 
   const handleTimeChange = (newTime: string) => {
     setTime(newTime);
-    if (date && newTime) {
+    if (date) {
       const [hours, minutes] = newTime.split(":");
       const newDate = new Date(date);
       newDate.setHours(parseInt(hours), parseInt(minutes));
       setDate(newDate);
       onChange?.(newDate);
+    } else if (newTime) {
+      // If no date but time is set, create a date with current date
+      const today = new Date();
+      const [hours, minutes] = newTime.split(":");
+      today.setHours(parseInt(hours), parseInt(minutes));
+      setDate(today);
+      onChange?.(today);
     }
   };
 
-  const displayValue = date ? format(date, "PPP 'at' p") : placeholder;
+  const displayValue = date ? (time ? format(date, "PPP 'at' p") : format(date, "PPP")) : placeholder;
   const id = useId();
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>

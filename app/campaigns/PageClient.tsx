@@ -414,7 +414,7 @@ export default function CampaignsPage({ user }: CampaignsPageProps) {
               <div className="space-y-3">
                 {/* Campaign Lifecycle and Dates */}
                 <div className="space-y-2">
-                  {c.campaign_start_date && (
+                  {c.lifecycle_attr === 2 && c.campaign_start_date && (
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">Start:</span>
                       <span>
@@ -422,7 +422,7 @@ export default function CampaignsPage({ user }: CampaignsPageProps) {
                       </span>
                     </div>
                   )}
-                  {c.campaign_end_date && (
+                  {c.lifecycle_attr === 2 && c.campaign_end_date && (
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">End:</span>
                       <span
@@ -435,6 +435,18 @@ export default function CampaignsPage({ user }: CampaignsPageProps) {
                         {new Date(c.campaign_end_date).toLocaleDateString()}
                       </span>
                     </div>
+                  )}
+                  {c.lifecycle_attr === 1 && (
+                    <>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Start:</span>
+                        <span>--</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">End:</span>
+                        <span>--</span>
+                      </div>
+                    </>
                   )}
                 </div>
 

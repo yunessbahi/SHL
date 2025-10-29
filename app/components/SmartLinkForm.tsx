@@ -55,6 +55,7 @@ export default function SmartLinkForm({
   // Behavior settings
   const [startDate, setStartDate] = useState(initialData?.start_datetime || "");
   const [endDate, setEndDate] = useState(initialData?.end_datetime || "");
+  const [expiresAt, setExpiresAt] = useState(initialData?.expires_at || "");
 
   // Targets
   const [targets, setTargets] = useState<Target[]>(
@@ -88,6 +89,11 @@ export default function SmartLinkForm({
             endDate: "",
           },
         ],
+  );
+
+  // Time window for behavior settings
+  const [timeWindow, setTimeWindow] = useState<{ start?: string; end?: string }>(
+    initialData?.time_window || {}
   );
 
   // Modal states
@@ -128,6 +134,16 @@ export default function SmartLinkForm({
       setSelectedCampaign(null);
     }
   }, [campaignId, campaigns]);
+
+  // Handle campaign lifecycle changes - lock end date when switching to always-on
+  useEffect(() => {
+    if (selectedCampaign?.lifecycle_attr === 1) {
+      // Always-on campaign: set endDate to null and lock it
+      setEndDate(null);
+      // Also update targets' end dates to null
+      setTargets(targets.map(target => ({ ...target, endDate: "" })));
+    }
+  }, [selectedCampaign?.lifecycle_attr]);
 
   const addTarget = () => {
     const newTarget: Target = {
@@ -272,8 +288,10 @@ export default function SmartLinkForm({
         const updateData: any = {
           name,
           description,
+          campaign_id: campaignId,
           start_datetime: startDate || null,
           end_datetime: endDate || null,
+          expires_at: expiresAt || null,
         };
 
         // Separate targets into to_add and to_update
@@ -322,6 +340,13 @@ export default function SmartLinkForm({
           throw new Error(errorData.message || "Failed to update link");
         }
 
+        const updatedLink = await res.json();
+
+        // Update local state with server response to reflect changes immediately
+        if (updatedLink.expires_at) {
+          setExpiresAt(updatedLink.expires_at);
+        }
+
         toast.success("Smart link updated successfully!");
         router.push("/links");
       } else {
@@ -341,6 +366,7 @@ export default function SmartLinkForm({
           campaign_id: campaignId,
           start_datetime: startDate || null,
           end_datetime: endDate || null,
+          expires_at: expiresAt || null,
           status: "active",
         };
 
@@ -429,10 +455,15 @@ export default function SmartLinkForm({
               setErrors((prev) => ({ ...prev, dates: "" }));
             }
           }}
+          expiresAt={expiresAt}
+          onExpiresAtChange={setExpiresAt}
           campaignStartDate={selectedCampaign?.campaign_start_date}
           campaignEndDate={selectedCampaign?.campaign_end_date}
           campaignTtlDays={selectedCampaign?.default_link_ttl_days}
           campaignLifecycle={selectedCampaign?.lifecycle_attr}
+          hasCampaign={!!selectedCampaign}
+          timeWindow={timeWindow}
+          onTimeWindowChange={setTimeWindow}
         />
         {errors.dates && (
           <p className="text-sm text-red-600 mt-2">{errors.dates}</p>
@@ -487,6 +518,19 @@ export default function SmartLinkForm({
                   showRemove={targets.length > 2}
                   campaignUtmTemplates={selectedCampaign?.utm_templates || []}
                   onCreateUtmTemplate={() => setShowUtmTemplateModal(true)}
+                  isAlwaysOn={selectedCampaign?.lifecycle_attr === 1}
+                  showTimeWindow={false}
+                  inheritedTimeWindow={timeWindow}
+                  linkStartDate={startDate}
+                  linkEndDate={endDate}
+                  campaignStartDate={selectedCampaign?.campaign_start_date}
+                  campaignEndDate={selectedCampaign?.campaign_end_date}
+                  onRestoreInheritedDates={() => {
+                    updateTarget(target.id, {
+                      startDate: selectedCampaign?.campaign_start_date || "",
+                      endDate: selectedCampaign?.campaign_end_date || ""
+                    });
+                  }}
                 />
                 {errors[`target-${target.id}`] && (
                   <p className="text-sm text-red-600 mt-2 ml-4">

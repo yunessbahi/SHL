@@ -31,7 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { MultiSelect } from "@/components/multi-select";
-import { DatePicker } from "@/components/ui/date-picker";
+import { CalendarWithTimeInput } from "@/components/ui/calendar-with-time-input";
 import { authFetch } from "@/lib/api";
 import { Clock, Calendar, Infinity, Tag } from "lucide-react";
 import { MultiSelectOption } from "@/components/multi-select";
@@ -42,8 +42,8 @@ const campaignSchema = z
     description: z.string().optional(),
     lifecycle_attr: z.number().min(1).max(3),
     default_link_ttl_days: z.number().optional(),
-    campaign_start_date: z.string().optional(),
-    campaign_end_date: z.string().optional(),
+    campaign_start_date: z.date().optional(),
+    campaign_end_date: z.date().optional(),
     status: z.enum(["active", "inactive", "paused"]),
     tags: z.array(z.number()).optional(),
   })
@@ -65,9 +65,7 @@ const campaignSchema = z
   .refine(
     (data) => {
       if (data.lifecycle_attr === 2) {
-        return (
-          data.campaign_start_date && data.campaign_start_date.trim() !== ""
-        );
+        return data.campaign_start_date !== undefined;
       }
       return true;
     },
@@ -79,7 +77,7 @@ const campaignSchema = z
   .refine(
     (data) => {
       if (data.lifecycle_attr === 2) {
-        return data.campaign_end_date && data.campaign_end_date.trim() !== "";
+        return data.campaign_end_date !== undefined;
       }
       return true;
     },
@@ -127,7 +125,7 @@ interface CampaignModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialData?: Campaign;
-  onSave: (data: CampaignFormValues) => void;
+  onSave: (data: any) => void;
 }
 
 const lifecycleOptions = [
@@ -221,14 +219,22 @@ export default function CampaignModal({
       description: "",
       lifecycle_attr: 1,
       default_link_ttl_days: 30,
-      campaign_start_date: "",
-      campaign_end_date: "",
+      campaign_start_date: undefined,
+      campaign_end_date: undefined,
       status: "active",
       tags: [],
     },
   });
 
   const watchedValues = form.watch();
+
+  // Clear dates when switching to always-on lifecycle
+  useEffect(() => {
+    if (watchedValues.lifecycle_attr === 1) {
+      form.setValue('campaign_start_date', undefined);
+      form.setValue('campaign_end_date', undefined);
+    }
+  }, [watchedValues.lifecycle_attr, form]);
 
   // Load tags on mount
   useEffect(() => {
@@ -254,8 +260,8 @@ export default function CampaignModal({
         description: initialData.description || "",
         lifecycle_attr: initialData.lifecycle_attr || 1,
         default_link_ttl_days: initialData.default_link_ttl_days || 30,
-        campaign_start_date: initialData.campaign_start_date || "",
-        campaign_end_date: initialData.campaign_end_date || "",
+        campaign_start_date: initialData.campaign_start_date ? new Date(initialData.campaign_start_date) : undefined,
+        campaign_end_date: initialData.campaign_end_date ? new Date(initialData.campaign_end_date) : undefined,
         status:
           (initialData.status as "active" | "inactive" | "paused") || "active",
         tags: initialData.tags?.map((t: any) => t.id) || [],
@@ -266,8 +272,8 @@ export default function CampaignModal({
         description: "",
         lifecycle_attr: 1,
         default_link_ttl_days: 30,
-        campaign_start_date: "",
-        campaign_end_date: "",
+        campaign_start_date: undefined,
+        campaign_end_date: undefined,
         status: "active",
         tags: [],
       });
@@ -277,7 +283,13 @@ export default function CampaignModal({
   const handleSubmit = async (values: CampaignFormValues) => {
     setLoading(true);
     try {
-      await onSave(values);
+      // Convert Date objects to ISO strings for backend
+      const payload = {
+        ...values,
+        campaign_start_date: values.campaign_start_date ? values.campaign_start_date.toISOString() : undefined,
+        campaign_end_date: values.campaign_end_date ? values.campaign_end_date.toISOString() : undefined,
+      };
+      await onSave(payload);
       onOpenChange(false);
     } catch (error) {
       console.error("Failed to save campaign:", error);
@@ -442,11 +454,12 @@ export default function CampaignModal({
                       name="campaign_start_date"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Start Date *</FormLabel>
+                          <FormLabel>Start Date & Time *</FormLabel>
                           <FormControl>
-                            <DatePicker
+                            <CalendarWithTimeInput
                               value={field.value}
                               onChange={field.onChange}
+                              placeholder="Select start date and time"
                             />
                           </FormControl>
                           <FormMessage />
@@ -459,11 +472,12 @@ export default function CampaignModal({
                       name="campaign_end_date"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>End Date *</FormLabel>
+                          <FormLabel>End Date & Time *</FormLabel>
                           <FormControl>
-                            <DatePicker
+                            <CalendarWithTimeInput
                               value={field.value}
                               onChange={field.onChange}
+                              placeholder="Select end date and time"
                             />
                           </FormControl>
                           <FormMessage />
