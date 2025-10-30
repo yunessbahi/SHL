@@ -803,10 +803,11 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
       if (!arraysEqual(prevDefaultValue, defaultValue)) {
         if (!arraysEqual(selectedValues, defaultValue)) {
           setSelectedValues(defaultValue);
+          onValueChange(defaultValue);
         }
         prevDefaultValueRef.current = [...defaultValue];
       }
-    }, [defaultValue, selectedValues, arraysEqual, resetOnDefaultValueChange]);
+    }, [defaultValue, arraysEqual, resetOnDefaultValueChange]);
 
     const getWidthConstraints = () => {
       const defaultMinWidth = screenSize === "mobile" ? "0px" : "200px";
@@ -827,9 +828,15 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
       }
     }, [isPopoverOpen]);
 
+    const allOptionsRef = React.useRef<MultiSelectOption[]>([]);
+
+    React.useEffect(() => {
+      allOptionsRef.current = getAllOptions();
+    }, [getAllOptions]);
+
     React.useEffect(() => {
       const selectedCount = selectedValues.length;
-      const allOptions = getAllOptions();
+      const allOptions = allOptionsRef.current;
       const totalOptions = allOptions.filter((opt) => !opt.disabled).length;
       if (selectedCount !== prevSelectedCount.current) {
         const diff = selectedCount - prevSelectedCount.current;
@@ -888,7 +895,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
         }
         prevSearchValue.current = searchValue;
       }
-    }, [selectedValues, isPopoverOpen, searchValue, announce, getAllOptions]);
+    }, [selectedValues, isPopoverOpen, searchValue, announce]);
 
     return (
       <>

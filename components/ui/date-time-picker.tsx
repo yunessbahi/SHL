@@ -57,21 +57,29 @@ export function DateTimePicker({
   const [minute, setMinute] = React.useState<string>("");
 
   React.useEffect(() => {
-    if (value) {
-      const parsedDate = new Date(value);
-      setDate(parsedDate);
-      setMonth(parsedDate);
-      setInputValue(formatDate(parsedDate));
-      setHour(parsedDate.getHours().toString().padStart(2, "0"));
-      setMinute(parsedDate.getMinutes().toString().padStart(2, "0"));
-    } else {
-      setDate(undefined);
-      setMonth(undefined);
-      setInputValue("");
-      setHour("");
-      setMinute("");
+    const newDate = value ? new Date(value) : undefined;
+    const newMonth = newDate;
+    const newInputValue = formatDate(newDate);
+    const newHour = newDate?.getHours().toString().padStart(2, "0") || "";
+    const newMinute = newDate?.getMinutes().toString().padStart(2, "0") || "";
+
+    // Only update state if values actually changed to prevent infinite loops
+    if (newDate?.getTime() !== date?.getTime()) {
+      setDate(newDate);
     }
-  }, [value]);
+    if (newMonth?.getTime() !== month?.getTime()) {
+      setMonth(newMonth);
+    }
+    if (newInputValue !== inputValue) {
+      setInputValue(newInputValue);
+    }
+    if (newHour !== hour) {
+      setHour(newHour);
+    }
+    if (newMinute !== minute) {
+      setMinute(newMinute);
+    }
+  }, [value, date, month, inputValue, hour, minute]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;

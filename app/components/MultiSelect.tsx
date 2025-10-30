@@ -46,18 +46,23 @@ export default function MultiSelect({
     onChange(next);
   };
 
-  const selectedLabels = options
-    .filter((opt) => values.includes(opt.value))
-    .map((opt) => opt.label);
+  const selectedLabels = React.useMemo(() => {
+    return options
+      .filter((opt) => values.includes(opt.value))
+      .map((opt) => opt.label);
+  }, [options, values]);
 
-  const displayedText =
-    selectedLabels.length === 0
-      ? placeholder
-      : maxCount && selectedLabels.length > maxCount
-        ? `${selectedLabels.slice(0, maxCount).join(", ")} +${
-            selectedLabels.length - maxCount
-          } more`
-        : selectedLabels.join(", ");
+  const displayedText = React.useMemo(() => {
+    if (selectedLabels.length === 0) {
+      return placeholder;
+    }
+    if (maxCount && selectedLabels.length > maxCount) {
+      return `${selectedLabels.slice(0, maxCount).join(", ")} +${
+        selectedLabels.length - maxCount
+      } more`;
+    }
+    return selectedLabels.join(", ");
+  }, [selectedLabels, placeholder, maxCount]);
 
   return (
     <div className="space-y-1">

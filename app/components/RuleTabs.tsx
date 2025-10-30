@@ -27,6 +27,9 @@ type RuleTabsProps = {
   inheritedTimeWindow?: { start?: string; end?: string };
   linkStartDate?: string;
   linkEndDate?: string;
+  campaignStartDate?: string;
+  campaignEndDate?: string;
+  onRestoreInheritedTimeWindow?: () => void;
 };
 
 const convertStringToDate = (dateString: string): Date | undefined => {
@@ -49,93 +52,31 @@ export default function RuleTabs({
   inheritedTimeWindow,
   linkStartDate,
   linkEndDate,
+  campaignStartDate,
+  campaignEndDate,
+  onRestoreInheritedTimeWindow,
 }: RuleTabsProps) {
   const [internalTab, setInternalTab] = useState("audience");
   const tab = activeTab ?? internalTab;
   const changeTab = onTabChange ?? setInternalTab;
 
-  // Reactive JSON that reflects the dynamic datetime fields
+  // Reactive JSON that shows current rules state with time_window_override
   const jsonStr = useMemo(() => {
-    const reactiveRules = { ...rules };
+    const displayRules = { ...rules };
 
-    // Always update time_window to reflect the current link-level dates
-    if (linkStartDate || linkEndDate) {
-      reactiveRules.time_window = {
-        ...(reactiveRules.time_window || {}),
-        start: linkStartDate || reactiveRules.time_window?.start,
-        end: linkEndDate || reactiveRules.time_window?.end,
-      };
+    // Add time_window_override to display if inheritedTimeWindow has overrides
+    if (
+      inheritedTimeWindow &&
+      (inheritedTimeWindow.start || inheritedTimeWindow.end)
+    ) {
+      displayRules.time_window_override = inheritedTimeWindow;
     }
 
-    return JSON.stringify(reactiveRules, null, 2);
-  }, [rules, linkStartDate, linkEndDate]);
+    return JSON.stringify(displayRules, null, 2);
+  }, [rules, inheritedTimeWindow]);
 
-  // Auto-update time_window dates when inherited dates change
-  React.useEffect(() => {
-    if (inheritedTimeWindow) {
-      // Inherit from link-level time window (centralized approach)
-      setRules({
-        ...rules,
-        time_window: {
-          ...(rules?.time_window || {}),
-          start: inheritedTimeWindow.start || rules?.time_window?.start,
-          end: inheritedTimeWindow.end || rules?.time_window?.end,
-        },
-      });
-    } else if (isAlwaysOn) {
-      // For always-on campaigns, set start to inheritedStartDate if not set or equal, and set end to null
-      if (
-        inheritedStartDate &&
-        (!rules?.time_window?.start ||
-          rules?.time_window?.start === inheritedStartDate)
-      ) {
-        setRules({
-          ...rules,
-          time_window: {
-            ...(rules?.time_window || {}),
-            start: inheritedStartDate,
-            end: null,
-          },
-        });
-      } else {
-        setRules({
-          ...rules,
-          time_window: {
-            ...(rules?.time_window || {}),
-            end: null,
-          },
-        });
-      }
-    } else {
-      // For one-off campaigns, inherit dates
-      if (
-        inheritedStartDate &&
-        (!rules?.time_window?.start ||
-          rules?.time_window?.start === inheritedStartDate)
-      ) {
-        setRules({
-          ...rules,
-          time_window: {
-            ...(rules?.time_window || {}),
-            start: inheritedStartDate,
-          },
-        });
-      }
-      if (
-        inheritedEndDate &&
-        (!rules?.time_window?.end ||
-          rules?.time_window?.end === inheritedEndDate)
-      ) {
-        setRules({
-          ...rules,
-          time_window: {
-            ...(rules?.time_window || {}),
-            end: inheritedEndDate,
-          },
-        });
-      }
-    }
-  }, [inheritedStartDate, inheritedEndDate, inheritedTimeWindow, isAlwaysOn]);
+  // For RuleTabs, we don't auto-update time_window anymore since it's managed centrally
+  // The time_window in rules should only contain overrides, not inherited values
 
   return (
     <div className="space-y-4">
@@ -186,20 +127,13 @@ export default function RuleTabs({
         </div>
       )}
 
-      {tab === "behavior" && (
+      {tab === "behavior" && showTimeWindow && (
         <div className="space-y-4">
-          {!showTimeWindow && (
-            <div className="text-sm text-muted-foreground">
-              Time window settings have been moved to Behavior Settings for
-              centralization.
-            </div>
-          )}
-          {showTimeWindow && (
-            <div className="text-sm text-muted-foreground">
-              Time window controls have been deprecated. Use Behavior Settings
-              for centralized time window management.
-            </div>
-          )}
+          <div className="text-sm text-muted-foreground">
+            Time window settings are managed in Behavior Settings for
+            centralized control. Use the Start/End Date fields in Behavior
+            Settings to override campaign dates.
+          </div>
         </div>
       )}
 

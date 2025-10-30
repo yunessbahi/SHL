@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, AlertTriangle } from "lucide-react";
@@ -13,12 +13,18 @@ import CampaignModal from "./CampaignModal";
 import { UtmTemplateModal } from "./UtmTemplateModal";
 import { authFetch } from "@/lib/api";
 import { useRouter } from "next/navigation";
+import {
+  useFormState,
+  useModalState,
+  useAsyncState,
+} from "@/lib/hooks/useFormState";
+import { useGroups } from "@/lib/hooks/useGroups";
 
 interface Target {
   id: string;
   targetUrl: string;
   weight: number;
-  rules: any;
+  rules: Record<string, any>;
   utmTemplateId: number | null;
   startDate?: string;
   endDate?: string;
@@ -31,6 +37,11 @@ interface SmartLinkFormProps {
   isEdit?: boolean;
 }
 
+/**
+ * Simplified SmartLinkForm component
+ * Removed circular dependencies and auto-sync effects
+ * Updated to use Select components for campaign and group dropdowns and new calendar component
+ */
 export default function SmartLinkForm({
   userId,
   linkId,
@@ -38,37 +49,100 @@ export default function SmartLinkForm({
   isEdit = false,
 }: SmartLinkFormProps) {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
 
-  // Link metadata
-  const [name, setName] = useState(initialData?.name || "");
-  const [description, setDescription] = useState(
-    initialData?.description || "",
-  );
-  const [campaignId, setCampaignId] = useState<number | null>(
-    initialData?.campaign_id || null,
-  );
-  const [groupId, setGroupId] = useState<number | null>(
-    initialData?.group_id || null,
-  );
+  // Modal states
+  const campaignModal = useModalState(false);
+  const utmTemplateModal = useModalState(false);
 
-  // Behavior settings
-  const [startDate, setStartDate] = useState(initialData?.start_datetime || "");
-  const [endDate, setEndDate] = useState(initialData?.end_datetime || "");
+  // Form submission state
+  const [submitError, setSubmitError] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [weightWarning, setWeightWarning] = useState<string>("");
+
+  // Campaign data state
+  const campaignState = useAsyncState<any[]>();
+  const [selectedCampaign, setSelectedCampaign] = useState<any>(null);
+
+  // Groups data state
+  const { groups, loading: loadingGroups } = useGroups();
+
+  // Load campaigns on mount
+  useEffect(() => {
+    campaignState.execute(
+      async () => {
+        const res = await authFetch("/api/campaigns/");
+        if (!res.ok) {
+          throw new Error("Failed to load campaigns");
+        }
+        return await res.json();
+      },
+      {
+        onError: (error) => {
+          console.error("Failed to load campaigns:", error);
+          toast.error("Failed to load campaigns");
+        },
+      },
+    );
+  }, []);
+
+  // Link metadata form state
+  const [metadataState, metadataActions] = useFormState({
+    name: initialData?.name || "",
+    description: initialData?.description || "",
+    campaignIds: initialData?.campaign_id ? [initialData.campaign_id] : [],
+    groupIds: initialData?.group_id ? [initialData.group_id] : [],
+  });
+
+  // Behavior form state (dates)
+  const [startDate, setStartDate] = useState(
+    initialData?.start_datetime || initialData?.time_window?.start || "",
+  );
+  const [endDate, setEndDate] = useState(
+    initialData?.end_datetime || initialData?.time_window?.end || "",
+  );
   const [expiresAt, setExpiresAt] = useState(initialData?.expires_at || "");
 
-  // Targets
+  // Synchronous update function to prevent lag
+  const handleEndDateChange = useCallback((newEndDate: string) => {
+    setEndDate(newEndDate);
+    // Sync expiresAt immediately to prevent lag
+    setExpiresAt(newEndDate);
+  }, []);
+
+  // Initialize expiresAt properly from initialData
+  useEffect(() => {
+    if (initialData?.expires_at) {
+      setExpiresAt(initialData.expires_at);
+    }
+  }, [initialData]);
+
+  // Synchronize expires_at with end_date (unidirectional to avoid infinite loop)
+  useEffect(() => {
+    if (endDate && endDate !== expiresAt) {
+      setExpiresAt(endDate);
+    }
+  }, [endDate]);
+
+  // Time window override state - manually controlled
+  const [timeWindowOverride, setTimeWindowOverride] = useState(() => {
+    return initialData?.time_window || {};
+  });
+
+  // Target management state
   const [targets, setTargets] = useState<Target[]>(
     initialData?.targets?.length > 0
-      ? initialData.targets.map((t: any, index: number) => ({
-          id: t.id?.toString() || `target-${index}`,
-          targetUrl: t.target_url || "",
-          weight: t.weight || 50,
-          rules: t.rules || {},
-          utmTemplateId: t.utm_template_id || null,
-          startDate: t.start_datetime || "",
-          endDate: t.end_datetime || "",
-        }))
+      ? initialData.targets.map((t: any, index: number) => {
+          const rules = t.rules || {};
+          // Remove time_window_override from rules as it's now stored at link level
+          const { time_window_override, ...otherRules } = rules;
+          return {
+            id: t.id?.toString() || `target-${index}`,
+            targetUrl: t.target_url || "",
+            weight: t.weight || 50,
+            rules: otherRules,
+            utmTemplateId: t.utm_template_id || null,
+          };
+        })
       : [
           {
             id: "1",
@@ -76,8 +150,6 @@ export default function SmartLinkForm({
             weight: 50,
             rules: {},
             utmTemplateId: null,
-            startDate: "",
-            endDate: "",
           },
           {
             id: "2",
@@ -85,68 +157,113 @@ export default function SmartLinkForm({
             weight: 50,
             rules: {},
             utmTemplateId: null,
-            startDate: "",
-            endDate: "",
           },
         ],
   );
 
-  // Time window for behavior settings
-  const [timeWindow, setTimeWindow] = useState<{
-    start?: string;
-    end?: string;
-  }>(initialData?.time_window || {});
-
-  // Modal states
-  const [showCampaignModal, setShowCampaignModal] = useState(false);
-  const [showUtmTemplateModal, setShowUtmTemplateModal] = useState(false);
-
-  // Validation states
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [weightWarning, setWeightWarning] = useState<string>("");
-  const [submitError, setSubmitError] = useState<string>("");
-
-  // Campaign data for inheritance
-  const [campaigns, setCampaigns] = useState<any[]>([]);
-  const [selectedCampaign, setSelectedCampaign] = useState<any>(null);
-
-  // Load campaigns
+  // Handle campaign selection
   useEffect(() => {
-    const loadCampaigns = async () => {
-      try {
-        const res = await authFetch("/api/campaigns/");
-        if (res.ok) {
-          const data = await res.json();
-          setCampaigns(data);
-        }
-      } catch (error) {
-        console.error("Failed to load campaigns:", error);
-      }
-    };
-    loadCampaigns();
-  }, []);
-
-  // Update selected campaign when campaignId changes
-  useEffect(() => {
-    if (campaignId) {
-      const campaign = campaigns.find((c) => c.id === campaignId);
+    if (metadataState.fields.campaignIds.value.length > 0) {
+      const campaign = campaignState.data?.find(
+        (c) => c.id === metadataState.fields.campaignIds.value[0],
+      );
       setSelectedCampaign(campaign);
     } else {
       setSelectedCampaign(null);
     }
-  }, [campaignId, campaigns]);
+  }, [metadataState.fields.campaignIds.value, campaignState.data]);
 
-  // Handle campaign lifecycle changes - lock end date when switching to always-on
+  // Handle always-on campaign changes - simplified (only in create mode)
   useEffect(() => {
-    if (selectedCampaign?.lifecycle_attr === 1) {
+    if (!isEdit && selectedCampaign?.lifecycle_attr === 1) {
       // Always-on campaign: set endDate to null and lock it
-      setEndDate(null);
+      setEndDate("");
       // Also update targets' end dates to null
       setTargets(targets.map((target) => ({ ...target, endDate: "" })));
     }
-  }, [selectedCampaign?.lifecycle_attr]);
+  }, [selectedCampaign?.lifecycle_attr, isEdit]);
 
-  const addTarget = () => {
+  // Simple sync: expires_at mirrors end_datetime for consistency
+  useEffect(() => {
+    if (endDate && endDate !== expiresAt) {
+      setExpiresAt(endDate);
+    }
+  }, [endDate]);
+
+  // Initialize time window override from campaign dates when campaign is selected (only for new links)
+  const initializeTimeWindowFromCampaign = useCallback(() => {
+    if (
+      selectedCampaign &&
+      selectedCampaign.campaign_start_date &&
+      selectedCampaign.campaign_end_date &&
+      !initialData
+    ) {
+      setTimeWindowOverride({
+        start: selectedCampaign.campaign_start_date,
+        end: selectedCampaign.campaign_end_date,
+      });
+    }
+  }, [selectedCampaign, initialData]);
+
+  // Call initialization when campaign changes
+  useEffect(() => {
+    initializeTimeWindowFromCampaign();
+  }, [initializeTimeWindowFromCampaign]);
+
+  // Track campaign lifecycle changes for reset behavior (only when not in edit mode)
+  const [previousCampaignLifecycle, setPreviousCampaignLifecycle] = useState<
+    number | undefined
+  >(isEdit ? undefined : selectedCampaign?.lifecycle_attr);
+
+  // Handle campaign change with lifecycle info
+  const handleCampaignChangeWithLifecycle = useCallback(
+    (campaignId: number | null, lifecycleAttr?: number) => {
+      // Only reset behavior in create mode, not edit mode
+      if (!isEdit && previousCampaignLifecycle !== lifecycleAttr) {
+        // Reset dates based on new campaign type
+        if (lifecycleAttr === 1) {
+          // Always-on: Clear end date and keep expires_at calculation for TTL
+          setEndDate("");
+        } else {
+          // One-off/Infinite/No campaign: Clear expires_at, use end_date as expiry
+          setExpiresAt("");
+        }
+
+        // Reset time window override
+        setTimeWindowOverride({});
+
+        setPreviousCampaignLifecycle(lifecycleAttr);
+      }
+    },
+    [previousCampaignLifecycle, isEdit],
+  );
+
+  // Reset behavior handler for BehaviorForm
+  const resetBehavior = useCallback(() => {
+    setStartDate("");
+    setEndDate("");
+    setExpiresAt("");
+    setTimeWindowOverride({});
+  }, []);
+
+  // Manual sync for time window override - user-triggered only
+  const handleTimeWindowSync = useCallback(() => {
+    const newTimeWindow = {
+      start: startDate || undefined,
+      end: endDate || undefined,
+    };
+
+    // Update both time window override AND actual form fields to ensure consistency
+    setTimeWindowOverride(newTimeWindow);
+
+    // For one-off campaigns, ensure end date is synced with expires at
+    if (selectedCampaign?.lifecycle_attr !== 1 && endDate) {
+      setExpiresAt(endDate);
+    }
+  }, [startDate, endDate, selectedCampaign?.lifecycle_attr]);
+
+  // Target management functions
+  const addTarget = useCallback(() => {
     const newTarget: Target = {
       id: Date.now().toString(),
       targetUrl: "",
@@ -156,7 +273,6 @@ export default function SmartLinkForm({
       startDate: "",
       endDate: "",
     };
-    setTargets([...targets, newTarget]);
 
     // Redistribute weights
     const totalWeight = 100;
@@ -166,224 +282,274 @@ export default function SmartLinkForm({
       ...target,
       weight: index === targets.length ? newWeight + remainder : newWeight,
     }));
+
     setTargets(updatedTargets);
-  };
+  }, [targets]);
 
-  const removeTarget = async (id: string) => {
-    if (targets.length <= 2) return; // Minimum 2 targets for smart links
+  const removeTarget = useCallback(
+    async (id: string) => {
+      if (targets.length <= 2) return; // Minimum 2 targets for smart links
 
-    // If editing and target has numeric ID, delete from backend
-    if (isEdit && linkId && !isNaN(parseInt(id))) {
-      try {
-        const res = await authFetch(`/api/workspace/targets/${id}`, {
-          method: "DELETE",
-        });
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({}));
-          throw new Error(errorData.message || "Failed to delete target");
+      // If editing and target has numeric ID, delete from backend
+      if (isEdit && linkId && !isNaN(parseInt(id))) {
+        try {
+          const res = await authFetch(`/api/workspace/targets/${id}`, {
+            method: "DELETE",
+          });
+          if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            throw new Error(errorData.message || "Failed to delete target");
+          }
+        } catch (error) {
+          console.error("Failed to delete target:", error);
+          toast.error("Failed to delete target. Please try again.");
+          return;
         }
-      } catch (error) {
-        console.error("Failed to delete target:", error);
-        toast.error("Failed to delete target. Please try again.");
-        return;
       }
-    }
 
-    const updatedTargets = targets.filter((t) => t.id !== id);
+      const updatedTargets = targets.filter((t) => t.id !== id);
 
-    // Redistribute weights
-    const totalWeight = 100;
-    const newWeight = Math.floor(totalWeight / updatedTargets.length);
-    const remainder = totalWeight - newWeight * updatedTargets.length;
-    const redistributedTargets = updatedTargets.map((target, index) => ({
-      ...target,
-      weight: index < remainder ? newWeight + 1 : newWeight,
-    }));
+      // Redistribute weights
+      const totalWeight = 100;
+      const newWeight = Math.floor(totalWeight / updatedTargets.length);
+      const remainder = totalWeight - newWeight * updatedTargets.length;
+      const redistributedTargets = updatedTargets.map((target, index) => ({
+        ...target,
+        weight: index < remainder ? newWeight + 1 : newWeight,
+      }));
 
-    setTargets(redistributedTargets);
-  };
+      setTargets(redistributedTargets);
+    },
+    [targets, isEdit, linkId],
+  );
 
-  const updateTarget = (id: string, updates: Partial<Target>) => {
-    setTargets(targets.map((t) => (t.id === id ? { ...t, ...updates } : t)));
-    // Clear errors for this target
-    setErrors((prev) => {
-      const newErrors = { ...prev };
-      delete newErrors[`target-${id}`];
-      return newErrors;
-    });
-  };
+  const updateTarget = useCallback(
+    (id: string, updates: Partial<Target>) => {
+      setTargets(targets.map((t) => (t.id === id ? { ...t, ...updates } : t)));
+    },
+    [targets],
+  );
 
   // Validation functions
-  const validateUrl = (url: string): boolean => {
+  const validateUrl = useCallback((url: string): boolean => {
     try {
       new URL(url);
       return true;
     } catch {
       return false;
     }
-  };
+  }, []);
 
-  const validateDates = (): boolean => {
-    if (!startDate || !endDate) return true; // Optional dates
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    return start < end;
-  };
-
-  const validateWeights = (): string => {
+  const validateWeights = useCallback((): string => {
     const totalWeight = targets.reduce((sum, t) => sum + t.weight, 0);
     if (totalWeight !== 100) {
       return `Total weight is ${totalWeight}%, should be 100%`;
     }
     return "";
-  };
+  }, [targets]);
 
-  const validateForm = (): {
+  const validateForm = useCallback((): {
     isValid: boolean;
-    errors: Record<string, string>;
-    weightWarning: string;
+    errors: string[];
   } => {
-    const newErrors: Record<string, string> = {};
+    const errors: string[] = [];
 
     // Name validation
-    if (!name.trim()) {
-      newErrors.name = "Link name is required";
+    if (!metadataState.fields.name.value.trim()) {
+      errors.push("Link name is required");
     }
 
     // Target validation
     targets.forEach((target, index) => {
       if (!target.targetUrl.trim()) {
-        newErrors[`target-${target.id}`] = "Target URL is required";
+        errors.push(`Target ${index + 1}: Target URL is required`);
       } else if (!validateUrl(target.targetUrl)) {
-        newErrors[`target-${target.id}`] = "Invalid URL format";
+        errors.push(`Target ${index + 1}: Invalid URL format`);
       }
     });
 
     // Date validation
-    if (startDate && endDate && !validateDates()) {
-      newErrors.dates = "Start date must be before end date";
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      if (start >= end) {
+        errors.push("Start date must be before end date");
+      }
     }
 
-    const weightWarn = validateWeights();
-    const isValid = Object.keys(newErrors).length === 0;
+    return { isValid: errors.length === 0, errors };
+  }, [
+    metadataState.fields.name.value,
+    targets,
+    startDate,
+    endDate,
+    validateUrl,
+  ]);
 
-    return { isValid, errors: newErrors, weightWarning: weightWarn };
-  };
+  // Handle campaign creation
+  const handleCampaignCreated = useCallback(
+    async (campaignData: any) => {
+      try {
+        // Refresh campaigns list
+        await campaignState.execute(async () => {
+          const res = await authFetch("/api/campaigns/");
+          if (!res.ok) {
+            throw new Error("Failed to load campaigns");
+          }
+          return await res.json();
+        });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+        // Auto-select the new campaign
+        metadataActions.setField("campaignIds", [campaignData.id]);
+        campaignModal.close();
+        toast.success("Campaign created and selected successfully!");
+      } catch (error) {
+        console.error("Failed to handle campaign creation:", error);
+        toast.error("Failed to refresh campaigns");
+      }
+    },
+    [campaignModal, metadataActions, campaignState],
+  );
 
+  // Handle UTM template creation
+  const handleUtmTemplateCreated = useCallback(
+    async (templateData: any) => {
+      try {
+        utmTemplateModal.close();
+        toast.success("UTM template created successfully!");
+      } catch (error) {
+        console.error("Failed to handle UTM template creation:", error);
+        toast.error("Failed to create UTM template");
+      }
+    },
+    [utmTemplateModal],
+  );
+
+  // Prepare API data
+  const prepareApiData = useCallback(() => {
+    const baseData = {
+      name: metadataState.fields.name.value,
+      description: metadataState.fields.description.value,
+      campaign_id:
+        metadataState.fields.campaignIds.value.length > 0
+          ? metadataState.fields.campaignIds.value[0]
+          : null,
+      start_datetime: startDate || null,
+      end_datetime: endDate || null,
+      expires_at: expiresAt || null,
+      time_window:
+        Object.keys(timeWindowOverride).length > 0 ? timeWindowOverride : null,
+      status: "active",
+    };
+
+    if (isEdit && linkId) {
+      // Update existing link
+      const targetsToAdd = [];
+      const targetsToUpdate = [];
+
+      for (const target of targets) {
+        if (isNaN(parseInt(target.id))) {
+          // New target (string ID)
+          targetsToAdd.push({
+            target_url: target.targetUrl,
+            weight: target.weight,
+            rules:
+              Object.keys(timeWindowOverride).length > 0
+                ? { ...target.rules, time_window_override: timeWindowOverride }
+                : target.rules,
+            utm_template_id: target.utmTemplateId,
+          });
+        } else {
+          // Existing target (numeric ID)
+          targetsToUpdate.push({
+            id: parseInt(target.id),
+            target_url: target.targetUrl,
+            weight: target.weight,
+            rules:
+              Object.keys(timeWindowOverride).length > 0
+                ? { ...target.rules, time_window_override: timeWindowOverride }
+                : target.rules,
+            utm_template_id: target.utmTemplateId,
+          });
+        }
+      }
+
+      return {
+        ...baseData,
+        ...(targetsToAdd.length > 0 && { targets_to_add: targetsToAdd }),
+        ...(targetsToUpdate.length > 0 && {
+          targets_to_update: targetsToUpdate,
+        }),
+      };
+    } else {
+      // Create new link
+      return {
+        ...baseData,
+        link_type: "smart",
+        targets: targets.map((target) => ({
+          target_url: target.targetUrl,
+          weight: target.weight,
+          rules:
+            Object.keys(timeWindowOverride).length > 0
+              ? JSON.stringify({
+                  ...target.rules,
+                  time_window_override: timeWindowOverride,
+                })
+              : JSON.stringify(target.rules),
+          utm_template_id: target.utmTemplateId,
+        })),
+      };
+    }
+  }, [
+    metadataState,
+    targets,
+    startDate,
+    endDate,
+    expiresAt,
+    timeWindowOverride,
+    isEdit,
+    linkId,
+  ]);
+
+  // Handle form submission
+  const handleSubmit = useCallback(async () => {
     const validation = validateForm();
     if (!validation.isValid) {
-      setErrors(validation.errors);
-      setWeightWarning(validation.weightWarning);
+      setSubmitError(validation.errors.join(", "));
       return;
     }
 
-    setLoading(true);
+    const weightWarn = validateWeights();
+    setWeightWarning(weightWarn);
+
+    setIsSubmitting(true);
     setSubmitError("");
 
     try {
-      if (isEdit && linkId) {
-        // Update existing link
-        const updateData: any = {
-          name,
-          description,
-          campaign_id: campaignId,
-          start_datetime: startDate || null,
-          end_datetime: endDate || null,
-          expires_at: expiresAt || null,
-        };
+      const apiData = prepareApiData();
+      const url =
+        isEdit && linkId
+          ? `/api/workspace/links/${linkId}`
+          : "/api/workspace/links";
 
-        // Separate targets into to_add and to_update
-        const targetsToAdd = [];
-        const targetsToUpdate = [];
+      const method = isEdit ? "PATCH" : "POST";
 
-        for (const target of targets) {
-          if (isNaN(parseInt(target.id))) {
-            // New target (string ID)
-            targetsToAdd.push({
-              target_url: target.targetUrl,
-              weight: target.weight,
-              rules: target.rules,
-              utm_template_id: target.utmTemplateId,
-              start_datetime: target.startDate || null,
-              end_datetime: target.endDate || null,
-            });
-          } else {
-            // Existing target (numeric ID)
-            targetsToUpdate.push({
-              id: parseInt(target.id),
-              target_url: target.targetUrl,
-              weight: target.weight,
-              rules: target.rules,
-              utm_template_id: target.utmTemplateId,
-              start_datetime: target.startDate || null,
-              end_datetime: target.endDate || null,
-            });
-          }
-        }
+      const res = await authFetch(url, {
+        method,
+        body: JSON.stringify(apiData),
+      });
 
-        if (targetsToAdd.length > 0) {
-          updateData.targets_to_add = targetsToAdd;
-        }
-        if (targetsToUpdate.length > 0) {
-          updateData.targets_to_update = targetsToUpdate;
-        }
-
-        const res = await authFetch(`/api/workspace/links/${linkId}`, {
-          method: "PATCH",
-          body: JSON.stringify(updateData),
-        });
-
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({}));
-          throw new Error(errorData.message || "Failed to update link");
-        }
-
-        const updatedLink = await res.json();
-
-        // Update local state with server response to reflect changes immediately
-        if (updatedLink.expires_at) {
-          setExpiresAt(updatedLink.expires_at);
-        }
-
-        toast.success("Smart link updated successfully!");
-        router.push("/links");
-      } else {
-        // Create new link
-        const linkData = {
-          name,
-          description,
-          link_type: "smart",
-          targets: targets.map((target) => ({
-            target_url: target.targetUrl,
-            weight: target.weight,
-            rules: target.rules,
-            utm_template_id: target.utmTemplateId,
-            start_datetime: target.startDate || null,
-            end_datetime: target.endDate || null,
-          })),
-          campaign_id: campaignId,
-          start_datetime: startDate || null,
-          end_datetime: endDate || null,
-          expires_at: expiresAt || null,
-          status: "active",
-        };
-
-        const res = await authFetch("/api/workspace/links", {
-          method: "POST",
-          body: JSON.stringify(linkData),
-        });
-
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({}));
-          throw new Error(errorData.message || "Failed to create smart link");
-        }
-
-        toast.success("Smart link created successfully!");
-        router.push("/links");
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(
+          errorData.message || `Failed to ${isEdit ? "update" : "create"} link`,
+        );
       }
+
+      toast.success(
+        `Smart link ${isEdit ? "updated" : "created"} successfully!`,
+      );
+      router.push("/links");
     } catch (error) {
       console.error("Failed to save smart link:", error);
       const errorMessage =
@@ -391,9 +557,9 @@ export default function SmartLinkForm({
       setSubmitError(errorMessage);
       toast.error("Failed to save smart link. Please try again.");
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
-  };
+  }, [validateForm, validateWeights, prepareApiData, isEdit, linkId, router]);
 
   const validation = validateForm();
   const isFormValid = validation.isValid;
@@ -411,7 +577,7 @@ export default function SmartLinkForm({
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+      <form className="space-y-4 sm:space-y-6">
         {/* Link Metadata */}
         <Card>
           <CardHeader>
@@ -419,24 +585,33 @@ export default function SmartLinkForm({
           </CardHeader>
           <CardContent>
             <LinkMetadataForm
-              name={name}
-              description={description}
-              campaignId={campaignId}
-              groupId={groupId}
-              onNameChange={(value) => {
-                setName(value);
-                if (errors.name) {
-                  setErrors((prev) => ({ ...prev, name: "" }));
-                }
-              }}
-              onDescriptionChange={setDescription}
-              onCampaignChange={setCampaignId}
-              onGroupChange={setGroupId}
-              onCreateCampaign={() => setShowCampaignModal(true)}
+              name={metadataState.fields.name.value}
+              description={metadataState.fields.description.value}
+              campaignIds={metadataState.fields.campaignIds.value}
+              groupIds={metadataState.fields.groupIds.value}
+              campaigns={campaignState.data || []}
+              groups={groups}
+              loadingCampaigns={campaignState.isLoading}
+              loadingGroups={loadingGroups}
+              onNameChange={(value) => metadataActions.setField("name", value)}
+              onDescriptionChange={(value) =>
+                metadataActions.setField("description", value)
+              }
+              onCampaignChange={(value) =>
+                metadataActions.setField("campaignIds", value)
+              }
+              onGroupChange={(value) =>
+                metadataActions.setField("groupIds", value)
+              }
+              onCreateCampaign={campaignModal.open}
+              onCampaignChangeWithLifecycle={handleCampaignChangeWithLifecycle}
             />
-            {errors.name && (
-              <p className="text-sm text-red-600 mt-2">{errors.name}</p>
-            )}
+            {metadataState.fields.name.touched &&
+              metadataState.fields.name.error && (
+                <p className="text-sm text-red-600 mt-2">
+                  {metadataState.fields.name.error}
+                </p>
+              )}
           </CardContent>
         </Card>
 
@@ -444,30 +619,30 @@ export default function SmartLinkForm({
         <BehaviorForm
           startDate={startDate}
           endDate={endDate}
-          onStartDateChange={(value) => {
-            setStartDate(value);
-            if (errors.dates) {
-              setErrors((prev) => ({ ...prev, dates: "" }));
-            }
-          }}
-          onEndDateChange={(value) => {
-            setEndDate(value);
-            if (errors.dates) {
-              setErrors((prev) => ({ ...prev, dates: "" }));
-            }
-          }}
           expiresAt={expiresAt}
+          onStartDateChange={setStartDate}
+          onEndDateChange={handleEndDateChange}
           onExpiresAtChange={setExpiresAt}
           campaignStartDate={selectedCampaign?.campaign_start_date}
           campaignEndDate={selectedCampaign?.campaign_end_date}
           campaignTtlDays={selectedCampaign?.default_link_ttl_days}
           campaignLifecycle={selectedCampaign?.lifecycle_attr}
           hasCampaign={!!selectedCampaign}
-          timeWindow={timeWindow}
-          onTimeWindowChange={setTimeWindow}
+          onResetBehavior={resetBehavior}
         />
-        {errors.dates && (
-          <p className="text-sm text-red-600 mt-2">{errors.dates}</p>
+
+        {/* Time Window Manual Sync Button */}
+        {!!selectedCampaign && (
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleTimeWindowSync}
+              className="text-sm"
+            >
+              Sync Time Window with Dates
+            </Button>
+          </div>
         )}
 
         {/* Targets */}
@@ -518,26 +693,13 @@ export default function SmartLinkForm({
                   onRemove={() => removeTarget(target.id)}
                   showRemove={targets.length > 2}
                   campaignUtmTemplates={selectedCampaign?.utm_templates || []}
-                  onCreateUtmTemplate={() => setShowUtmTemplateModal(true)}
+                  onCreateUtmTemplate={utmTemplateModal.open}
                   isAlwaysOn={selectedCampaign?.lifecycle_attr === 1}
                   showTimeWindow={false}
-                  inheritedTimeWindow={timeWindow}
+                  inheritedTimeWindow={timeWindowOverride}
                   linkStartDate={startDate}
                   linkEndDate={endDate}
-                  campaignStartDate={selectedCampaign?.campaign_start_date}
-                  campaignEndDate={selectedCampaign?.campaign_end_date}
-                  onRestoreInheritedDates={() => {
-                    updateTarget(target.id, {
-                      startDate: selectedCampaign?.campaign_start_date || "",
-                      endDate: selectedCampaign?.campaign_end_date || "",
-                    });
-                  }}
                 />
-                {errors[`target-${target.id}`] && (
-                  <p className="text-sm text-red-600 mt-2 ml-4">
-                    {errors[`target-${target.id}`]}
-                  </p>
-                )}
               </div>
             ))}
           </div>
@@ -584,18 +746,19 @@ export default function SmartLinkForm({
             type="button"
             variant="outline"
             onClick={() => router.back()}
-            disabled={loading}
+            disabled={isSubmitting}
             className="w-full sm:w-auto"
           >
             Cancel
           </Button>
           <Button
-            type="submit"
-            disabled={loading || !isFormValid}
+            type="button"
+            onClick={handleSubmit}
+            disabled={isSubmitting || !isFormValid}
             className="w-full sm:w-auto"
           >
-            {loading && <Spinner className="mr-2 h-4 w-4" />}
-            {loading
+            {isSubmitting && <Spinner className="mr-2 h-4 w-4" />}
+            {isSubmitting
               ? isEdit
                 ? "Updating..."
                 : "Creating..."
@@ -608,23 +771,21 @@ export default function SmartLinkForm({
 
       {/* Campaign Modal */}
       <CampaignModal
-        open={showCampaignModal}
-        onOpenChange={setShowCampaignModal}
-        onSave={(campaignData) => {
-          console.log("Campaign created:", campaignData);
-          setShowCampaignModal(false);
-        }}
+        open={campaignModal.isOpen}
+        onOpenChange={(open) =>
+          open ? campaignModal.open() : campaignModal.close()
+        }
+        onSave={handleCampaignCreated}
       />
 
       {/* UTM Template Modal */}
       <UtmTemplateModal
-        open={showUtmTemplateModal}
-        onOpenChange={setShowUtmTemplateModal}
-        onSave={async (templateData) => {
-          console.log("UTM Template created:", templateData);
-          setShowUtmTemplateModal(false);
-        }}
-        campaigns={campaigns}
+        open={utmTemplateModal.isOpen}
+        onOpenChange={(open) =>
+          open ? utmTemplateModal.open() : utmTemplateModal.close()
+        }
+        onSave={handleUtmTemplateCreated}
+        campaigns={campaignState.data || []}
       />
     </div>
   );

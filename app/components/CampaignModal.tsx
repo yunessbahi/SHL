@@ -287,16 +287,32 @@ export default function CampaignModal({
   const handleSubmit = async (values: CampaignFormValues) => {
     setLoading(true);
     try {
-      // Convert Date objects to ISO strings for backend
+      // Convert Date objects to ISO strings with proper UTC handling for one-off campaigns
       const payload = {
         ...values,
         campaign_start_date: values.campaign_start_date
-          ? values.campaign_start_date.toISOString()
+          ? new Date(
+              values.campaign_start_date.getTime() -
+                values.campaign_start_date.getTimezoneOffset() * 60000,
+            )
+              .toISOString()
+              .replace("Z", "+00:00")
           : undefined,
         campaign_end_date: values.campaign_end_date
-          ? values.campaign_end_date.toISOString()
+          ? new Date(
+              values.campaign_end_date.getTime() -
+                values.campaign_end_date.getTimezoneOffset() * 60000,
+            )
+              .toISOString()
+              .replace("Z", "+00:00")
           : undefined,
       };
+
+      // Log the payload for debugging one-off campaign datetime issues
+      if (values.lifecycle_attr === 2) {
+        console.log("Submitting one-off campaign payload:", payload);
+      }
+
       await onSave(payload);
       onOpenChange(false);
     } catch (error) {

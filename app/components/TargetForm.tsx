@@ -1,12 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, X, Trash2, Eye, EyeOff } from "lucide-react";
-import DateTimePicker from "./DateTimePicker";
+import { Plus, Trash2, Eye, EyeOff } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -17,7 +16,6 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import WeightSlider from "./WeightSlider";
 import RuleTabs from "./RuleTabs";
-import { authFetch } from "@/lib/api";
 
 interface UTMTemplate {
   id: number;
@@ -27,28 +25,24 @@ interface UTMTemplate {
 }
 
 interface TargetFormProps {
+  // Core form values
   targetUrl: string;
   weight: number;
-  rules: any;
+  rules: Record<string, any>;
   utmTemplateId: number | null;
+
+  // Available UTM templates
+  utmTemplates?: UTMTemplate[];
+  campaignUtmTemplates?: UTMTemplate[];
+  loadingUtmTemplates?: boolean;
+
+  // Optional target-specific dates
   startDate?: string;
   endDate?: string;
   inheritedStartDate?: string;
   inheritedEndDate?: string;
-  onTargetUrlChange: (url: string) => void;
-  onWeightChange: (weight: number) => void;
-  onRulesChange: (rules: any) => void;
-  onUtmTemplateChange: (id: number | null) => void;
-  onStartDateChange?: (date: string) => void;
-  onEndDateChange?: (date: string) => void;
-  onRemove?: () => void;
-  showRemove?: boolean;
-  campaignUtmTemplates?: Array<{
-    id: number;
-    name: string;
-    utm_params: Record<string, string>;
-  }>;
-  onCreateUtmTemplate?: () => void;
+
+  // Configuration options
   isAlwaysOn?: boolean;
   showTimeWindow?: boolean;
   inheritedTimeWindow?: { start?: string; end?: string };
@@ -56,28 +50,36 @@ interface TargetFormProps {
   linkEndDate?: string;
   campaignStartDate?: string;
   campaignEndDate?: string;
-  onRestoreInheritedDates?: () => void;
+  showRemove?: boolean;
+
+  // Change handlers
+  onTargetUrlChange: (url: string) => void;
+  onWeightChange: (weight: number) => void;
+  onRulesChange: (rules: Record<string, any>) => void;
+  onUtmTemplateChange: (id: number | null) => void;
+  onStartDateChange?: (date: string) => void;
+  onEndDateChange?: (date: string) => void;
+  onRemove?: () => void;
+  onCreateUtmTemplate?: () => void;
 }
 
+/**
+ * Clean, focused TargetForm component
+ * Handles only UI rendering and user interactions
+ * All data fetching and template management handled by parent components
+ */
 export default function TargetForm({
   targetUrl,
   weight,
   rules,
   utmTemplateId,
+  utmTemplates = [],
+  campaignUtmTemplates = [],
+  loadingUtmTemplates = false,
   startDate,
   endDate,
   inheritedStartDate,
   inheritedEndDate,
-  onTargetUrlChange,
-  onWeightChange,
-  onRulesChange,
-  onUtmTemplateChange,
-  onStartDateChange,
-  onEndDateChange,
-  onRemove,
-  showRemove = false,
-  campaignUtmTemplates = [],
-  onCreateUtmTemplate,
   isAlwaysOn = false,
   showTimeWindow = true,
   inheritedTimeWindow,
@@ -85,84 +87,26 @@ export default function TargetForm({
   linkEndDate,
   campaignStartDate,
   campaignEndDate,
-  onRestoreInheritedDates,
+  showRemove = false,
+  onTargetUrlChange,
+  onWeightChange,
+  onRulesChange,
+  onUtmTemplateChange,
+  onStartDateChange,
+  onEndDateChange,
+  onRemove,
+  onCreateUtmTemplate,
 }: TargetFormProps) {
-  const [utmTemplates, setUtmTemplates] = useState<UTMTemplate[]>([]);
-  const [loadingTemplates, setLoadingTemplates] = useState(true);
-  const [showTemplateForm, setShowTemplateForm] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
-  const [newTemplate, setNewTemplate] = useState({
-    name: "",
-    description: "",
-    pinned: false,
-    utm_params: {
-      utm_source: "",
-      utm_medium: "",
-      utm_campaign: "",
-      utm_term: "",
-      utm_content: "",
-    },
-  });
 
-  // Load UTM templates
-  useEffect(() => {
-    const loadTemplates = async () => {
-      try {
-        const res = await authFetch("/api/utm-templates/");
-        if (res.ok) setUtmTemplates(await res.json());
-      } catch (error) {
-        console.error("Failed to load UTM templates:", error);
-      } finally {
-        setLoadingTemplates(false);
-      }
-    };
-    loadTemplates();
-  }, []);
-
-  const createTemplate = async () => {
-    try {
-      const res = await authFetch("/api/utm-templates/", {
-        method: "POST",
-        body: JSON.stringify(newTemplate),
-      });
-      if (res.ok) {
-        const template = await res.json();
-        setUtmTemplates([template, ...utmTemplates]);
-        onUtmTemplateChange(template.id);
-        setShowTemplateForm(false);
-        setNewTemplate({
-          name: "",
-          description: "",
-          pinned: false,
-          utm_params: {
-            utm_source: "",
-            utm_medium: "",
-            utm_campaign: "",
-            utm_term: "",
-            utm_content: "",
-          },
-        });
-      }
-    } catch (error) {
-      console.error("Failed to create UTM template:", error);
-    }
-  };
-
+  // Find current template
   const selectedTemplate = utmTemplates.find((t) => t.id === utmTemplateId);
-  const campaignTemplate = campaignUtmTemplates.find(
+  const campaignTemplate = campaignUtmTemplates?.find(
     (t) => t.id === utmTemplateId,
   );
   const currentTemplate = selectedTemplate || campaignTemplate;
 
-  // Determine if dates are inherited from campaign
-  const isInheritedStartDate =
-    startDate === campaignStartDate && campaignStartDate;
-  const isInheritedEndDate = endDate === campaignEndDate && campaignEndDate;
-
-  // Check if dates have been overridden
-  const hasOverriddenStartDate = startDate && startDate !== campaignStartDate;
-  const hasOverriddenEndDate = endDate && endDate !== campaignEndDate;
-
+  // Generate UTM preview
   const getUtmPreview = () => {
     if (!currentTemplate) return null;
 
@@ -207,6 +151,7 @@ export default function TargetForm({
             onChange={(e) => onTargetUrlChange(e.target.value)}
             placeholder="https://example.com/destination"
             className="mt-1"
+            required
           />
         </div>
 
@@ -242,19 +187,17 @@ export default function TargetForm({
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() =>
-                  onCreateUtmTemplate
-                    ? onCreateUtmTemplate()
-                    : setShowTemplateForm(true)
-                }
+                onClick={onCreateUtmTemplate}
+                disabled={!onCreateUtmTemplate}
               >
                 <Plus className="h-3 w-3 mr-1" />
                 New Template
               </Button>
             </div>
           </div>
+
           <div className="flex gap-2 mt-1">
-            {loadingTemplates ? (
+            {loadingUtmTemplates ? (
               <Skeleton className="flex-1 h-10" />
             ) : (
               <select
@@ -267,7 +210,7 @@ export default function TargetForm({
                 className="flex-1 px-3 py-2 border rounded-md text-sm"
               >
                 <option value="">No template</option>
-                {campaignUtmTemplates.length > 0 && (
+                {campaignUtmTemplates && campaignUtmTemplates.length > 0 && (
                   <optgroup label="Campaign Templates">
                     {campaignUtmTemplates.map((template) => (
                       <option
@@ -331,67 +274,33 @@ export default function TargetForm({
           )}
         </div>
 
-        {/* Target Date Overrides */}
-        {(campaignStartDate || campaignEndDate) && !isAlwaysOn && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium">
-                Target Date Overrides
-              </Label>
-              {(hasOverriddenStartDate || hasOverriddenEndDate) &&
-                onRestoreInheritedDates && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={onRestoreInheritedDates}
-                    className="h-6 px-2 text-xs"
-                  >
-                    <X className="h-3 w-3 mr-1" />
-                    Restore Inherited
-                  </Button>
-                )}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Target-specific date overrides (optional) */}
+        {(startDate !== undefined || endDate !== undefined) && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {startDate !== undefined && (
               <div>
-                <Label htmlFor="target-start-date" className="text-sm">
-                  Start Date & Time
-                </Label>
-                <DateTimePicker
-                  value={startDate || ""}
-                  onChange={(date) => onStartDateChange?.(date)}
+                <Label htmlFor="target-start-date">Start Date (Override)</Label>
+                <Input
+                  id="target-start-date"
+                  type="datetime-local"
+                  value={startDate}
+                  onChange={(e) => onStartDateChange?.(e.target.value)}
+                  className="mt-1"
                 />
-                {campaignStartDate && (
-                  <p
-                    className={`text-xs mt-1 ${isInheritedStartDate ? "text-blue-600" : "text-muted-foreground"}`}
-                  >
-                    {isInheritedStartDate
-                      ? "Inherited from campaign"
-                      : `Campaign starts: ${new Date(campaignStartDate).toLocaleString()}`}
-                  </p>
-                )}
               </div>
-
+            )}
+            {endDate !== undefined && (
               <div>
-                <Label htmlFor="target-end-date" className="text-sm">
-                  End Date & Time
-                </Label>
-                <DateTimePicker
-                  value={endDate || ""}
-                  onChange={(date) => onEndDateChange?.(date)}
+                <Label htmlFor="target-end-date">End Date (Override)</Label>
+                <Input
+                  id="target-end-date"
+                  type="datetime-local"
+                  value={endDate}
+                  onChange={(e) => onEndDateChange?.(e.target.value)}
+                  className="mt-1"
                 />
-                {campaignEndDate && (
-                  <p
-                    className={`text-xs mt-1 ${isInheritedEndDate ? "text-blue-600" : "text-muted-foreground"}`}
-                  >
-                    {isInheritedEndDate
-                      ? "Inherited from campaign"
-                      : `Campaign ends: ${new Date(campaignEndDate).toLocaleString()}`}
-                  </p>
-                )}
               </div>
-            </div>
+            )}
           </div>
         )}
 
@@ -409,171 +318,12 @@ export default function TargetForm({
               inheritedTimeWindow={inheritedTimeWindow}
               linkStartDate={linkStartDate}
               linkEndDate={linkEndDate}
+              campaignStartDate={campaignStartDate}
+              campaignEndDate={campaignEndDate}
             />
           </div>
         </div>
       </CardContent>
-
-      {/* UTM Template Creation Modal */}
-      {showTemplateForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="w-96 max-h-[80vh] overflow-y-auto">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Create UTM Template</CardTitle>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowTemplateForm(false)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="template-name">Name</Label>
-                <Input
-                  id="template-name"
-                  value={newTemplate.name}
-                  onChange={(e) =>
-                    setNewTemplate({ ...newTemplate, name: e.target.value })
-                  }
-                  placeholder="Enter template name"
-                />
-              </div>
-              <div>
-                <Label htmlFor="template-description">Description</Label>
-                <Input
-                  id="template-description"
-                  value={newTemplate.description}
-                  onChange={(e) =>
-                    setNewTemplate({
-                      ...newTemplate,
-                      description: e.target.value,
-                    })
-                  }
-                  placeholder="Enter template description"
-                />
-              </div>
-              <div>
-                <Label className="text-sm font-medium">UTM Parameters</Label>
-                <div className="grid grid-cols-2 gap-2 mt-2">
-                  <div>
-                    <Label htmlFor="utm-source" className="text-xs">
-                      Source
-                    </Label>
-                    <Input
-                      id="utm-source"
-                      value={newTemplate.utm_params.utm_source}
-                      onChange={(e) =>
-                        setNewTemplate({
-                          ...newTemplate,
-                          utm_params: {
-                            ...newTemplate.utm_params,
-                            utm_source: e.target.value,
-                          },
-                        })
-                      }
-                      placeholder="e.g., google"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="utm-medium" className="text-xs">
-                      Medium
-                    </Label>
-                    <Input
-                      id="utm-medium"
-                      value={newTemplate.utm_params.utm_medium}
-                      onChange={(e) =>
-                        setNewTemplate({
-                          ...newTemplate,
-                          utm_params: {
-                            ...newTemplate.utm_params,
-                            utm_medium: e.target.value,
-                          },
-                        })
-                      }
-                      placeholder="e.g., cpc"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="utm-campaign" className="text-xs">
-                      Campaign
-                    </Label>
-                    <Input
-                      id="utm-campaign"
-                      value={newTemplate.utm_params.utm_campaign}
-                      onChange={(e) =>
-                        setNewTemplate({
-                          ...newTemplate,
-                          utm_params: {
-                            ...newTemplate.utm_params,
-                            utm_campaign: e.target.value,
-                          },
-                        })
-                      }
-                      placeholder="e.g., summer_sale"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="utm-term" className="text-xs">
-                      Term
-                    </Label>
-                    <Input
-                      id="utm-term"
-                      value={newTemplate.utm_params.utm_term}
-                      onChange={(e) =>
-                        setNewTemplate({
-                          ...newTemplate,
-                          utm_params: {
-                            ...newTemplate.utm_params,
-                            utm_term: e.target.value,
-                          },
-                        })
-                      }
-                      placeholder="e.g., running shoes"
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <Label htmlFor="utm-content" className="text-xs">
-                      Content
-                    </Label>
-                    <Input
-                      id="utm-content"
-                      value={newTemplate.utm_params.utm_content}
-                      onChange={(e) =>
-                        setNewTemplate({
-                          ...newTemplate,
-                          utm_params: {
-                            ...newTemplate.utm_params,
-                            utm_content: e.target.value,
-                          },
-                        })
-                      }
-                      placeholder="e.g., logolink"
-                    />
-                  </div>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  onClick={createTemplate}
-                  disabled={!newTemplate.name.trim()}
-                >
-                  Create
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setShowTemplateForm(false)}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
     </Card>
   );
 }

@@ -48,17 +48,21 @@ export function DatePicker({
   const [month, setMonth] = React.useState<Date | undefined>(date);
 
   React.useEffect(() => {
-    if (value) {
-      const parsedDate = new Date(value);
-      setDate(parsedDate);
-      setMonth(parsedDate);
-      setInputValue(formatDate(parsedDate));
-    } else {
-      setDate(undefined);
-      setMonth(undefined);
-      setInputValue("");
+    const newDate = value ? new Date(value) : undefined;
+    const newMonth = newDate;
+    const newInputValue = formatDate(newDate);
+
+    // Only update state if values actually changed to prevent infinite loops
+    if (newDate?.getTime() !== date?.getTime()) {
+      setDate(newDate);
     }
-  }, [value]);
+    if (newMonth?.getTime() !== month?.getTime()) {
+      setMonth(newMonth);
+    }
+    if (newInputValue !== inputValue) {
+      setInputValue(newInputValue);
+    }
+  }, [value, date, month, inputValue]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;

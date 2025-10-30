@@ -121,13 +121,16 @@ export const ComboboxTrigger = ({
 }: ComboboxTriggerProps) => {
   const { value, data, type, setWidth } = useContext(ComboboxContext);
   const ref = useRef<HTMLButtonElement>(null);
+  const previousWidthRef = useRef<number>(0);
 
   useEffect(() => {
     // Create a ResizeObserver to detect width changes
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const newWidth = (entry.target as HTMLElement).offsetWidth;
-        if (newWidth) {
+        // Only update if width actually changed to prevent unnecessary re-renders
+        if (newWidth && newWidth !== previousWidthRef.current) {
+          previousWidthRef.current = newWidth;
           setWidth?.(newWidth);
         }
       }
@@ -135,6 +138,12 @@ export const ComboboxTrigger = ({
 
     if (ref.current) {
       resizeObserver.observe(ref.current);
+      // Set initial width
+      const initialWidth = ref.current.offsetWidth;
+      if (initialWidth) {
+        previousWidthRef.current = initialWidth;
+        setWidth?.(initialWidth);
+      }
     }
 
     // Clean up the observer when component unmounts
@@ -202,12 +211,21 @@ export const ComboboxInput = ({
     defaultProp: defaultValue ?? inputValue,
     prop: controlledValue,
     onChange: (newValue) => {
-      // Sync with context state
-      setInputValue(newValue);
+      // Prevent infinite loops by checking if value actually changed
+      if (newValue !== inputValue) {
+        setInputValue(newValue);
+      }
       // Call external onChange if provided
       controlledOnValueChange?.(newValue);
     },
   });
+
+  // Sync controlled value changes without causing loops
+  useEffect(() => {
+    if (controlledValue !== undefined && controlledValue !== value) {
+      onValueChange(controlledValue);
+    }
+  }, [controlledValue]);
 
   return (
     <CommandInput
