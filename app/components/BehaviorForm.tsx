@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { DateTimePicker } from "@/components/ui/date-time-picker";
+import { DateTimePicker24h } from "@/components/ui/date-time-picker-24h";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -78,8 +78,7 @@ export default function BehaviorForm({
   const [isFixedStartDate, setIsFixedStartDate] = useState(false);
 
   // Reset behavior when campaign changes
-  const [previousCampaignLifecycle, setPreviousCampaignLifecycle] =
-    useState(campaignLifecycle);
+  const [previousCampaignLifecycle, setPreviousCampaignLifecycle] = useState(campaignLifecycle);
 
   // Campaign info object
   const campaignInfo: CampaignInfo = {
@@ -147,9 +146,7 @@ export default function BehaviorForm({
             <Checkbox
               id="fixed-start-date"
               checked={isFixedStartDate}
-              onCheckedChange={(checked) =>
-                setIsFixedStartDate(checked as boolean)
-              }
+              onCheckedChange={(checked) => setIsFixedStartDate(checked as boolean)}
             />
             <Label htmlFor="fixed-start-date" className="text-sm font-medium">
               Fix start date/time
@@ -164,7 +161,7 @@ export default function BehaviorForm({
             {campaignInfo.isAlwaysOn ? (
               <div className="space-y-2">
                 {isFixedStartDate ? (
-                  <DateTimePicker
+                  <DateTimePicker24h
                     value={startDate}
                     onChange={handleStartDateChange}
                   />
@@ -178,7 +175,7 @@ export default function BehaviorForm({
                 )}
               </div>
             ) : (
-              <DateTimePicker
+              <DateTimePicker24h
                 value={startDate}
                 onChange={handleStartDateChange}
               />
@@ -188,8 +185,7 @@ export default function BehaviorForm({
             {hasCampaign && campaignStartDate && (
               <div className="flex items-center justify-between mt-2 p-2 bg-blue-50 rounded-md">
                 <div className="text-xs text-blue-700">
-                  Campaign default:{" "}
-                  {new Date(campaignStartDate).toLocaleString()}
+                  Campaign default: {new Date(campaignStartDate).toLocaleString()}
                 </div>
                 <Button
                   type="button"
@@ -209,17 +205,18 @@ export default function BehaviorForm({
           {campaignLifecycle !== 1 && (
             <div>
               <Label htmlFor="end-date">
-                End Date & Time{" "}
-                {campaignLifecycle !== 1 && "(This becomes the expiry)"}
+                End Date & Time {campaignLifecycle !== 1 && "(This becomes the expiry)"}
               </Label>
-              <DateTimePicker value={endDate} onChange={handleEndDateChange} />
+              <DateTimePicker24h
+                value={endDate}
+                onChange={handleEndDateChange}
+              />
 
               {/* Guide Label for End Date */}
               {hasCampaign && campaignEndDate && (
                 <div className="flex items-center justify-between mt-2 p-2 bg-blue-50 rounded-md">
                   <div className="text-xs text-blue-700">
-                    Campaign default:{" "}
-                    {new Date(campaignEndDate).toLocaleString()}
+                    Campaign default: {new Date(campaignEndDate).toLocaleString()}
                   </div>
                   <Button
                     type="button"
@@ -241,35 +238,28 @@ export default function BehaviorForm({
             <div>
               <Label htmlFor="expires-at">TTL Expiry (Auto-calculated)</Label>
               <div className="px-3 py-2 border rounded-md bg-blue-50 text-sm font-mono">
-                {expiresAt
-                  ? new Date(expiresAt).toLocaleString()
-                  : "Calculating..."}
+                {expiresAt ? new Date(expiresAt).toLocaleString() : "Calculating..."}
                 <Badge variant="outline" className="ml-2 text-xs">
                   Auto
                 </Badge>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Automatically calculated from start date + campaign TTL (
-                {campaignTtlDays || 30} days)
+                Automatically calculated from start date + campaign TTL ({campaignTtlDays || 30} days)
               </p>
             </div>
           )}
 
           {/* Information note for one-off and infinite campaigns */}
-          {hasCampaign &&
-            (campaignLifecycle === 2 || campaignLifecycle === 3) && (
-              <div className="text-xs text-muted-foreground bg-gray-50 p-3 rounded-md">
-                <div className="flex items-center gap-2 mb-2">
-                  <Calendar className="h-4 w-4" />
-                  <span className="font-medium">One-off/Infinite Campaign</span>
-                </div>
-                <p>
-                  For these campaign types, the end date becomes the expiry date
-                  automatically.
-                </p>
-                <p className="mt-1">No separate expiry field is needed.</p>
+          {hasCampaign && (campaignLifecycle === 2 || campaignLifecycle === 3) && (
+            <div className="text-xs text-muted-foreground bg-gray-50 p-3 rounded-md">
+              <div className="flex items-center gap-2 mb-2">
+                <Calendar className="h-4 w-4" />
+                <span className="font-medium">One-off/Infinite Campaign</span>
               </div>
-            )}
+              <p>For these campaign types, the end date becomes the expiry date automatically.</p>
+              <p className="mt-1">No separate expiry field is needed.</p>
+            </div>
+          )}
 
           {/* Information note for no campaign */}
           {!hasCampaign && (
@@ -278,10 +268,7 @@ export default function BehaviorForm({
                 <Calendar className="h-4 w-4" />
                 <span className="font-medium">No Campaign</span>
               </div>
-              <p>
-                When no campaign is selected, the end date becomes the expiry
-                date automatically.
-              </p>
+              <p>When no campaign is selected, the end date becomes the expiry date automatically.</p>
               <p className="mt-1">No separate expiry field is needed.</p>
             </div>
           )}
