@@ -83,13 +83,9 @@ export default function SingleLinkForm({
     groupIds: initialData?.group_id ? [initialData.group_id] : [],
   });
 
-  // Behavior form state (dates)
-  const [startDate, setStartDate] = useState(
-    initialData?.start_datetime || initialData?.time_window?.start || "",
-  );
-  const [endDate, setEndDate] = useState(
-    initialData?.end_datetime || initialData?.time_window?.end || "",
-  );
+  // Behavior form state (dates) - Proper initialization for edit mode
+  const [startDate, setStartDate] = useState(initialData?.start_datetime || "");
+  const [endDate, setEndDate] = useState(initialData?.end_datetime || "");
   const [expiresAt, setExpiresAt] = useState(initialData?.expires_at || "");
 
   // Target form state
@@ -120,7 +116,7 @@ export default function SingleLinkForm({
   // Track campaign lifecycle changes for reset behavior (only when not in edit mode)
   const [previousCampaignLifecycle, setPreviousCampaignLifecycle] = useState<
     number | undefined
-  >(isEdit ? undefined : selectedCampaign?.lifecycle_attr);
+  >(isEdit ? undefined : undefined); // Don't track in edit mode at all
 
   // Initialize time window override from campaign dates when campaign is selected (only for new links)
   const initializeTimeWindowFromCampaign = useCallback(() => {
@@ -145,8 +141,12 @@ export default function SingleLinkForm({
   // Handle campaign change with lifecycle info
   const handleCampaignChangeWithLifecycle = useCallback(
     (campaignId: number | null, lifecycleAttr?: number) => {
-      // Only reset behavior in create mode, not edit mode
-      if (!isEdit && previousCampaignLifecycle !== lifecycleAttr) {
+      // Only reset behavior in create mode, never in edit mode
+      if (
+        !isEdit &&
+        previousCampaignLifecycle !== undefined &&
+        previousCampaignLifecycle !== lifecycleAttr
+      ) {
         // Reset dates based on new campaign type
         if (lifecycleAttr === 1) {
           // Always-on: Clear end date and keep expires_at calculation for TTL
@@ -167,11 +167,14 @@ export default function SingleLinkForm({
 
   // Reset behavior handler for BehaviorForm
   const resetBehavior = useCallback(() => {
-    setStartDate("");
-    setEndDate("");
-    setExpiresAt("");
-    setTimeWindowOverride({});
-  }, []);
+    // Only reset in create mode, preserve dates in edit mode
+    if (!isEdit) {
+      setStartDate("");
+      setEndDate("");
+      setExpiresAt("");
+      setTimeWindowOverride({});
+    }
+  }, [isEdit]);
 
   // Initialize expiresAt properly from initialData
   useEffect(() => {

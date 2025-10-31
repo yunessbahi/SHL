@@ -73,10 +73,6 @@ export default function BehaviorForm({
   isEdit = false,
   onResetBehavior,
 }: BehaviorFormProps) {
-  // Live clock state for always-on campaigns
-  const [liveStartDate, setLiveStartDate] = useState(new Date());
-  const [isFixedStartDate, setIsFixedStartDate] = useState(false);
-
   // Reset behavior when campaign changes
   const [previousCampaignLifecycle, setPreviousCampaignLifecycle] =
     useState(campaignLifecycle);
@@ -109,16 +105,6 @@ export default function BehaviorForm({
     onEndDateChange(dateStr);
   };
 
-  // Live clock effect for always-on campaigns
-  React.useEffect(() => {
-    if (campaignInfo.isAlwaysOn && !isFixedStartDate) {
-      const interval = setInterval(() => {
-        setLiveStartDate(new Date());
-      }, 1000);
-      return () => clearInterval(interval);
-    }
-  }, [campaignInfo.isAlwaysOn, isFixedStartDate]);
-
   // Restore handlers for campaign dates
   const restoreStartDate = () => {
     if (campaignStartDate) {
@@ -141,48 +127,14 @@ export default function BehaviorForm({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Always-on Campaign Controls */}
-        {campaignInfo.isAlwaysOn && (
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="fixed-start-date"
-              checked={isFixedStartDate}
-              onCheckedChange={(checked) =>
-                setIsFixedStartDate(checked as boolean)
-              }
-            />
-            <Label htmlFor="fixed-start-date" className="text-sm font-medium">
-              Fix start date/time
-            </Label>
-          </div>
-        )}
-
         <div className="grid grid-cols-1 gap-6">
           {/* Start Date Field - always visible */}
           <div>
             <Label htmlFor="start-date">Start Date & Time</Label>
-            {campaignInfo.isAlwaysOn ? (
-              <div className="space-y-2">
-                {isFixedStartDate ? (
-                  <DateTimePicker24h
-                    value={startDate}
-                    onChange={handleStartDateChange}
-                  />
-                ) : (
-                  <div className="px-3 py-2 border rounded-md bg-gray-50 text-sm font-mono">
-                    {liveStartDate.toLocaleString()}
-                    <Badge variant="outline" className="ml-2 text-xs">
-                      Live
-                    </Badge>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <DateTimePicker24h
-                value={startDate}
-                onChange={handleStartDateChange}
-              />
-            )}
+            <DateTimePicker24h
+              value={startDate}
+              onChange={handleStartDateChange}
+            />
 
             {/* Guide Label for Start Date */}
             {hasCampaign && campaignStartDate && (
