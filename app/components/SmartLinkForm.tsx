@@ -26,8 +26,6 @@ interface Target {
   weight: number;
   rules: Record<string, any>;
   utmTemplateId: number | null;
-  startDate?: string;
-  endDate?: string;
 }
 
 interface SmartLinkFormProps {
@@ -128,7 +126,18 @@ export default function SmartLinkForm({
   const [targets, setTargets] = useState<Target[]>(
     initialData?.targets?.length > 0
       ? initialData.targets.map((t: any, index: number) => {
-          const rules = t.rules || {};
+          // Ensure rules is properly parsed as JSON object
+          let rules = t.rules;
+          if (typeof rules === "string") {
+            try {
+              rules = JSON.parse(rules);
+            } catch {
+              rules = {};
+            }
+          } else if (!rules || typeof rules !== "object") {
+            rules = {};
+          }
+
           // Remove time_window_override from rules as it's now stored at link level
           const { time_window_override, ...otherRules } = rules;
           return {
@@ -174,8 +183,6 @@ export default function SmartLinkForm({
     if (!isEdit && selectedCampaign?.lifecycle_attr === 1) {
       // Always-on campaign: set endDate to null and lock it
       setEndDate("");
-      // Also update targets' end dates to null
-      setTargets(targets.map((target) => ({ ...target, endDate: "" })));
     }
   }, [selectedCampaign?.lifecycle_attr, isEdit]);
 
@@ -273,8 +280,6 @@ export default function SmartLinkForm({
       weight: Math.max(10, Math.floor(100 / (targets.length + 1))),
       rules: {},
       utmTemplateId: null,
-      startDate: "",
-      endDate: "",
     };
 
     // Redistribute weights
@@ -451,15 +456,17 @@ export default function SmartLinkForm({
       const targetsToUpdate = [];
 
       for (const target of targets) {
+        const rulesWithOverride =
+          Object.keys(timeWindowOverride).length > 0
+            ? { ...target.rules, time_window_override: timeWindowOverride }
+            : target.rules;
+
         if (isNaN(parseInt(target.id))) {
           // New target (string ID)
           targetsToAdd.push({
             target_url: target.targetUrl,
             weight: target.weight,
-            rules:
-              Object.keys(timeWindowOverride).length > 0
-                ? { ...target.rules, time_window_override: timeWindowOverride }
-                : target.rules,
+            rules: JSON.stringify(rulesWithOverride),
             utm_template_id: target.utmTemplateId,
           });
         } else {
@@ -468,10 +475,7 @@ export default function SmartLinkForm({
             id: parseInt(target.id),
             target_url: target.targetUrl,
             weight: target.weight,
-            rules:
-              Object.keys(timeWindowOverride).length > 0
-                ? { ...target.rules, time_window_override: timeWindowOverride }
-                : target.rules,
+            rules: JSON.stringify(rulesWithOverride),
             utm_template_id: target.utmTemplateId,
           });
         }
@@ -489,18 +493,21 @@ export default function SmartLinkForm({
       return {
         ...baseData,
         link_type: "smart",
-        targets: targets.map((target) => ({
-          target_url: target.targetUrl,
-          weight: target.weight,
-          rules:
+        targets: targets.map((target) => {
+          const rulesWithOverride =
             Object.keys(timeWindowOverride).length > 0
-              ? JSON.stringify({
+              ? {
                   ...target.rules,
                   time_window_override: timeWindowOverride,
-                })
-              : JSON.stringify(target.rules),
-          utm_template_id: target.utmTemplateId,
-        })),
+                }
+              : target.rules;
+          return {
+            target_url: target.targetUrl,
+            weight: target.weight,
+            rules: JSON.stringify(rulesWithOverride),
+            utm_template_id: target.utmTemplateId,
+          };
+        }),
       };
     }
   }, [
@@ -673,8 +680,6 @@ export default function SmartLinkForm({
                   weight={target.weight}
                   rules={target.rules}
                   utmTemplateId={target.utmTemplateId}
-                  startDate={target.startDate}
-                  endDate={target.endDate}
                   inheritedStartDate={startDate}
                   inheritedEndDate={endDate}
                   onTargetUrlChange={(url) =>
@@ -686,12 +691,6 @@ export default function SmartLinkForm({
                   onRulesChange={(rules) => updateTarget(target.id, { rules })}
                   onUtmTemplateChange={(id) =>
                     updateTarget(target.id, { utmTemplateId: id })
-                  }
-                  onStartDateChange={(date) =>
-                    updateTarget(target.id, { startDate: date })
-                  }
-                  onEndDateChange={(date) =>
-                    updateTarget(target.id, { endDate: date })
                   }
                   onRemove={() => removeTarget(target.id)}
                   showRemove={targets.length > 2}

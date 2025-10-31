@@ -36,9 +36,7 @@ interface TargetFormProps {
   campaignUtmTemplates?: UTMTemplate[];
   loadingUtmTemplates?: boolean;
 
-  // Optional target-specific dates
-  startDate?: string;
-  endDate?: string;
+  // Inherited dates from link behavior
   inheritedStartDate?: string;
   inheritedEndDate?: string;
 
@@ -57,8 +55,7 @@ interface TargetFormProps {
   onWeightChange: (weight: number) => void;
   onRulesChange: (rules: Record<string, any>) => void;
   onUtmTemplateChange: (id: number | null) => void;
-  onStartDateChange?: (date: string) => void;
-  onEndDateChange?: (date: string) => void;
+
   onRemove?: () => void;
   onCreateUtmTemplate?: () => void;
 }
@@ -76,8 +73,7 @@ export default function TargetForm({
   utmTemplates = [],
   campaignUtmTemplates = [],
   loadingUtmTemplates = false,
-  startDate,
-  endDate,
+
   inheritedStartDate,
   inheritedEndDate,
   isAlwaysOn = false,
@@ -92,8 +88,7 @@ export default function TargetForm({
   onWeightChange,
   onRulesChange,
   onUtmTemplateChange,
-  onStartDateChange,
-  onEndDateChange,
+
   onRemove,
   onCreateUtmTemplate,
 }: TargetFormProps) {
@@ -273,36 +268,6 @@ export default function TargetForm({
             </div>
           )}
         </div>
-
-        {/* Target-specific date overrides (optional) */}
-        {(startDate !== undefined || endDate !== undefined) && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {startDate !== undefined && (
-              <div>
-                <Label htmlFor="target-start-date">Start Date (Override)</Label>
-                <Input
-                  id="target-start-date"
-                  type="datetime-local"
-                  value={startDate}
-                  onChange={(e) => onStartDateChange?.(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-            )}
-            {endDate !== undefined && (
-              <div>
-                <Label htmlFor="target-end-date">End Date (Override)</Label>
-                <Input
-                  id="target-end-date"
-                  type="datetime-local"
-                  value={endDate}
-                  onChange={(e) => onEndDateChange?.(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Audience Rules */}
         <div>

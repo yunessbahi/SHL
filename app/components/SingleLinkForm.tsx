@@ -92,7 +92,19 @@ export default function SingleLinkForm({
   const [targetState, targetActions] = useFormState({
     targetUrl: initialData?.targets?.[0]?.target_url || "",
     weight: initialData?.targets?.[0]?.weight || 100,
-    rules: initialData?.targets?.[0]?.rules || {},
+    rules: (() => {
+      let rules = initialData?.targets?.[0]?.rules;
+      if (typeof rules === "string") {
+        try {
+          rules = JSON.parse(rules);
+        } catch {
+          rules = {};
+        }
+      } else if (!rules || typeof rules !== "object") {
+        rules = {};
+      }
+      return rules;
+    })(),
     utmTemplateId: initialData?.targets?.[0]?.utm_template_id || null,
   });
 
@@ -331,13 +343,16 @@ export default function SingleLinkForm({
             id: initialData?.targets?.[0]?.id,
             target_url: targetState.fields.targetUrl.value,
             weight: targetState.fields.weight.value,
-            rules:
-              Object.keys(timeWindowOverride).length > 0
-                ? {
-                    ...targetState.fields.rules.value,
-                    time_window_override: timeWindowOverride,
-                  }
-                : targetState.fields.rules.value,
+            rules: (() => {
+              const rulesWithOverride =
+                Object.keys(timeWindowOverride).length > 0
+                  ? {
+                      ...targetState.fields.rules.value,
+                      time_window_override: timeWindowOverride,
+                    }
+                  : targetState.fields.rules.value;
+              return JSON.stringify(rulesWithOverride);
+            })(),
             utm_template_id: targetState.fields.utmTemplateId.value,
             group_id:
               metadataState.fields.groupIds.value.length > 0
@@ -359,13 +374,16 @@ export default function SingleLinkForm({
           {
             target_url: targetState.fields.targetUrl.value,
             weight: targetState.fields.weight.value,
-            rules:
-              Object.keys(timeWindowOverride).length > 0
-                ? {
-                    ...targetState.fields.rules.value,
-                    time_window_override: timeWindowOverride,
-                  }
-                : targetState.fields.rules.value,
+            rules: (() => {
+              const rulesWithOverride =
+                Object.keys(timeWindowOverride).length > 0
+                  ? {
+                      ...targetState.fields.rules.value,
+                      time_window_override: timeWindowOverride,
+                    }
+                  : targetState.fields.rules.value;
+              return JSON.stringify(rulesWithOverride);
+            })(),
             utm_template_id: targetState.fields.utmTemplateId.value,
             group_id:
               metadataState.fields.groupIds.value.length > 0
