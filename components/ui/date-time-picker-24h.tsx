@@ -26,7 +26,7 @@ export function DateTimePicker24h({
   className?: string;
 }) {
   const [open, setOpen] = React.useState(false);
-  
+
   // Convert string value to Date object for the picker
   const dateValue = value ? new Date(value) : undefined;
 
@@ -74,7 +74,7 @@ export function DateTimePicker24h({
             variant={"outline"}
             className={cn(
               "w-full pl-3 text-left font-normal",
-              !value && "text-muted-foreground"
+              !value && "text-muted-foreground",
             )}
           >
             {value ? (
@@ -120,25 +120,23 @@ export function DateTimePicker24h({
               </ScrollArea>
               <ScrollArea className="w-64 sm:w-auto">
                 <div className="flex sm:flex-col p-2">
-                  {Array.from({ length: 12 }, (_, i) => i * 5).map(
-                    (minute) => (
-                      <Button
-                        key={minute}
-                        size="icon"
-                        variant={
-                          dateValue && dateValue.getMinutes() === minute
-                            ? "default"
-                            : "ghost"
-                        }
-                        className="sm:w-full shrink-0 aspect-square"
-                        onClick={() =>
-                          handleTimeChange("minute", minute.toString())
-                        }
-                      >
-                        {minute.toString().padStart(2, '0')}
-                      </Button>
-                    )
-                  )}
+                  {Array.from({ length: 12 }, (_, i) => i * 5).map((minute) => (
+                    <Button
+                      key={minute}
+                      size="icon"
+                      variant={
+                        dateValue && dateValue.getMinutes() === minute
+                          ? "default"
+                          : "ghost"
+                      }
+                      className="sm:w-full shrink-0 aspect-square"
+                      onClick={() =>
+                        handleTimeChange("minute", minute.toString())
+                      }
+                    >
+                      {minute.toString().padStart(2, "0")}
+                    </Button>
+                  ))}
                 </div>
                 <ScrollBar orientation="horizontal" className="sm:hidden" />
               </ScrollArea>
