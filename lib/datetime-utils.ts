@@ -7,9 +7,11 @@
  * Convert UTC ISO string to local date string for display
  * This is what should be used everywhere for displaying dates to users
  */
-export function formatDateForDisplay(isoString: string | null | undefined): string {
+export function formatDateForDisplay(
+  isoString: string | null | undefined,
+): string {
   if (!isoString) return "Never";
-  
+
   try {
     const date = new Date(isoString);
     return date.toLocaleDateString("en-US", {
@@ -18,7 +20,7 @@ export function formatDateForDisplay(isoString: string | null | undefined): stri
       day: "2-digit",
       hour: "2-digit",
       minute: "2-digit",
-      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     });
   } catch {
     return "Invalid date";
@@ -29,9 +31,11 @@ export function formatDateForDisplay(isoString: string | null | undefined): stri
  * Format date for form inputs (datetime-local format)
  * Returns YYYY-MM-DDTHH:MM format
  */
-export function formatDateForInput(isoString: string | null | undefined): string {
+export function formatDateForInput(
+  isoString: string | null | undefined,
+): string {
   if (!isoString) return "";
-  
+
   try {
     const date = new Date(isoString);
     // Format as YYYY-MM-DDTHH:MM for datetime-local input
@@ -47,7 +51,7 @@ export function formatDateForInput(isoString: string | null | undefined): string
  */
 export function formatInputToISO(inputValue: string | null): string | null {
   if (!inputValue) return null;
-  
+
   try {
     // Parse the datetime-local value as local time and convert to UTC ISO
     const date = new Date(inputValue);

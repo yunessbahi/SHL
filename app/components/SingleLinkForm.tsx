@@ -179,7 +179,7 @@ export default function SingleLinkForm({
       setExpiresAt(initialData.expires_at);
     }
   }, [initialData]);
-  
+
   // Synchronize expires_at with end_date (unidirectional to avoid infinite loop)
   useEffect(() => {
     if (endDate && endDate !== expiresAt) {
