@@ -256,21 +256,34 @@ export default function SmartLinkForm({
     }
   }, [isEdit]);
 
-  // Manual sync for time window override - user-triggered only
-  const handleTimeWindowSync = useCallback(() => {
+  // Automatic sync: whenever start/end dates change, update time window override
+  useEffect(() => {
     const newTimeWindow = {
       start: startDate || undefined,
       end: endDate || undefined,
     };
-
-    // Update both time window override AND actual form fields to ensure consistency
     setTimeWindowOverride(newTimeWindow);
+  }, [startDate, endDate]);
 
-    // For one-off campaigns, ensure end date is synced with expires at
-    if (selectedCampaign?.lifecycle_attr !== 1 && endDate) {
-      setExpiresAt(endDate);
+  // Calculate TTL expiry for always-on campaigns
+  const calculateTtlExpiry = useCallback(() => {
+    if (
+      selectedCampaign?.lifecycle_attr === 1 &&
+      startDate &&
+      selectedCampaign?.default_link_ttl_days
+    ) {
+      const start = new Date(startDate);
+      const ttlDays = selectedCampaign.default_link_ttl_days;
+      const expiry = new Date(start);
+      expiry.setDate(expiry.getDate() + ttlDays);
+      return expiry.toISOString();
     }
-  }, [startDate, endDate, selectedCampaign?.lifecycle_attr]);
+    return null;
+  }, [
+    startDate,
+    selectedCampaign?.lifecycle_attr,
+    selectedCampaign?.default_link_ttl_days,
+  ]);
 
   // Target management functions
   const addTarget = useCallback(() => {
@@ -435,6 +448,9 @@ export default function SmartLinkForm({
 
   // Prepare API data
   const prepareApiData = useCallback(() => {
+    // Calculate expires_at for always-on campaigns
+    const calculatedExpiresAt = calculateTtlExpiry() || expiresAt;
+
     const baseData = {
       name: metadataState.fields.name.value,
       description: metadataState.fields.description.value,
@@ -444,7 +460,7 @@ export default function SmartLinkForm({
           : null,
       start_datetime: startDate || null,
       end_datetime: endDate || null,
-      expires_at: expiresAt || null,
+      expires_at: calculatedExpiresAt || null,
       time_window:
         Object.keys(timeWindowOverride).length > 0 ? timeWindowOverride : null,
       status: "active",
@@ -516,6 +532,7 @@ export default function SmartLinkForm({
     startDate,
     endDate,
     expiresAt,
+    calculateTtlExpiry,
     timeWindowOverride,
     isEdit,
     linkId,
@@ -629,7 +646,7 @@ export default function SmartLinkForm({
         <BehaviorForm
           startDate={startDate}
           endDate={endDate}
-          expiresAt={expiresAt}
+          expiresAt={calculateTtlExpiry() || expiresAt}
           onStartDateChange={setStartDate}
           onEndDateChange={handleEndDateChange}
           onExpiresAtChange={setExpiresAt}
@@ -640,20 +657,6 @@ export default function SmartLinkForm({
           hasCampaign={!!selectedCampaign}
           onResetBehavior={resetBehavior}
         />
-
-        {/* Time Window Manual Sync Button */}
-        {!!selectedCampaign && (
-          <div className="flex justify-end">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleTimeWindowSync}
-              className="text-sm"
-            >
-              Sync Time Window with Dates
-            </Button>
-          </div>
-        )}
 
         {/* Targets */}
         <div className="space-y-4">

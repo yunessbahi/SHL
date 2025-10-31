@@ -202,21 +202,14 @@ export default function SingleLinkForm({
     }
   }, [endDate, expiresAt]);
 
-  // Manual sync for time window override - user-triggered only
-  const handleTimeWindowSync = useCallback(() => {
+  // Automatic sync: whenever start/end dates change, update time window override
+  useEffect(() => {
     const newTimeWindow = {
       start: startDate || undefined,
       end: endDate || undefined,
     };
-
-    // Update both time window override AND actual form fields to ensure consistency
     setTimeWindowOverride(newTimeWindow);
-
-    // For one-off campaigns, ensure end date is synced with expires at
-    if (selectedCampaign?.lifecycle_attr !== 1 && endDate) {
-      setExpiresAt(endDate);
-    }
-  }, [startDate, endDate, selectedCampaign?.lifecycle_attr]);
+  }, [startDate, endDate]);
 
   // Validation function
   const validateForm = useCallback((): string[] => {
@@ -520,20 +513,6 @@ export default function SingleLinkForm({
           hasCampaign={!!selectedCampaign}
           onResetBehavior={resetBehavior}
         />
-
-        {/* Time Window Manual Sync Button */}
-        {!!selectedCampaign && (
-          <div className="flex justify-end">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleTimeWindowSync}
-              className="text-sm"
-            >
-              Sync Time Window with Dates
-            </Button>
-          </div>
-        )}
 
         {/* Target Configuration */}
         <TargetForm
