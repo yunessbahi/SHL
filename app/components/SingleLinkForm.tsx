@@ -113,6 +113,26 @@ export default function SingleLinkForm({
     return initialData?.time_window || {};
   });
 
+  // Calculate TTL expiry for always-on campaigns
+  const calculateTtlExpiry = useCallback(() => {
+    if (
+      selectedCampaign?.lifecycle_attr === 1 &&
+      startDate &&
+      selectedCampaign?.default_link_ttl_days
+    ) {
+      const start = new Date(startDate);
+      const ttlDays = selectedCampaign.default_link_ttl_days;
+      const expiry = new Date(start);
+      expiry.setDate(expiry.getDate() + ttlDays);
+      return expiry.toISOString();
+    }
+    return null;
+  }, [
+    startDate,
+    selectedCampaign?.lifecycle_attr,
+    selectedCampaign?.default_link_ttl_days,
+  ]);
+
   // Handle campaign selection
   useEffect(() => {
     if (metadataState.fields.campaignIds.value.length > 0) {
@@ -130,6 +150,43 @@ export default function SingleLinkForm({
     number | undefined
   >(isEdit ? undefined : undefined); // Don't track in edit mode at all
 
+  // Initialize expiresAt properly from initialData
+  useEffect(() => {
+    if (initialData?.expires_at) {
+      setExpiresAt(initialData.expires_at);
+    }
+  }, [initialData]);
+
+  // Synchronize expires_at with end_date (unidirectional to avoid infinite loop)
+  useEffect(() => {
+    if (endDate && endDate !== expiresAt) {
+      setExpiresAt(endDate);
+    }
+  }, [endDate, expiresAt]);
+
+  // Automatic sync: whenever start/end dates change, update time window override
+  // For always-on campaigns, sync with calculated TTL expiry
+  // For other campaigns, sync with end date
+  useEffect(() => {
+    const calculatedTtl = calculateTtlExpiry();
+
+    const newTimeWindow = {
+      start: startDate || undefined,
+      // For always-on campaigns, use calculated TTL expiry as end date
+      // For other campaigns, use the manual end date
+      end:
+        selectedCampaign?.lifecycle_attr === 1
+          ? calculatedTtl || undefined
+          : endDate || undefined,
+    };
+    setTimeWindowOverride(newTimeWindow);
+  }, [
+    startDate,
+    endDate,
+    selectedCampaign?.lifecycle_attr,
+    calculateTtlExpiry,
+  ]);
+
   // Initialize time window override from campaign dates when campaign is selected (only for new links)
   const initializeTimeWindowFromCampaign = useCallback(() => {
     if (
@@ -140,6 +197,8 @@ export default function SingleLinkForm({
     ) {
       setTimeWindowOverride({
         start: selectedCampaign.campaign_start_date,
+        // For always-on campaigns, maintain campaign end date in time_window_override
+        // TTL expiry calculation is separate and doesn't affect time_window_override
         end: selectedCampaign.campaign_end_date,
       });
     }
@@ -184,32 +243,21 @@ export default function SingleLinkForm({
       setStartDate("");
       setEndDate("");
       setExpiresAt("");
-      setTimeWindowOverride({});
-    }
-  }, [isEdit]);
 
-  // Initialize expiresAt properly from initialData
-  useEffect(() => {
-    if (initialData?.expires_at) {
-      setExpiresAt(initialData.expires_at);
+      // For always-on campaigns, preserve time_window_override with campaign dates
+      if (
+        selectedCampaign?.lifecycle_attr === 1 &&
+        selectedCampaign?.campaign_end_date
+      ) {
+        setTimeWindowOverride({
+          start: selectedCampaign.campaign_start_date,
+          end: selectedCampaign.campaign_end_date,
+        });
+      } else {
+        setTimeWindowOverride({});
+      }
     }
-  }, [initialData]);
-
-  // Synchronize expires_at with end_date (unidirectional to avoid infinite loop)
-  useEffect(() => {
-    if (endDate && endDate !== expiresAt) {
-      setExpiresAt(endDate);
-    }
-  }, [endDate, expiresAt]);
-
-  // Automatic sync: whenever start/end dates change, update time window override
-  useEffect(() => {
-    const newTimeWindow = {
-      start: startDate || undefined,
-      end: endDate || undefined,
-    };
-    setTimeWindowOverride(newTimeWindow);
-  }, [startDate, endDate]);
+  }, [isEdit, selectedCampaign]);
 
   // Validation function
   const validateForm = useCallback((): string[] => {
@@ -286,26 +334,6 @@ export default function SingleLinkForm({
     },
     [utmTemplateModal],
   );
-
-  // Calculate TTL expiry for always-on campaigns
-  const calculateTtlExpiry = useCallback(() => {
-    if (
-      selectedCampaign?.lifecycle_attr === 1 &&
-      startDate &&
-      selectedCampaign?.default_link_ttl_days
-    ) {
-      const start = new Date(startDate);
-      const ttlDays = selectedCampaign.default_link_ttl_days;
-      const expiry = new Date(start);
-      expiry.setDate(expiry.getDate() + ttlDays);
-      return expiry.toISOString();
-    }
-    return null;
-  }, [
-    startDate,
-    selectedCampaign?.lifecycle_attr,
-    selectedCampaign?.default_link_ttl_days,
-  ]);
 
   // Prepare API data
   const prepareApiData = useCallback(() => {

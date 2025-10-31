@@ -203,6 +203,8 @@ export default function SmartLinkForm({
     ) {
       setTimeWindowOverride({
         start: selectedCampaign.campaign_start_date,
+        // For always-on campaigns, maintain campaign end date in time_window_override
+        // TTL expiry calculation is separate and doesn't affect time_window_override
         end: selectedCampaign.campaign_end_date,
       });
     }
@@ -252,18 +254,21 @@ export default function SmartLinkForm({
       setStartDate("");
       setEndDate("");
       setExpiresAt("");
-      setTimeWindowOverride({});
-    }
-  }, [isEdit]);
 
-  // Automatic sync: whenever start/end dates change, update time window override
-  useEffect(() => {
-    const newTimeWindow = {
-      start: startDate || undefined,
-      end: endDate || undefined,
-    };
-    setTimeWindowOverride(newTimeWindow);
-  }, [startDate, endDate]);
+      // For always-on campaigns, preserve time_window_override with campaign dates
+      if (
+        selectedCampaign?.lifecycle_attr === 1 &&
+        selectedCampaign?.campaign_end_date
+      ) {
+        setTimeWindowOverride({
+          start: selectedCampaign.campaign_start_date,
+          end: selectedCampaign.campaign_end_date,
+        });
+      } else {
+        setTimeWindowOverride({});
+      }
+    }
+  }, [isEdit, selectedCampaign]);
 
   // Calculate TTL expiry for always-on campaigns
   const calculateTtlExpiry = useCallback(() => {
@@ -283,6 +288,28 @@ export default function SmartLinkForm({
     startDate,
     selectedCampaign?.lifecycle_attr,
     selectedCampaign?.default_link_ttl_days,
+  ]);
+  // Automatic sync: whenever start/end dates change, update time window override
+  // For always-on campaigns, sync with calculated TTL expiry
+  // For other campaigns, sync with end date
+  useEffect(() => {
+    const calculatedTtl = calculateTtlExpiry();
+
+    const newTimeWindow = {
+      start: startDate || undefined,
+      // For always-on campaigns, use calculated TTL expiry as end date
+      // For other campaigns, use the manual end date
+      end:
+        selectedCampaign?.lifecycle_attr === 1
+          ? calculatedTtl || undefined
+          : endDate || undefined,
+    };
+    setTimeWindowOverride(newTimeWindow);
+  }, [
+    startDate,
+    endDate,
+    selectedCampaign?.lifecycle_attr,
+    calculateTtlExpiry,
   ]);
 
   // Target management functions
