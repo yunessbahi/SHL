@@ -485,6 +485,10 @@ export default function SmartLinkForm({
         metadataState.fields.campaignIds.value.length > 0
           ? metadataState.fields.campaignIds.value[0]
           : null,
+      group_id:
+        metadataState.fields.groupIds.value.length > 0
+          ? metadataState.fields.groupIds.value[0]
+          : null,
       start_datetime: startDate || null,
       end_datetime: endDate || null,
       expires_at: calculatedExpiresAt || null,
@@ -511,6 +515,10 @@ export default function SmartLinkForm({
             weight: target.weight,
             rules: JSON.stringify(rulesWithOverride),
             utm_template_id: target.utmTemplateId,
+            group_id:
+              metadataState.fields.groupIds.value.length > 0
+                ? metadataState.fields.groupIds.value[0]
+                : null,
           });
         } else {
           // Existing target (numeric ID)
@@ -520,6 +528,10 @@ export default function SmartLinkForm({
             weight: target.weight,
             rules: JSON.stringify(rulesWithOverride),
             utm_template_id: target.utmTemplateId,
+            group_id:
+              metadataState.fields.groupIds.value.length > 0
+                ? metadataState.fields.groupIds.value[0]
+                : null,
           });
         }
       }
@@ -549,6 +561,10 @@ export default function SmartLinkForm({
             weight: target.weight,
             rules: JSON.stringify(rulesWithOverride),
             utm_template_id: target.utmTemplateId,
+            group_id:
+              metadataState.fields.groupIds.value.length > 0
+                ? metadataState.fields.groupIds.value[0]
+                : null,
           };
         }),
       };
