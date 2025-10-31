@@ -30,6 +30,7 @@ interface LinkItem {
   name: string;
   description?: string;
   link_type: string;
+  type: string;
   campaign?: string;
   status: string;
   created_at: string;
@@ -64,9 +65,10 @@ export default function LinksPage({ user }: LinksPageProps) {
   }, []);
 
   const filteredItems = items.filter((item) => {
+    console.log(item);
     if (filter === "all") return true;
     if (filter === "smart") return item.link_type === "smart";
-    if (filter === "single") return item.link_type === "single";
+    if (filter === "single") return item.link_type === "redirect"; // Database stores "redirect" for single links
     if (filter === "active") return item.status === "active";
     if (filter === "expired") return item.status === "expired";
     return true;
@@ -202,7 +204,7 @@ export default function LinksPage({ user }: LinksPageProps) {
           {
             key: "single",
             label: "Single",
-            count: items.filter((i) => i.link_type === "single").length,
+            count: items.filter((i) => i.link_type === "redirect").length, // Database stores "redirect" for single links
           },
         ].map((tab) => (
           <Button

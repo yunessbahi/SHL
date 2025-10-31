@@ -36,7 +36,8 @@ interface Link {
   id: number;
   short_code: string;
   name: string;
-  type: "single" | "smart";
+  link_type: "redirect" | "smart"; // Database stores "redirect" for single links
+  type: "single" | "smart"; // Frontend display type (mapped from link_type)
   campaign: string | null;
   status: "active" | "expired";
   created_at: string;
@@ -71,7 +72,12 @@ export default function LinksPage({ user }: LinksPageProps) {
       const res = await authFetch("/api/links/");
       if (res.ok) {
         const data = await res.json();
-        setLinks(data);
+        // Map link_type from database to type for frontend display
+        const mappedData = data.map((link: any) => ({
+          ...link,
+          type: link.link_type === "smart" ? "smart" : "single", // Map "redirect" to "single"
+        }));
+        setLinks(mappedData);
       }
     } catch (error) {
       console.error("Failed to fetch links:", error);
