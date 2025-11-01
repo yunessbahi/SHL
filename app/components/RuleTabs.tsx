@@ -60,7 +60,7 @@ export default function RuleTabs({
   const tab = activeTab ?? internalTab;
   const changeTab = onTabChange ?? setInternalTab;
 
-  // Reactive JSON that shows current rules state with time_window_override
+  // Reactive JSON that shows current rules state with time_window_override and utm_overrides
   const jsonStr = useMemo(() => {
     const displayRules = { ...rules };
 
@@ -70,6 +70,11 @@ export default function RuleTabs({
       (inheritedTimeWindow.start || inheritedTimeWindow.end)
     ) {
       displayRules.time_window_override = inheritedTimeWindow;
+    }
+
+    // Ensure utm_overrides is displayed even if empty
+    if (!displayRules.utm_overrides) {
+      displayRules.utm_overrides = {};
     }
 
     return JSON.stringify(displayRules, null, 2);
@@ -148,6 +153,10 @@ export default function RuleTabs({
               } catch {}
             }}
           />
+          <p className="text-xs text-muted-foreground">
+            Override specific UTM parameters from the selected template. This
+            JSON will be merged with template defaults.
+          </p>
         </div>
       )}
 

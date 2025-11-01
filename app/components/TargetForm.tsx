@@ -101,6 +101,17 @@ export default function TargetForm({
   );
   const currentTemplate = selectedTemplate || campaignTemplate;
 
+  // Auto-populate utm_overrides when template changes (overwrite instead of append)
+  React.useEffect(() => {
+    if (currentTemplate && currentTemplate.utm_params) {
+      // Overwrite with template parameters (don't preserve old values)
+      onRulesChange({
+        ...rules,
+        utm_overrides: { ...currentTemplate.utm_params },
+      });
+    }
+  }, [utmTemplateId, currentTemplate?.id]); // Only trigger when template changes, not on every render
+
   // Generate UTM preview
   const getUtmPreview = () => {
     if (!currentTemplate) return null;

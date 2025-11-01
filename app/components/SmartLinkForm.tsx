@@ -64,6 +64,11 @@ export default function SmartLinkForm({
   // Groups data state
   const { groups, loading: loadingGroups } = useGroups();
 
+  // UTM templates state
+  const [utmTemplates, setUtmTemplates] = useState<any[]>([]);
+  const [campaignUtmTemplates, setCampaignUtmTemplates] = useState<any[]>([]);
+  const [loadingUtmTemplates, setLoadingUtmTemplates] = useState(false);
+
   // Load campaigns on mount
   useEffect(() => {
     campaignState.execute(
@@ -90,6 +95,61 @@ export default function SmartLinkForm({
     campaignIds: initialData?.campaign_id ? [initialData.campaign_id] : [],
     groupIds: initialData?.group_id ? [initialData.group_id] : [],
   });
+
+  // Load UTM templates filtered by campaign
+  const loadUtmTemplates = useCallback(async () => {
+    setLoadingUtmTemplates(true);
+    try {
+      const res = await authFetch("/api/utm-templates/");
+      if (!res.ok) return;
+
+      const allTemplates: any[] = await res.json();
+
+      // Filter templates by campaign or global
+      const campaignId =
+        metadataState.fields.campaignIds.value.length > 0
+          ? metadataState.fields.campaignIds.value[0]
+          : null;
+
+      const filteredTemplates = campaignId
+        ? allTemplates.filter((t) =>
+            t.campaigns?.some((c: any) => c.id === campaignId),
+          )
+        : allTemplates.filter((t: any) => t.is_global);
+
+      // Deduplicate
+      const unique = new Map<number, any>();
+      filteredTemplates.forEach((t) => unique.set(t.id, t));
+
+      const result = Array.from(unique.values());
+      setUtmTemplates(result);
+    } catch (error) {
+      console.error("Failed to load UTM templates:", error);
+    } finally {
+      setLoadingUtmTemplates(false);
+    }
+  }, [metadataState.fields.campaignIds.value]);
+
+  // Load when campaign changes
+  useEffect(() => {
+    loadUtmTemplates();
+  }, [loadUtmTemplates]);
+
+  // Load templates if draft already has campaign (e.g. editing)
+  useEffect(() => {
+    if (initialData?.campaign_id) {
+      loadUtmTemplates();
+    }
+  }, []);
+
+  // Set campaign-specific UTM templates when campaign changes
+  useEffect(() => {
+    if (selectedCampaign?.utm_templates) {
+      setCampaignUtmTemplates(selectedCampaign.utm_templates || []);
+    } else {
+      setCampaignUtmTemplates([]);
+    }
+  }, [selectedCampaign]);
 
   // Behavior form state (dates) - Proper initialization for edit mode
   const [startDate, setStartDate] = useState(initialData?.start_datetime || "");
@@ -740,7 +800,9 @@ export default function SmartLinkForm({
                   }
                   onRemove={() => removeTarget(target.id)}
                   showRemove={targets.length > 2}
+                  utmTemplates={utmTemplates}
                   campaignUtmTemplates={selectedCampaign?.utm_templates || []}
+                  loadingUtmTemplates={loadingUtmTemplates}
                   onCreateUtmTemplate={utmTemplateModal.open}
                   isAlwaysOn={selectedCampaign?.lifecycle_attr === 1}
                   showTimeWindow={false}
