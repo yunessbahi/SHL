@@ -44,7 +44,22 @@ export function DateTimePicker24h({
         newDate.setHours(now.getHours());
         newDate.setMinutes(now.getMinutes());
       }
-      onChange(newDate.toISOString());
+
+      // Preserve timezone information in the ISO string
+      const timezoneOffset = -newDate.getTimezoneOffset(); // getTimezoneOffset returns negative value
+      const offsetHours = Math.floor(Math.abs(timezoneOffset) / 60);
+      const offsetMinutes = Math.abs(timezoneOffset) % 60;
+      const offsetSign = timezoneOffset >= 0 ? "+" : "-";
+      const offsetString = `${offsetSign}${String(offsetHours).padStart(2, "0")}:${String(offsetMinutes).padStart(2, "0")}`;
+
+      const year = newDate.getFullYear();
+      const month = String(newDate.getMonth() + 1).padStart(2, "0");
+      const day = String(newDate.getDate()).padStart(2, "0");
+      const hours = String(newDate.getHours()).padStart(2, "0");
+      const minutes = String(newDate.getMinutes()).padStart(2, "0");
+
+      const isoStringWithTZ = `${year}-${month}-${day}T${hours}:${minutes}:00${offsetString}`;
+      onChange(isoStringWithTZ);
     }
   }
 
@@ -59,7 +74,21 @@ export function DateTimePicker24h({
       newDate.setMinutes(parseInt(timeValue, 10));
     }
 
-    onChange(newDate.toISOString());
+    // Preserve timezone information in the ISO string
+    const timezoneOffset = -newDate.getTimezoneOffset(); // getTimezoneOffset returns negative value
+    const offsetHours = Math.floor(Math.abs(timezoneOffset) / 60);
+    const offsetMinutes = Math.abs(timezoneOffset) % 60;
+    const offsetSign = timezoneOffset >= 0 ? "+" : "-";
+    const offsetString = `${offsetSign}${String(offsetHours).padStart(2, "0")}:${String(offsetMinutes).padStart(2, "0")}`;
+
+    const year = newDate.getFullYear();
+    const month = String(newDate.getMonth() + 1).padStart(2, "0");
+    const day = String(newDate.getDate()).padStart(2, "0");
+    const hours = String(newDate.getHours()).padStart(2, "0");
+    const minutes = String(newDate.getMinutes()).padStart(2, "0");
+
+    const isoStringWithTZ = `${year}-${month}-${day}T${hours}:${minutes}:00${offsetString}`;
+    onChange(isoStringWithTZ);
   }
 
   return (
