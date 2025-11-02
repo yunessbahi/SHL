@@ -1,19 +1,11 @@
 "use client";
 import React, { useMemo, useState } from "react";
 import JsonEditor from "../components/JsonEditor";
-//import MultiSelect from "../components/MultiSelect";
 import { MultiSelect } from "@/components/multi-select";
 import { CalendarWithTimeInput } from "@/components/ui/calendar-with-time-input";
 import { Button } from "@/components/ui/button";
 import { RotateCcw, X } from "lucide-react";
-
-const COUNTRY_OPTIONS = [
-  { label: "United States", value: "US" },
-  { label: "France", value: "FR" },
-  { label: "United Kingdom", value: "GB" },
-  { label: "Germany", value: "DE" },
-  { label: "Canada", value: "CA" },
-];
+import { useCountries } from "@/lib/hooks/useCountries";
 
 type RuleTabsProps = {
   rules: any;
@@ -60,6 +52,17 @@ export default function RuleTabs({
   const tab = activeTab ?? internalTab;
   const changeTab = onTabChange ?? setInternalTab;
 
+  // Load countries dynamically from the database
+  const {
+    countryOptions,
+    loading: countriesLoading,
+    error: countriesError,
+    isUsingFallback,
+    retryCount,
+    lastSuccessfulLoad,
+    forceRefresh,
+  } = useCountries();
+
   // Reactive JSON that shows current rules state with time_window_override and utm_overrides
   const jsonStr = useMemo(() => {
     const displayRules = { ...rules };
@@ -104,14 +107,92 @@ export default function RuleTabs({
 
       {tab === "audience" && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <MultiSelect
-            placeholder="Country allow"
-            options={COUNTRY_OPTIONS}
-            defaultValue={rules?.country_allow || []}
-            onValueChange={(vals) =>
-              setRules({ ...rules, country_allow: vals })
-            }
-          />
+          <div>
+            <MultiSelect
+              placeholder="Country allow"
+              options={countryOptions}
+              defaultValue={rules?.country_allow || []}
+              onValueChange={(vals) =>
+                setRules({ ...rules, country_allow: vals })
+              }
+              disabled={countriesLoading}
+            />
+
+            {/* Enhanced status indicators */}
+            {countriesLoading && (
+              <div className="flex items-center gap-2 mt-1">
+                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-indigo-600"></div>
+                <p className="text-xs text-muted-foreground">
+                  Loading countries from database...
+                </p>
+              </div>
+            )}
+
+            {isUsingFallback && !countriesLoading && (
+              <div className="mt-1 p-2 bg-amber-50 border border-amber-200 rounded">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1">
+                    <p className="text-xs text-amber-800 font-medium">
+                      ⚠️ Using fallback countries
+                    </p>
+                    <p className="text-xs text-amber-700">
+                      Limited to {countryOptions.length} countries due to API
+                      connection issues
+                    </p>
+                    {lastSuccessfulLoad && (
+                      <p className="text-xs text-amber-600 mt-1">
+                        Last successful sync:{" "}
+                        {lastSuccessfulLoad.toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={forceRefresh}
+                    className="text-xs h-6 px-2"
+                  >
+                    Retry
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {countriesError && !isUsingFallback && (
+              <div className="mt-1 p-2 bg-red-50 border border-red-200 rounded">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1">
+                    <p className="text-xs text-red-800 font-medium">
+                      ❌ Failed to load countries
+                    </p>
+                    <p className="text-xs text-red-700">{countriesError}</p>
+                    {retryCount > 0 && (
+                      <p className="text-xs text-red-600 mt-1">
+                        Retried {retryCount} time{retryCount !== 1 ? "s" : ""}
+                      </p>
+                    )}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={forceRefresh}
+                    className="text-xs h-6 px-2"
+                  >
+                    Retry
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {!countriesLoading &&
+              !countriesError &&
+              !isUsingFallback &&
+              countryOptions.length > 0 && (
+                <p className="text-xs text-green-600 mt-1">
+                  ✓ Loaded {countryOptions.length} countries
+                </p>
+              )}
+          </div>
           <div>
             <label className="block text-sm mb-1">Device allow</label>
             <select
