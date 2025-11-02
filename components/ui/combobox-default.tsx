@@ -35,6 +35,8 @@ interface ComboboxProps {
   className?: string;
   disabled?: boolean;
   allowClear?: boolean;
+  showGlobalBadge?: boolean;
+  selectedOptionData?: any;
 }
 
 export function Combobox({
@@ -47,6 +49,8 @@ export function Combobox({
   className,
   disabled = false,
   allowClear = true,
+  showGlobalBadge = false,
+  selectedOptionData,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
 
@@ -83,11 +87,6 @@ export function Combobox({
       options: groupOptions,
     }));
 
-    console.log(
-      "Rendered groups:",
-      result.map((g) => ({ group: g.label, count: g.options.length })),
-    );
-
     return result;
   }, [options]);
 
@@ -101,7 +100,18 @@ export function Combobox({
           className={cn("w-full justify-between", className)}
           disabled={disabled}
         >
-          {selectedOption ? selectedOption.label : placeholder}
+          {selectedOption ? (
+            <div className="flex items-center gap-2">
+              <span>{selectedOption.label}</span>
+              {showGlobalBadge && selectedOptionData?.is_global && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 border">
+                  Global
+                </span>
+              )}
+            </div>
+          ) : (
+            placeholder
+          )}
           <ChevronsUpDown className="opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -246,22 +256,6 @@ export function formatUtmTemplateOptions(
       group: "Global",
     });
   });
-
-  console.log(
-    `Assigned: ${assignedTemplates.length}, Global: ${globalTemplates.length}, Total options: ${options.length}`,
-  );
-  console.log(
-    "Global option details:",
-    globalTemplates.map((t) => ({ id: t.id, name: t.name, group: "Global" })),
-  );
-  console.log(
-    "Assigned option details:",
-    assignedTemplates.map((t) => ({
-      id: t.id,
-      name: t.name,
-      group: "Assigned",
-    })),
-  );
 
   return options;
 }

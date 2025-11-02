@@ -231,6 +231,8 @@ export default function TargetForm({
                 placeholder="Select UTM template"
                 searchPlaceholder="Search templates..."
                 allowClear={false}
+                showGlobalBadge={true}
+                selectedOptionData={currentTemplate}
               />
             )}
           </div>
@@ -266,14 +268,7 @@ export default function TargetForm({
             </div>
           )}
 
-          {/* Inheritance Indicator */}
-          {currentTemplate && currentTemplate.is_global && (
-            <div className="mt-2">
-              <Badge variant="secondary" className="text-xs">
-                Global template
-              </Badge>
-            </div>
-          )}
+          {/* Global badge now displayed inside combobox field */}
         </div>
 
         {/* Audience Rules */}
