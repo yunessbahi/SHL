@@ -54,6 +54,7 @@ interface PreviewPageProps {
 interface VisitorContext {
   country: string;
   device_type: string;
+  is_mobile: boolean;
   referer: string;
   ip: string;
   ua: string;
@@ -90,6 +91,7 @@ export default function PreviewPage({ user, id }: PreviewPageProps) {
   const [context, setContext] = useState<VisitorContext>({
     country: "",
     device_type: "any",
+    is_mobile: false,
     referer: "",
     ip: "",
     ua: "",
@@ -289,7 +291,11 @@ export default function PreviewPage({ user, id }: PreviewPageProps) {
                 <Select
                   value={context.device_type}
                   onValueChange={(value) =>
-                    setContext({ ...context, device_type: value })
+                    setContext({
+                      ...context,
+                      device_type: value,
+                      is_mobile: value === "mobile",
+                    })
                   }
                 >
                   <SelectTrigger>
@@ -485,10 +491,13 @@ export default function PreviewPage({ user, id }: PreviewPageProps) {
                             {context.country && (
                               <li>Country: {context.country}</li>
                             )}
-                            {context.device_type &&
-                              context.device_type !== "any" && (
-                                <li>Device: {context.device_type}</li>
-                              )}
+                            {context.is_mobile !== undefined && (
+                              <li>
+                                Device:{" "}
+                                {context.is_mobile ? "Mobile" : "Desktop"}{" "}
+                                (is_mobile: {context.is_mobile})
+                              </li>
+                            )}
                             {context.referer && (
                               <li>Referer: {context.referer}</li>
                             )}
