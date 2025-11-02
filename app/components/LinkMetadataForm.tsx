@@ -15,12 +15,10 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Combobox,
+  formatCampaignOptions,
+  formatGroupOptions,
+} from "@/components/ui/combobox-default";
 
 interface Campaign {
   id: number;
@@ -92,14 +90,14 @@ export default function LinkMetadataForm({
   const selectedCampaignId = campaignIds.length > 0 ? campaignIds[0] : "";
   const selectedGroupId = groupIds.length > 0 ? groupIds[0] : "";
 
-  const handleCampaignChange = (value: string) => {
-    if (value === "none") {
+  const handleCampaignChange = (value: string | number | null) => {
+    if (!value) {
       onCampaignChange([]);
       if (onCampaignChangeWithLifecycle) {
         onCampaignChangeWithLifecycle(null, undefined);
       }
     } else {
-      const campaignId = parseInt(value);
+      const campaignId = parseInt(String(value));
       onCampaignChange([campaignId]);
 
       // Find campaign and pass lifecycle info
@@ -110,13 +108,17 @@ export default function LinkMetadataForm({
     }
   };
 
-  const handleGroupChange = (value: string) => {
-    if (value === "none") {
+  const handleGroupChange = (value: string | number | null) => {
+    if (!value) {
       onGroupChange([]);
     } else {
-      onGroupChange([parseInt(value)]);
+      onGroupChange([parseInt(String(value))]);
     }
   };
+
+  // Format campaign and group options
+  const campaignOptions = formatCampaignOptions(campaigns, true);
+  const groupOptions = formatGroupOptions(groups, true);
 
   return (
     <div className="space-y-6">
@@ -161,25 +163,14 @@ export default function LinkMetadataForm({
             {loadingCampaigns ? (
               <Skeleton className="h-10 w-full" />
             ) : (
-              <Select
-                value={selectedCampaignId.toString()}
+              <Combobox
+                options={campaignOptions}
+                value={selectedCampaignId}
                 onValueChange={handleCampaignChange}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a campaign" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No campaign</SelectItem>
-                  {campaigns.map((campaign) => (
-                    <SelectItem
-                      key={campaign.id}
-                      value={campaign.id.toString()}
-                    >
-                      {campaign.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Select a campaign"
+                searchPlaceholder="Search campaigns..."
+                allowClear={false}
+              />
             )}
             <Button
               type="button"
@@ -207,22 +198,14 @@ export default function LinkMetadataForm({
             {loadingGroups ? (
               <Skeleton className="h-10 w-full" />
             ) : (
-              <Select
-                value={selectedGroupId.toString()}
+              <Combobox
+                options={groupOptions}
+                value={selectedGroupId}
                 onValueChange={handleGroupChange}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a group" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No group</SelectItem>
-                  {groups.map((group) => (
-                    <SelectItem key={group.id} value={group.id.toString()}>
-                      {group.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Select a group"
+                searchPlaceholder="Search groups..."
+                allowClear={false}
+              />
             )}
             <Button
               type="button"

@@ -88,33 +88,16 @@ export default function SingleLinkForm({
     groupIds: initialData?.group_id ? [initialData.group_id] : [],
   });
 
-  // Load UTM templates filtered by campaign
+  // Load UTM templates with campaign relationships populated
   const loadUtmTemplates = useCallback(async () => {
     setLoadingUtmTemplates(true);
     try {
+      // Backend now always returns templates with campaign relationships
       const res = await authFetch("/api/utm-templates/");
       if (!res.ok) return;
 
       const allTemplates: any[] = await res.json();
-
-      // Filter templates by campaign or global
-      const campaignId =
-        metadataState.fields.campaignIds.value.length > 0
-          ? metadataState.fields.campaignIds.value[0]
-          : null;
-
-      const filteredTemplates = campaignId
-        ? allTemplates.filter((t) =>
-            t.campaigns?.some((c: any) => c.id === campaignId),
-          )
-        : allTemplates.filter((t: any) => t.is_global);
-
-      // Deduplicate
-      const unique = new Map<number, any>();
-      filteredTemplates.forEach((t) => unique.set(t.id, t));
-
-      const result = Array.from(unique.values());
-      setUtmTemplates(result);
+      setUtmTemplates(allTemplates);
     } catch (error) {
       console.error("Failed to load UTM templates:", error);
     } finally {
@@ -125,7 +108,7 @@ export default function SingleLinkForm({
   // Load when campaign changes
   useEffect(() => {
     loadUtmTemplates();
-  }, [loadUtmTemplates]);
+  }, [loadUtmTemplates, selectedCampaign]);
 
   // Load templates if draft already has campaign (e.g. editing)
   useEffect(() => {
@@ -136,12 +119,18 @@ export default function SingleLinkForm({
 
   // Set campaign-specific UTM templates when campaign changes
   useEffect(() => {
-    if (selectedCampaign?.utm_templates) {
-      setCampaignUtmTemplates(selectedCampaign.utm_templates || []);
+    if (selectedCampaign) {
+      // Extract campaign-specific templates from utmTemplates
+      const campaignTemplates = utmTemplates.filter(
+        (t) =>
+          t.campaigns &&
+          t.campaigns.some((c: any) => c.id === selectedCampaign.id),
+      );
+      setCampaignUtmTemplates(campaignTemplates);
     } else {
       setCampaignUtmTemplates([]);
     }
-  }, [selectedCampaign]);
+  }, [selectedCampaign, utmTemplates]);
 
   // Behavior form state (dates) - Proper initialization for edit mode
   const [startDate, setStartDate] = useState(initialData?.start_datetime || "");
@@ -575,6 +564,7 @@ export default function SingleLinkForm({
                 metadataActions.setField("groupIds", value)
               }
               onCreateCampaign={campaignModal.open}
+              onCreateGroup={() => {}}
               onCampaignChangeWithLifecycle={handleCampaignChangeWithLifecycle}
             />
             {metadataState.fields.name.touched &&
@@ -619,7 +609,7 @@ export default function SingleLinkForm({
             targetActions.setField("utmTemplateId", value)
           }
           utmTemplates={utmTemplates}
-          campaignUtmTemplates={selectedCampaign?.utm_templates || []}
+          campaignUtmTemplates={campaignUtmTemplates}
           loadingUtmTemplates={loadingUtmTemplates}
           onCreateUtmTemplate={utmTemplateModal.open}
           isAlwaysOn={selectedCampaign?.lifecycle_attr === 1}

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Eye, EyeOff } from "lucide-react";
+import { Plus, Trash2, Eye, EyeOff, BadgeCheckIcon } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -16,12 +16,18 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import WeightSlider from "./WeightSlider";
 import RuleTabs from "./RuleTabs";
+import {
+  Combobox,
+  formatUtmTemplateOptions,
+} from "@/components/ui/combobox-default";
 
 interface UTMTemplate {
   id: number;
   name: string;
   description: string;
   utm_params: Record<string, string>;
+  is_global?: boolean;
+  campaigns?: any[];
 }
 
 interface TargetFormProps {
@@ -30,7 +36,6 @@ interface TargetFormProps {
   weight: number;
   rules: Record<string, any>;
   utmTemplateId: number | null;
-
   // Available UTM templates
   utmTemplates?: UTMTemplate[];
   campaignUtmTemplates?: UTMTemplate[];
@@ -94,11 +99,11 @@ export default function TargetForm({
 }: TargetFormProps) {
   const [showPreview, setShowPreview] = useState(false);
 
-  // Find current template
+  // Find current template from either utmTemplates or campaignUtmTemplates
   const selectedTemplate = utmTemplates.find((t) => t.id === utmTemplateId);
-  const campaignTemplate = campaignUtmTemplates?.find(
-    (t) => t.id === utmTemplateId,
-  );
+  const campaignTemplate = Array.isArray(campaignUtmTemplates)
+    ? campaignUtmTemplates.find((t) => t.id === utmTemplateId)
+    : null;
   const currentTemplate = selectedTemplate || campaignTemplate;
 
   // Auto-populate utm_overrides when template changes (overwrite instead of append)
@@ -111,6 +116,11 @@ export default function TargetForm({
       });
     }
   }, [utmTemplateId, currentTemplate?.id]); // Only trigger when template changes, not on every render
+
+  // Wrapper function to handle string/number conversion for UTM template change
+  const handleUtmTemplateChange = (value: string | number | null) => {
+    onUtmTemplateChange(value ? Number(value) : null);
+  };
 
   // Generate UTM preview
   const getUtmPreview = () => {
@@ -206,36 +216,22 @@ export default function TargetForm({
             {loadingUtmTemplates ? (
               <Skeleton className="flex-1 h-10" />
             ) : (
-              <select
-                value={utmTemplateId || ""}
-                onChange={(e) =>
-                  onUtmTemplateChange(
-                    e.target.value ? Number(e.target.value) : null,
-                  )
-                }
-                className="flex-1 px-3 py-2 border rounded-md text-sm"
-              >
-                <option value="">No template</option>
-                {campaignUtmTemplates && campaignUtmTemplates.length > 0 && (
-                  <optgroup label="Campaign Templates">
-                    {campaignUtmTemplates.map((template) => (
-                      <option
-                        key={`campaign-${template.id}`}
-                        value={template.id}
-                      >
-                        {template.name} (Campaign)
-                      </option>
-                    ))}
-                  </optgroup>
+              <Combobox
+                options={formatUtmTemplateOptions(
+                  utmTemplates,
+                  Array.isArray(campaignUtmTemplates)
+                    ? campaignUtmTemplates.map((t: UTMTemplate) => t.id)
+                    : [],
+                  true,
                 )}
-                <optgroup label="Global Templates">
-                  {utmTemplates.map((template) => (
-                    <option key={template.id} value={template.id}>
-                      {template.name}
-                    </option>
-                  ))}
-                </optgroup>
-              </select>
+                value={utmTemplateId?.toString() || ""}
+                onValueChange={(value) =>
+                  handleUtmTemplateChange(value ? Number(value) : null)
+                }
+                placeholder="Select UTM template"
+                searchPlaceholder="Search templates..."
+                allowClear={false}
+              />
             )}
           </div>
 
@@ -271,10 +267,10 @@ export default function TargetForm({
           )}
 
           {/* Inheritance Indicator */}
-          {campaignTemplate && (
+          {currentTemplate && currentTemplate.is_global && (
             <div className="mt-2">
               <Badge variant="secondary" className="text-xs">
-                Inherited from campaign
+                Global template
               </Badge>
             </div>
           )}
