@@ -142,7 +142,11 @@ export default function Sidebar({
             >
               Dashboard
             </SidebarItem>
-            <SidebarItem href="/links" icon={LinkIcon} collapsed={collapsed}>
+            <SidebarItem
+              href="/workspace/links"
+              icon={LinkIcon}
+              collapsed={collapsed}
+            >
               Links
             </SidebarItem>
           </SidebarSection>

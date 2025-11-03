@@ -2,13 +2,13 @@ import { getSafeSession } from "@/lib/getSafeSession";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { NextRequest } from "next/server";
-import TargetsPageClient from "./PageClient";
+import PreviewPageClient from "./PageClient";
 
 interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-export default async function TargetsPage({ params }: PageProps) {
+export default async function PreviewPage({ params }: PageProps) {
   const { id } = await params;
   const headersList = headers();
   const request = new NextRequest(
@@ -18,8 +18,8 @@ export default async function TargetsPage({ params }: PageProps) {
   const sessionResult = await getSafeSession(request);
 
   if (!sessionResult || !sessionResult.user) {
-    redirect("/auth/login?redirectedFrom=/links");
+    redirect("/auth/login?redirectedFrom=/workspace/links");
   }
 
-  return <TargetsPageClient user={sessionResult.user} id={id} />;
+  return <PreviewPageClient user={sessionResult.user} id={id} />;
 }
