@@ -37,6 +37,7 @@ interface LinkMetadataFormProps {
   // Form values
   name: string;
   description: string;
+  fallbackUrl: string; // New fallback URL field
   campaignIds: number[]; // Changed to array for MultiSelect
   groupIds: number[]; // Changed to array for MultiSelect
 
@@ -49,6 +50,7 @@ interface LinkMetadataFormProps {
   // Change handlers
   onNameChange: (name: string) => void;
   onDescriptionChange: (description: string) => void;
+  onFallbackUrlChange: (url: string) => void; // New handler
   onCampaignChange: (ids: number[]) => void;
   onGroupChange: (ids: number[]) => void;
 
@@ -72,6 +74,7 @@ interface LinkMetadataFormProps {
 export default function LinkMetadataForm({
   name,
   description,
+  fallbackUrl,
   campaignIds = [],
   groupIds = [],
   campaigns = [],
@@ -80,6 +83,7 @@ export default function LinkMetadataForm({
   loadingGroups = false,
   onNameChange,
   onDescriptionChange,
+  onFallbackUrlChange,
   onCampaignChange,
   onGroupChange,
   onCreateCampaign,
@@ -146,6 +150,21 @@ export default function LinkMetadataForm({
             rows={3}
             className="mt-1"
           />
+        </div>
+
+        <div>
+          <Label htmlFor="fallback-url">Fallback URL</Label>
+          <Input
+            id="fallback-url"
+            value={fallbackUrl}
+            onChange={(e) => onFallbackUrlChange(e.target.value)}
+            placeholder="Enter fallback URL (used when no targets match)"
+            className="mt-1"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            This URL will be used when no targets match the user's conditions
+            (smart links only)
+          </p>
         </div>
       </div>
 

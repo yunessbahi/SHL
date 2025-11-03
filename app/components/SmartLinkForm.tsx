@@ -92,6 +92,7 @@ export default function SmartLinkForm({
   const [metadataState, metadataActions] = useFormState({
     name: initialData?.name || "",
     description: initialData?.description || "",
+    fallbackUrl: initialData?.fallback_url || initialData?.target_url || "", // Use fallback_url or fallback to target_url for backward compatibility
     campaignIds: initialData?.campaign_id ? [initialData.campaign_id] : [],
     groupIds: initialData?.group_id ? [initialData.group_id] : [],
   });
@@ -539,6 +540,7 @@ export default function SmartLinkForm({
     const baseData = {
       name: metadataState.fields.name.value,
       description: metadataState.fields.description.value,
+      fallback_url: metadataState.fields.fallbackUrl.value, // Add fallback_url to base data
       campaign_id:
         metadataState.fields.campaignIds.value.length > 0
           ? metadataState.fields.campaignIds.value[0]
@@ -715,6 +717,7 @@ export default function SmartLinkForm({
             <LinkMetadataForm
               name={metadataState.fields.name.value}
               description={metadataState.fields.description.value}
+              fallbackUrl={metadataState.fields.fallbackUrl.value}
               campaignIds={metadataState.fields.campaignIds.value}
               groupIds={metadataState.fields.groupIds.value}
               campaigns={campaignState.data || []}
@@ -724,6 +727,9 @@ export default function SmartLinkForm({
               onNameChange={(value) => metadataActions.setField("name", value)}
               onDescriptionChange={(value) =>
                 metadataActions.setField("description", value)
+              }
+              onFallbackUrlChange={(value) =>
+                metadataActions.setField("fallbackUrl", value)
               }
               onCampaignChange={(value) =>
                 metadataActions.setField("campaignIds", value)
