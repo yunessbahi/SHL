@@ -87,6 +87,9 @@ export default function SingleLinkForm({
     fallbackUrl: initialData?.fallback_url || initialData?.target_url || "", // Use fallback_url or fallback to target_url for backward compatibility
     campaignIds: initialData?.campaign_id ? [initialData.campaign_id] : [],
     groupIds: initialData?.group_id ? [initialData.group_id] : [],
+    // Advanced validation fields
+    ipAddresses: "", // Will be populated from target rules
+    referers: "", // Will be populated from target rules
   });
 
   // Load UTM templates with campaign relationships populated
@@ -157,6 +160,55 @@ export default function SingleLinkForm({
     })(),
     utmTemplateId: initialData?.targets?.[0]?.utm_template_id || null,
   });
+
+  // Extract IP addresses and referers from target rules for form display
+  const [ipAddresses, setIpAddresses] = useState(() => {
+    const rules = targetState.fields.rules.value;
+    const ipAllow = rules?.ip_address_allow || [];
+    return ipAllow.join(", ");
+  });
+
+  const [referers, setReferers] = useState(() => {
+    const rules = targetState.fields.rules.value;
+    const refererAllow = rules?.referer_allow || [];
+    return refererAllow.join(", ");
+  });
+
+  // Handle IP addresses changes
+  const handleIpAddressesChange = useCallback(
+    (newIpAddresses: string) => {
+      setIpAddresses(newIpAddresses);
+      // Update the target rules with new IP addresses
+      const ipArray = newIpAddresses
+        .split(",")
+        .map((ip) => ip.trim())
+        .filter((ip) => ip.length > 0);
+      const newRules = {
+        ...targetState.fields.rules.value,
+        ip_address_allow: ipArray,
+      };
+      targetActions.setField("rules", newRules);
+    },
+    [targetActions, targetState.fields.rules.value],
+  );
+
+  // Handle referers changes
+  const handleReferersChange = useCallback(
+    (newReferers: string) => {
+      setReferers(newReferers);
+      // Update the target rules with new referers
+      const refererArray = newReferers
+        .split(",")
+        .map((ref) => ref.trim())
+        .filter((ref) => ref.length > 0);
+      const newRules = {
+        ...targetState.fields.rules.value,
+        referer_allow: refererArray,
+      };
+      targetActions.setField("rules", newRules);
+    },
+    [targetActions, targetState.fields.rules.value],
+  );
 
   // Time window override state - manually controlled
   const [timeWindowOverride, setTimeWindowOverride] = useState(() => {
@@ -552,6 +604,8 @@ export default function SingleLinkForm({
               fallbackUrl={metadataState.fields.fallbackUrl.value}
               campaignIds={metadataState.fields.campaignIds.value}
               groupIds={metadataState.fields.groupIds.value}
+              ipAddresses={ipAddresses}
+              referers={referers}
               campaigns={campaignState.data || []}
               groups={groups}
               loadingCampaigns={campaignState.isLoading}
@@ -569,6 +623,8 @@ export default function SingleLinkForm({
               onGroupChange={(value) =>
                 metadataActions.setField("groupIds", value)
               }
+              onIpAddressesChange={handleIpAddressesChange}
+              onReferersChange={handleReferersChange}
               onCreateCampaign={campaignModal.open}
               onCreateGroup={() => {}}
               onCampaignChangeWithLifecycle={handleCampaignChangeWithLifecycle}

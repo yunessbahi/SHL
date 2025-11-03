@@ -225,6 +225,89 @@ export default function SmartLinkForm({
         ],
   );
 
+  // Extract IP addresses and referers from first target rules for form display
+  const [ipAddresses, setIpAddresses] = useState(() => {
+    if (initialData?.targets?.[0]?.rules) {
+      let rules = initialData.targets[0].rules;
+      if (typeof rules === "string") {
+        try {
+          rules = JSON.parse(rules);
+        } catch {
+          rules = {};
+        }
+      }
+      const ipAllow = rules?.ip_address_allow || [];
+      return ipAllow.join(", ");
+    }
+    return "";
+  });
+
+  const [referers, setReferers] = useState(() => {
+    if (initialData?.targets?.[0]?.rules) {
+      let rules = initialData.targets[0].rules;
+      if (typeof rules === "string") {
+        try {
+          rules = JSON.parse(rules);
+        } catch {
+          rules = {};
+        }
+      }
+      const refererAllow = rules?.referer_allow || [];
+      return refererAllow.join(", ");
+    }
+    return "";
+  });
+
+  // Handle IP addresses changes
+  const handleIpAddressesChange = useCallback(
+    (newIpAddresses: string) => {
+      setIpAddresses(newIpAddresses);
+      // Update the first target rules with new IP addresses
+      const ipArray = newIpAddresses
+        .split(",")
+        .map((ip) => ip.trim())
+        .filter((ip) => ip.length > 0);
+      const updatedTargets = targets.map((target, index) => {
+        if (index === 0) {
+          // Update only the first target for consistency
+          const newRules = {
+            ...target.rules,
+            ip_address_allow: ipArray,
+          };
+          return { ...target, rules: newRules };
+        }
+        return target;
+      });
+      setTargets(updatedTargets);
+    },
+    [targets],
+  );
+
+  // Handle referers changes
+  const handleReferersChange = useCallback(
+    (newReferers: string) => {
+      setReferers(newReferers);
+      // Update the first target rules with new referers
+      const refererArray = newReferers
+        .split(",")
+        .map((ref) => ref.trim())
+        .filter((ref) => ref.length > 0);
+      const updatedTargets = targets.map((target, index) => {
+        if (index === 0) {
+          // Update only the first target for consistency
+          const newRules = {
+            ...target.rules,
+            referer_allow: refererArray,
+          };
+          return { ...target, rules: newRules };
+        }
+        return target;
+      });
+      setTargets(updatedTargets);
+    },
+    [targets],
+  );
+
   // Handle campaign selection
   useEffect(() => {
     if (metadataState.fields.campaignIds.value.length > 0) {
@@ -720,6 +803,8 @@ export default function SmartLinkForm({
               fallbackUrl={metadataState.fields.fallbackUrl.value}
               campaignIds={metadataState.fields.campaignIds.value}
               groupIds={metadataState.fields.groupIds.value}
+              ipAddresses={ipAddresses}
+              referers={referers}
               campaigns={campaignState.data || []}
               groups={groups}
               loadingCampaigns={campaignState.isLoading}
@@ -737,6 +822,8 @@ export default function SmartLinkForm({
               onGroupChange={(value) =>
                 metadataActions.setField("groupIds", value)
               }
+              onIpAddressesChange={handleIpAddressesChange}
+              onReferersChange={handleReferersChange}
               onCreateCampaign={campaignModal.open}
               onCreateGroup={() => {}}
               onCampaignChangeWithLifecycle={handleCampaignChangeWithLifecycle}

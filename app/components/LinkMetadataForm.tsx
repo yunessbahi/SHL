@@ -1,11 +1,11 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, ChevronDown, ChevronRight } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -14,6 +14,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   Combobox,
   formatCampaignOptions,
@@ -41,6 +46,10 @@ interface LinkMetadataFormProps {
   campaignIds: number[]; // Changed to array for MultiSelect
   groupIds: number[]; // Changed to array for MultiSelect
 
+  // Advanced validation fields
+  ipAddresses?: string; // Comma-separated IP addresses
+  referers?: string; // Comma-separated referer patterns
+
   // Available options
   campaigns?: Campaign[];
   groups?: Group[];
@@ -53,6 +62,10 @@ interface LinkMetadataFormProps {
   onFallbackUrlChange: (url: string) => void; // New handler
   onCampaignChange: (ids: number[]) => void;
   onGroupChange: (ids: number[]) => void;
+
+  // Advanced validation handlers
+  onIpAddressesChange: (ipAddresses: string) => void;
+  onReferersChange: (referers: string) => void;
 
   // Action callbacks
   onCreateCampaign?: () => void;
@@ -77,6 +90,8 @@ export default function LinkMetadataForm({
   fallbackUrl,
   campaignIds = [],
   groupIds = [],
+  ipAddresses = "",
+  referers = "",
   campaigns = [],
   groups = [],
   loadingCampaigns = false,
@@ -86,10 +101,15 @@ export default function LinkMetadataForm({
   onFallbackUrlChange,
   onCampaignChange,
   onGroupChange,
+  onIpAddressesChange,
+  onReferersChange,
   onCreateCampaign,
   onCampaignChangeWithLifecycle,
   onCreateGroup,
 }: LinkMetadataFormProps) {
+  // State for collapsible advanced rules section
+  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+
   // Get selected values (take first item from arrays for single selection)
   const selectedCampaignId = campaignIds.length > 0 ? campaignIds[0] : "";
   const selectedGroupId = groupIds.length > 0 ? groupIds[0] : "";
@@ -240,6 +260,76 @@ export default function LinkMetadataForm({
           </CardContent>
         </Card>
       </div>
+
+      {/* Advanced Rules Section */}
+      <Collapsible open={isAdvancedOpen} onOpenChange={setIsAdvancedOpen}>
+        <CollapsibleTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full flex items-center justify-between"
+          >
+            <span className="text-sm font-medium">Advanced Rules</span>
+            {isAdvancedOpen ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="space-y-4 mt-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">IP Address Validation</CardTitle>
+              <CardDescription className="text-xs">
+                Restrict access based on visitor IP addresses
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div>
+                <Label htmlFor="ip-addresses">Allowed IP Addresses</Label>
+                <Textarea
+                  id="ip-addresses"
+                  value={ipAddresses}
+                  onChange={(e) => onIpAddressesChange(e.target.value)}
+                  placeholder="Enter IP addresses separated by commas&#10;Example: 192.168.1.1, 10.0.0.1, 203.0.113.1"
+                  className="mt-1"
+                  rows={2}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Supports IPv4 and IPv6. Leave empty to allow all IPs.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">Referer Validation</CardTitle>
+              <CardDescription className="text-xs">
+                Restrict access based on referer URL patterns
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div>
+                <Label htmlFor="referers">Allowed Referer Patterns</Label>
+                <Textarea
+                  id="referers"
+                  value={referers}
+                  onChange={(e) => onReferersChange(e.target.value)}
+                  placeholder="Enter referer patterns separated by commas&#10;Example: *.google.com, *.facebook.com, https://example.com/*"
+                  className="mt-1"
+                  rows={2}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Supports wildcards (*.example.com). Leave empty to allow all
+                  referers.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   );
 }
