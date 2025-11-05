@@ -225,6 +225,9 @@ export default function SmartLinkForm({
         ],
   );
 
+  // Note: Removed nextTargetId - new targets don't need frontend IDs
+  // Database will auto-generate primary keys
+
   // Extract IP addresses and referers from first target rules for form display
   const [ipAddresses, setIpAddresses] = useState(() => {
     if (initialData?.targets?.[0]?.rules) {
@@ -456,8 +459,9 @@ export default function SmartLinkForm({
 
   // Target management functions
   const addTarget = useCallback(() => {
+    // New targets don't need any ID - database will auto-generate primary key
     const newTarget: Target = {
-      id: Date.now().toString(),
+      id: "", // Empty ID means new target (database will auto-generate)
       targetUrl: "",
       weight: Math.max(10, Math.floor(100 / (targets.length + 1))),
       rules: {},
@@ -651,8 +655,9 @@ export default function SmartLinkForm({
             ? { ...target.rules, time_window_override: timeWindowOverride }
             : target.rules;
 
-        if (isNaN(parseInt(target.id))) {
-          // New target (string ID)
+        // Check if this is a new target (empty ID) or existing target (numeric ID)
+        if (!target.id || target.id.trim() === "") {
+          // New target (no ID - database will auto-generate)
           targetsToAdd.push({
             target_url: target.targetUrl,
             weight: target.weight,
@@ -664,7 +669,7 @@ export default function SmartLinkForm({
                 : null,
           });
         } else {
-          // Existing target (numeric ID)
+          // Existing target (has numeric ID)
           targetsToUpdate.push({
             id: parseInt(target.id),
             target_url: target.targetUrl,
@@ -753,7 +758,15 @@ export default function SmartLinkForm({
       });
 
       if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
+        const errorText = await res.text();
+
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { message: errorText };
+        }
+
         throw new Error(
           errorData.message || `Failed to ${isEdit ? "update" : "create"} link`,
         );
@@ -762,7 +775,7 @@ export default function SmartLinkForm({
       toast.success(
         `Smart link ${isEdit ? "updated" : "created"} successfully!`,
       );
-      router.push("/links");
+      //router.push("/links");
     } catch (error) {
       console.error("Failed to save smart link:", error);
       const errorMessage =
