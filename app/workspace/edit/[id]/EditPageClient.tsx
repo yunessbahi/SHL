@@ -24,6 +24,7 @@ export default function EditPageClient({ user, linkId }: EditPageClientProps) {
         if (res.ok) {
           const data = await res.json();
           setLinkData(data);
+          console.log("data: ", data);
         } else {
           setError("Failed to load link data");
         }
