@@ -250,8 +250,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import ProgressTTL from "@/components/ui/progress-ttl";
 
-import GlimpsePreview from "@/components/glimpse";
-
 // Enhanced link data interface with all metadata for expanded row
 interface Target {
   id: string;
@@ -1019,7 +1017,7 @@ export default function LinksDataTable({
                                         )}*/}
 
                                 {/* <GlimpsePreview url={row.short_url} label={row.short_url} />*/}
-                                <GlimpsePreview url={row.short_url} />
+                                {row.short_url}
                               </TableCell>
                             </TableRow>
 
