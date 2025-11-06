@@ -34,6 +34,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { useGroups } from "@/lib/hooks/useGroups";
+import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 // Removed old custom Progress component - now using ProgressTTL from '@/components/ui/progress-ttl'
 
 // Device icons mapping
@@ -249,6 +250,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import ProgressTTL from "@/components/ui/progress-ttl";
 
+import GlimpsePreview from "@/components/glimpse";
+
 // Enhanced link data interface with all metadata for expanded row
 interface Target {
   id: string;
@@ -376,9 +379,9 @@ export default function LinksDataTable({
           if (groups && groups.length > 0) {
             // If link.group is a number, look it up; otherwise use the string value directly
             /*const groupId = typeof link.group === 'number' ? link.group : parseInt(link.group);
-                            if (!isNaN(groupId)) {
-                                groupName = getGroupName(groups, groupId);
-                            }*/
+                                        if (!isNaN(groupId)) {
+                                            groupName = getGroupName(groups, groupId);
+                                        }*/
           }
           return {
             id: link.id.toString(),
@@ -804,32 +807,32 @@ export default function LinksDataTable({
     if (status == "active") {
       return (
         /*<Badge variant="success" >
-                    success
-                </Badge>*/
+                            success
+                        </Badge>*/
         <Status variant="active" label="Live Now" />
       );
     } else if (status == "expired") {
       return (
         /* <Badge variant="destructive" appearance={"light"}>
-                    <BadgeDot/>
-                    Expired
-                </Badge>*/
+                            <BadgeDot/>
+                            Expired
+                        </Badge>*/
         <Status variant="danger" label="Expired" />
       );
     } else if (status == "paused") {
       return (
         /*<Badge variant="outline" >
-                    <PauseCircle className="h-3 w-3 mr-1"/>
-                    Paused
-                </Badge>*/
+                            <PauseCircle className="h-3 w-3 mr-1"/>
+                            Paused
+                        </Badge>*/
         <Status variant={"warn"} label="Paused" />
       );
     } else if (status == "archived") {
       return (
         /*<Badge variant="outline" >
-                    <ArchiveIcon className="h-3 w-3 mr-1"/>
-                    Archived
-                </Badge>*/
+                            <ArchiveIcon className="h-3 w-3 mr-1"/>
+                            Archived
+                        </Badge>*/
         <Status variant="default" label="Archived" />
       );
     }
@@ -947,141 +950,237 @@ export default function LinksDataTable({
             const expandedData = expandedDataCache.get(linkId);
             const utmParams = expandedData?.utm_params || {};
             return (
-              <div className="p-6 bg-white rounded-lg mx-4 mb-2">
+              <div className="p-6  rounded-lg mx-4 mb-2">
                 {/* 2-Column Grid Layout */}
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-3 gap-6">
                   {/* Grid Column 1 - LINK INFORMATION */}
                   <div className="space-y-4">
                     <h3 className="font-semibold text-lg border-b pb-2">
                       LINK INFORMATION
                     </h3>
 
-                    {/* Basic Link Info */}
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">Title:</span>
-                        <span>{row.name}</span>
-                        <StatusBadge status={row.status} />
-                      </div>
+                    <div className={"w-full"}>
+                      <h4 className="font-normal text-balance mb-2 text-muted-foreground">
+                        Basic Information
+                      </h4>
+                      <div className="border border-border rounded-lg overflow-hidden ">
+                        <Table className="text-xs w-full text-balance">
+                          <TableBody>
+                            <TableRow className="*:border-border hover:bg-transparent [&>:not(:last-child)]:border-r">
+                              <TableCell className="bg-muted/50 py-2 font-medium">
+                                Link Name
+                              </TableCell>
+                              <TableCell className="flex py-2 gap-2 items-center">
+                                {row.name}
+                                <StatusBadge status={row.status} />
+                              </TableCell>
+                            </TableRow>
+                            <TableRow className="*:border-border hover:bg-transparent [&>:not(:last-child)]:border-r">
+                              <TableCell className="bg-muted/50 py-2 font-medium">
+                                Description
+                              </TableCell>
+                              <TableCell className="py-2">
+                                {row.description || "--"}
+                              </TableCell>
+                            </TableRow>
+                            <TableRow className="*:border-border hover:bg-transparent [&>:not(:last-child)]:border-r">
+                              <TableCell className="bg-muted/50 py-2 font-medium">
+                                Campaign
+                              </TableCell>
+                              <TableCell className="py-2">
+                                {row.campaign || "--"}
+                              </TableCell>
+                            </TableRow>
+                            <TableRow className="*:border-border hover:bg-transparent [&>:not(:last-child)]:border-r">
+                              <TableCell className="bg-muted/50 py-2 font-medium">
+                                Group
+                              </TableCell>
+                              <TableCell className="py-2">
+                                {row.group || "Default Group"}
+                              </TableCell>
+                            </TableRow>
 
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">Description:</span>
-                        <span className="text-gray-500">
-                          {row.description || "--"}
-                        </span>
-                      </div>
+                            <TableRow className="*:border-border hover:bg-transparent [&>:not(:last-child)]:border-r">
+                              <TableCell className="bg-muted/50 py-2 font-medium">
+                                Short URL
+                              </TableCell>
+                              <TableCell className="py-2">
+                                {/*{row.short_url ? (
+                                            <a
+                                                href={row.short_url}
+                                                className="text-blue-600 hover:underline"
+                                            >
+                                                {row.short_url}
+                                            </a>
+                                        ) : (
+                                            <span className="text-muted-foreground/50">
+                                      --
+                                    </span>
+                                        )}*/}
 
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">Campaign:</span>
-                        <span className="text-gray-500">
-                          {row.campaign || "--"}
-                        </span>
-                      </div>
+                                {/* <GlimpsePreview url={row.short_url} label={row.short_url} />*/}
+                                <GlimpsePreview url={row.short_url} />
+                              </TableCell>
+                            </TableRow>
 
-                      <div className="flex items-center gap-3">
-                        <span className="font-medium min-w-[80px]">Group:</span>
-                        <span className="text-gray-700">
-                          {row.group || "Default Group"}
-                        </span>
+                            <TableRow className="*:border-border hover:bg-transparent [&>:not(:last-child)]:border-r">
+                              <TableCell className="bg-muted/50 py-2 font-medium">
+                                Fallback URL
+                              </TableCell>
+                              <TableCell className="py-2">
+                                {row.fallback_url ? (
+                                  <a
+                                    href={row.fallback_url}
+                                    className="text-blue-600 hover:underline"
+                                  >
+                                    {row.fallback_url}
+                                  </a>
+                                ) : (
+                                  <span className="text-muted-foreground/50">
+                                    --
+                                  </span>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          </TableBody>
+                        </Table>
                       </div>
+                    </div>
+                    <div className={"w-full"}>
+                      <h4 className="font-normal text-sm mb-2 text-muted-foreground">
+                        Advanced Rules
+                      </h4>
+                      <div className="w-full border border-border rounded-lg overflow-hidden flex-1">
+                        <Table className="text-xs">
+                          <TableBody>
+                            <TableRow className="*:border-border hover:bg-transparent [&>:not(:last-child)]:border-r">
+                              <TableCell className=" bg-muted/50 py-2 font-medium">
+                                IP Address
+                              </TableCell>
+                              <TableCell className="flex py-2">
+                                {row.rules?.ip_addresses &&
+                                row.rules.ip_addresses.length > 0 ? (
+                                  row.rules.ip_addresses.length === 1 ? (
+                                    row.rules.ip_addresses[0]
+                                  ) : (
+                                    row.rules.ip_addresses.join(", ")
+                                  )
+                                ) : (
+                                  <span className={"text-muted-foreground"}>
+                                    No restrictions
+                                  </span>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                            <TableRow className="*:border-border hover:bg-transparent [&>:not(:last-child)]:border-r">
+                              <TableCell className="bg-muted/50 py-2 font-medium">
+                                Referer
+                              </TableCell>
+                              <TableCell className="py-2">
+                                {row.rules?.referer_domains &&
+                                row.rules.referer_domains.length > 0 ? (
+                                  row.rules.referer_domains.length === 1 ? (
+                                    row.rules.referer_domains[0]
+                                  ) : (
+                                    row.rules.referer_domains.join(", ")
+                                  )
+                                ) : (
+                                  <span className={"text-muted-foreground"}>
+                                    No restrictions
+                                  </span>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                            <TableRow className="*:border-border hover:bg-transparent [&>:not(:last-child)]:border-r">
+                              <TableCell className="w-25 bg-muted/50 py-2 font-medium">
+                                Start At
+                              </TableCell>
+                              <TableCell className="flex py-2">
+                                {row.start_at ? (
+                                  new Date(row.start_at).toLocaleDateString() +
+                                  " " +
+                                  new Date(row.start_at).toLocaleTimeString()
+                                ) : (
+                                  <span className={"text-muted-foreground"}>
+                                    "mm/dd/yy hh:mm"
+                                  </span>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                            <TableRow className="*:border-border hover:bg-transparent [&>:not(:last-child)]:border-r">
+                              <TableCell className="bg-muted/50 py-2 font-medium">
+                                Expired At
+                              </TableCell>
+                              <TableCell className="py-2">
+                                {row.expires_at ? (
+                                  new Date(
+                                    row.expires_at,
+                                  ).toLocaleDateString() +
+                                  " " +
+                                  new Date(row.expires_at).toLocaleTimeString()
+                                ) : (
+                                  <span className={"text-muted-foreground"}>
+                                    "mm/dd/yy hh:mm"
+                                  </span>
+                                )}
+                              </TableCell>
+                            </TableRow>
 
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">Fallback URL:</span>
-                        {row.fallback_url ? (
-                          <a
-                            href={row.fallback_url}
-                            className="text-blue-600 hover:underline"
-                          >
-                            {row.fallback_url}
-                          </a>
-                        ) : (
-                          <span className="text-gray-500">--</span>
-                        )}
+                            <TableRow className="*:border-border hover:bg-transparent [&>:not(:last-child)]:border-r">
+                              <TableCell className="bg-muted/50 py-2 font-medium"></TableCell>
+                              <TableCell className="py-2">
+                                {row.expires_at && (
+                                  <div className="w-full">
+                                    <ProgressTTL
+                                      startDate={row.start_at}
+                                      endDate={row.expires_at}
+                                      expiresAt={row.expires_at}
+                                      createdAt={row.created_at}
+                                      showTitle={true}
+                                      className="w-full"
+                                    />
+                                  </div>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          </TableBody>
+                        </Table>
                       </div>
                     </div>
 
-                    {/* Advanced Rules */}
-                    <div>
-                      <h4 className="font-medium mb-2">Advanced Rules</h4>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex items-center gap-3">
-                          <span className="font-medium min-w-[90px]">
-                            IP Address:
-                          </span>
-                          <span className="text-gray-600">
-                            {row.rules?.ip_addresses &&
-                            row.rules.ip_addresses.length > 0
-                              ? row.rules.ip_addresses.length === 1
-                                ? row.rules.ip_addresses[0]
-                                : row.rules.ip_addresses.join(", ")
-                              : "No restrictions"}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="font-medium min-w-[90px]">
-                            Referer:
-                          </span>
-                          <span className="text-gray-600">
-                            {row.rules?.referer_domains &&
-                            row.rules.referer_domains.length > 0
-                              ? row.rules.referer_domains.length === 1
-                                ? row.rules.referer_domains[0]
-                                : row.rules.referer_domains.join(", ")
-                              : "No restrictions"}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Link Lifetime */}
-                    <div>
-                      <h4 className="font-medium mb-2">Link Lifetime</h4>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex items-center gap-3">
-                          <span className="font-medium min-w-[80px]">
-                            Start:
-                          </span>
-                          <span className="text-gray-700">
-                            {row.start_at
-                              ? new Date(row.start_at).toLocaleDateString() +
-                                " " +
-                                new Date(row.start_at).toLocaleTimeString()
-                              : "mm/dd/yy hh:mm"}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="font-medium min-w-[80px]">End:</span>
-                          <span className="text-gray-700">
-                            {row.expires_at
-                              ? new Date(row.expires_at).toLocaleDateString() +
-                                " " +
-                                new Date(row.expires_at).toLocaleTimeString()
-                              : "mm/dd/yy hh:mm"}
-                          </span>
-                        </div>
-
-                        {/* Progress Bar - Time to Expiry */}
-                        {row.expires_at && (
-                          <div className="mt-2">
-                            <ProgressTTL
-                              startDate={row.start_at}
-                              endDate={row.expires_at}
-                              expiresAt={row.expires_at}
-                              createdAt={row.created_at}
-                              showTitle={true}
-                              className="w-full"
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                    {/*<div className="border border-border rounded-lg overflow-hidden">
+                          <Table className="w-full text-xs md:w-[350px]">
+                              <TableBody>
+                                  <TableRow className="*:border-border hover:bg-transparent [&>:not(:last-child)]:border-r">
+                                      <TableCell className="bg-muted/50 py-2 font-medium">
+                                          Role
+                                      </TableCell>
+                                      <TableCell className="py-2">
+                                          <Badge variant="secondary">Admin</Badge>
+                                      </TableCell>
+                                  </TableRow>
+                                  <TableRow className="*:border-border hover:bg-transparent [&>:not(:last-child)]:border-r">
+                                      <TableCell className="bg-muted/50 py-2 font-medium">
+                                          Status
+                                      </TableCell>
+                                      <TableCell className="py-2">
+                                          <Badge variant="primary">Active</Badge>
+                                      </TableCell>
+                                  </TableRow>
+                              </TableBody>
+                          </Table>
+                      </div>*/}
                   </div>
 
                   {/* Grid Column 2 - TARGETS */}
                   <div>
-                    <h3 className="font-semibold text-lg border-b pb-2">
-                      Target ({row.targets_count})
-                    </h3>
+                    <div className="w-full inline-flex items-center font-semibold text-lg border-b pb-2 gap-1">
+                      <h3>{row.targets_count > 1 ? "TARGETS" : "TARGET"}</h3>
+
+                      <Badge size="xs" shape="circle" variant="primary">
+                        {row.targets_count}
+                      </Badge>
+                    </div>
 
                     {isLoadingExpanded ? (
                       <div className="text-center py-8">
@@ -1094,18 +1193,18 @@ export default function LinksDataTable({
                           <AccordionItem key={target.id} value={target.id}>
                             <AccordionTrigger className="text-left hover:no-underline">
                               <div className="flex items-center gap-2">
-                                <span className="truncate max-w-[200px]">
-                                  {target.url}
-                                </span>
                                 <Badge
                                   variant="outline"
-                                  className="text-xs flex-shrink-0"
+                                  className="text-xs flex-shrink-1 font-light font-mono"
                                 >
                                   {target.weight}%
                                 </Badge>
+                                <span className="font-normal text-balance text-muted-foreground">
+                                  {target.url}
+                                </span>
                               </div>
                             </AccordionTrigger>
-                            <AccordionContent>
+                            <AccordionContent className={"text-xs"}>
                               <div className="space-y-3">
                                 <div>
                                   <h4 className="font-medium mb-2">
@@ -1115,7 +1214,7 @@ export default function LinksDataTable({
                                   {/* Allowed Countries */}
                                   <div className="space-y-2">
                                     <div className="flex items-center gap-3">
-                                      <span className="font-medium text-sm min-w-[120px]">
+                                      <span className="font-medium text-xs min-w-[120px]">
                                         Allowed Countries:
                                       </span>
                                       <div className="flex flex-wrap gap-1">
@@ -1125,45 +1224,45 @@ export default function LinksDataTable({
                                             (country, j) => (
                                               <Badge
                                                 key={j}
-                                                variant="outline"
-                                                className="text-xs bg-blue-50 text-blue-700 border-blue-200"
+                                                variant="secondary"
+                                                className="text-xs font-light"
                                               >
-                                                [{country}]
+                                                {country}
                                               </Badge>
                                             ),
                                           )
                                         ) : (
                                           <Badge
-                                            variant="outline"
-                                            className="text-xs bg-gray-50 text-gray-600 border-gray-200"
+                                            variant="secondary"
+                                            className="text-xs font-light"
                                           >
-                                            [All]
+                                            All
                                           </Badge>
                                         )}
                                       </div>
                                     </div>
 
                                     {/* Allowed Device */}
-                                    <div className="flex items-center gap-3">
-                                      <span className="font-medium text-sm min-w-[120px]">
+                                    <div className="flex text-xs items-center gap-3">
+                                      <span className="font-medium min-w-[120px]">
                                         Allowed Device:
                                       </span>
-                                      <div className="flex flex-wrap gap-1">
+                                      <div className="flex font-mono flex-wrap gap-1">
                                         {target.allowed_devices &&
                                         target.allowed_devices.length > 0 ? (
                                           target.allowed_devices.map(
                                             (device, j) => {
                                               const deviceLabel =
                                                 device === "mobile"
-                                                  ? "[Mobile]"
+                                                  ? "Mobile"
                                                   : device === "desktop"
-                                                    ? "[Desktop]"
-                                                    : `[${device}]`;
+                                                    ? "Desktop"
+                                                    : `${device}`;
                                               return (
                                                 <Badge
                                                   key={j}
-                                                  variant="outline"
-                                                  className="text-xs bg-green-50 text-green-700 border-green-200"
+                                                  variant="secondary"
+                                                  className="text-xs font-light"
                                                 >
                                                   {deviceLabel}
                                                 </Badge>
@@ -1172,8 +1271,8 @@ export default function LinksDataTable({
                                           )
                                         ) : (
                                           <Badge
-                                            variant="outline"
-                                            className="text-xs bg-gray-50 text-gray-600 border-gray-200"
+                                            variant="secondary"
+                                            className="text-xs font-light"
                                           >
                                             [Any]
                                           </Badge>
@@ -1183,12 +1282,12 @@ export default function LinksDataTable({
 
                                     {/* UTM Template */}
                                     <div className="flex items-center gap-3">
-                                      <span className="font-medium text-sm min-w-[120px]">
+                                      <span className="font-medium min-w-[120px]">
                                         UTM Template:
                                       </span>
                                       <Badge
-                                        variant="outline"
-                                        className="text-xs bg-blue-50 text-blue-700 border-blue-200"
+                                        variant="secondary"
+                                        className="text-xs font-light"
                                       >
                                         {target.utm_template ||
                                           "Default Template"}
@@ -1216,10 +1315,10 @@ export default function LinksDataTable({
                                               key={key}
                                               className={`grid grid-cols-2 gap-4 p-3 ${index < Object.keys(utmOverrides).length - 1 ? "border-b" : ""} bg-white`}
                                             >
-                                              <span className="font-medium text-gray-700">
+                                              <span className="font-medium text-accent-foreground">
                                                 {key}:
                                               </span>
-                                              <span className="text-gray-600 font-mono">
+                                              <span className="text-muted-foreground font-mono">
                                                 {String(value) ||
                                                   "Not configured"}
                                               </span>
@@ -1252,6 +1351,7 @@ export default function LinksDataTable({
                       </div>
                     )}
                   </div>
+                  <div></div>
                 </div>
               </div>
             );

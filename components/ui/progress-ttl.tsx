@@ -212,7 +212,7 @@ export default function ProgressTTL({
   return (
     <div className={`w-full space-y-2 ${className}`}>
       {showTitle && (
-        <div className="flex justify-between text-sm">
+        <div className="flex justify-between">
           <span>Time to Expiry</span>
           <span className="text-muted-foreground">
             {timeRemaining.isExpired
