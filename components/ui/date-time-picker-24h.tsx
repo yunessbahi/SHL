@@ -134,7 +134,7 @@ export function DateTimePicker24h({
                         size="icon"
                         variant={
                           dateValue && dateValue.getHours() === hour
-                            ? "default"
+                            ? "primary"
                             : "ghost"
                         }
                         className="sm:w-full shrink-0 aspect-square"
@@ -156,7 +156,7 @@ export function DateTimePicker24h({
                       size="icon"
                       variant={
                         dateValue && dateValue.getMinutes() === minute
-                          ? "default"
+                          ? "primary"
                           : "ghost"
                       }
                       className="sm:w-full shrink-0 aspect-square"

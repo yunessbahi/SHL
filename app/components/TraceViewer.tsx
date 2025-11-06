@@ -40,7 +40,7 @@ export default function TraceViewer({ trace }: TraceViewerProps) {
 
   const getStatusBadge = (passed: boolean) => {
     return passed ? (
-      <Badge variant="default" className="bg-green-100 text-green-800">
+      <Badge variant="primary" className="bg-green-100 text-green-800">
         <CheckCircle className="h-3 w-3 mr-1" />
         PASS
       </Badge>

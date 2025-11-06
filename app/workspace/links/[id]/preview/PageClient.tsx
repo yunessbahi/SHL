@@ -422,7 +422,7 @@ export default function PreviewPage({ user, id }: PreviewPageProps) {
                 {/* Tab Navigation */}
                 <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
                   <Button
-                    variant={activeTab === "summary" ? "default" : "ghost"}
+                    variant={activeTab === "summary" ? "primary" : "ghost"}
                     size="sm"
                     onClick={() => setActiveTab("summary")}
                     className="flex-1"
@@ -430,7 +430,7 @@ export default function PreviewPage({ user, id }: PreviewPageProps) {
                     Summary
                   </Button>
                   <Button
-                    variant={activeTab === "url" ? "default" : "ghost"}
+                    variant={activeTab === "url" ? "primary" : "ghost"}
                     size="sm"
                     onClick={() => setActiveTab("url")}
                     className="flex-1"
@@ -438,7 +438,7 @@ export default function PreviewPage({ user, id }: PreviewPageProps) {
                     Final URL
                   </Button>
                   <Button
-                    variant={activeTab === "trace" ? "default" : "ghost"}
+                    variant={activeTab === "trace" ? "primary" : "ghost"}
                     size="sm"
                     onClick={() => setActiveTab("trace")}
                     className="flex-1"
@@ -457,7 +457,7 @@ export default function PreviewPage({ user, id }: PreviewPageProps) {
                             Target Selected
                           </h3>
                           <Badge
-                            variant="default"
+                            variant="primary"
                             className="bg-green-100 text-green-800"
                           >
                             <CheckCircle className="h-3 w-3 mr-1" />

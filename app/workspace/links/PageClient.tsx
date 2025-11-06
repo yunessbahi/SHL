@@ -153,7 +153,7 @@ export default function LinksPage({ user }: LinksPageProps) {
       statusConfig[status as keyof typeof statusConfig] || statusConfig.expired;
 
     return (
-      <Badge variant="default" className={config.className}>
+      <Badge variant="primary" className={config.className}>
         {config.icon}
         {config.label}
       </Badge>
@@ -347,7 +347,7 @@ export default function LinksPage({ user }: LinksPageProps) {
         ].map((tab) => (
           <Button
             key={tab.key}
-            variant={filter === tab.key ? "default" : "outline"}
+            variant={filter === tab.key ? "primary" : "outline"}
             size="sm"
             onClick={() => setFilter(tab.key)}
             className="text-sm"

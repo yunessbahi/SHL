@@ -276,7 +276,7 @@ export default function CampaignsPage({ user }: CampaignsPageProps) {
   const getStatusVariant = (status: string) => {
     switch (status) {
       case "active":
-        return "default";
+        return "primary";
       case "paused":
         return "secondary";
       case "inactive": // archived
@@ -472,7 +472,7 @@ export default function CampaignsPage({ user }: CampaignsPageProps) {
                 {/* Links count with click-through */}
                 <div className="text-sm">
                   <Button
-                    variant="link"
+                    variant="ghost"
                     size="sm"
                     className="p-0 h-auto text-sm text-blue-600 hover:text-blue-800"
                     onClick={() =>
@@ -494,7 +494,7 @@ export default function CampaignsPage({ user }: CampaignsPageProps) {
                     Manage Templates
                   </Button>
                   <Button
-                    variant="default"
+                    variant="primary"
                     size="sm"
                     className="w-full"
                     disabled={c.status === "paused"}
@@ -544,7 +544,7 @@ export default function CampaignsPage({ user }: CampaignsPageProps) {
             </div>
             <div className="mb-4 flex gap-2">
               <Button
-                variant={showAssignModal ? "default" : "secondary"}
+                variant={showAssignModal ? "primary" : "secondary"}
                 onClick={() => setShowAssignModal((v) => !v)}
               >
                 <Plus className="h-4 w-4 mr-1" />
