@@ -1,4 +1,4 @@
-import * as React from "react";
+import React from "react";
 import { CSSProperties, Fragment, ReactNode } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useDataGrid } from "@/components/ui/data-grid";

@@ -65,7 +65,7 @@ export function DateTimePicker24h({
 
   function handleTimeChange(type: "hour" | "minute", timeValue: string) {
     const currentDate = dateValue || new Date();
-    let newDate = new Date(currentDate);
+    const newDate = new Date(currentDate);
 
     if (type === "hour") {
       const hour = parseInt(timeValue, 10);

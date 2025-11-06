@@ -231,7 +231,9 @@ export default function RuleTabs({
             onChange={(s) => {
               try {
                 setRules({ ...rules, utm_overrides: JSON.parse(s) });
-              } catch {}
+              } catch {
+                // Invalid JSON, ignore changes
+              }
             }}
           />
           <p className="text-xs text-muted-foreground">
@@ -247,7 +249,9 @@ export default function RuleTabs({
           onChange={(s) => {
             try {
               setRules(JSON.parse(s));
-            } catch {}
+            } catch {
+              // Invalid JSON, ignore changes
+            }
           }}
         />
       )}

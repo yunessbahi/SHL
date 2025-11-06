@@ -375,7 +375,7 @@ export default function LinksDataTable({
           const targetsCount = linkType === "smart" ? 1 : 1; // Default to 1, will be updated when expanded
 
           // Use group name lookup if groups data is available, otherwise use the group value directly
-          let groupName = link.group;
+          const groupName = link.group;
           if (groups && groups.length > 0) {
             // If link.group is a number, look it up; otherwise use the string value directly
             /*const groupId = typeof link.group === 'number' ? link.group : parseInt(link.group);

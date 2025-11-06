@@ -59,7 +59,7 @@ export default function SignupPage() {
       } else {
         setSuccess(true);
       }
-    } catch (err) {
+    } catch {
       setError("An unexpected error occurred");
     } finally {
       setLoading(false);
@@ -82,7 +82,7 @@ export default function SignupPage() {
         setError(error.message);
         setLoading(false);
       }
-    } catch (err) {
+    } catch {
       setError("An unexpected error occurred");
       setLoading(false);
     }

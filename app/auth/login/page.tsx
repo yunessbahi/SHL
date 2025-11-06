@@ -246,19 +246,13 @@ export default function LoginPage() {
   const redirectedFrom = getSafeRedirect(searchParams.get("redirectedFrom"));
 
   useEffect(() => {
-    console.log("[DEBUG] Login page: Checking initial session");
     // Check for existing session on mount
     const checkInitialSession = async () => {
       const {
         data: { user },
         error,
       } = await supabase.auth.getUser();
-      console.log("[DEBUG] Login page: Initial session check", {
-        user: !!user,
-        error,
-      });
       if (user) {
-        console.log("[DEBUG] Login page: Redirecting to", redirectedFrom);
         router.replace(redirectedFrom);
       } else {
         setIsCheckingAuth(false);
@@ -266,26 +260,16 @@ export default function LoginPage() {
     };
     checkInitialSession();
 
-    console.log("[DEBUG] Login page: Setting up onAuthStateChange listener");
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("[DEBUG] Login page: Auth state change", {
-        event,
-        hasSession: !!session,
-      });
       // Handle multiple auth events that indicate successful authentication
       if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && session) {
-        console.log(
-          "[DEBUG] Login page: Redirecting after auth event to",
-          redirectedFrom,
-        );
         router.replace(redirectedFrom);
       }
     });
 
     return () => {
-      console.log("[DEBUG] Login page: Cleaning up auth listener");
       subscription.unsubscribe();
     };
   }, [router, supabase, redirectedFrom]);
@@ -294,28 +278,18 @@ export default function LoginPage() {
     e.preventDefault();
     setEmailLoading(true);
     setError("");
-    console.log("[DEBUG] Login page: Attempting email login for", email);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      console.log("[DEBUG] Login page: Email login result", {
-        success: !error,
-        error: error?.message,
-      });
       if (error) setError(error.message);
       else {
-        console.log(
-          "[DEBUG] Login page: Login successful, redirecting to",
-          redirectedFrom,
-        );
         router.replace(redirectedFrom);
       }
-    } catch (err) {
-      console.error("[DEBUG] Login page: Unexpected error during login", err);
+    } catch {
       setError("An unexpected error occurred");
     } finally {
       setEmailLoading(false);
@@ -325,7 +299,6 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
     setError("");
-    console.log("[DEBUG] Login page: Attempting Google OAuth login");
 
     try {
       const { error } = await supabase.auth.signInWithOAuth({
@@ -335,18 +308,11 @@ export default function LoginPage() {
         },
       });
 
-      console.log("[DEBUG] Login page: Google OAuth result", {
-        error: error?.message,
-      });
       if (error) {
         setError(error.message);
         setGoogleLoading(false);
       }
-    } catch (err) {
-      console.error(
-        "[DEBUG] Login page: Unexpected error during Google login",
-        err,
-      );
+    } catch {
       setError("An unexpected error occurred");
       setGoogleLoading(false);
     }

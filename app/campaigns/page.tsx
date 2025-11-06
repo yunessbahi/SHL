@@ -1,3 +1,4 @@
+import React from "react";
 import { getSafeSession } from "@/lib/getSafeSession";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
