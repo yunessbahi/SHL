@@ -1,3 +1,4 @@
+/*
 //app/layout.tsx
 import "./globals.css";
 import type { Metadata } from "next";
@@ -91,6 +92,132 @@ export default async function RootLayout({
         <Sidebar hasSession={!!user} user={safeUser}>
           <Header user={safeUser}>
             <div className="p-4">{children}</div>
+          </Header>
+        </Sidebar>
+      </body>
+    </html>
+  );
+}
+*/
+
+//app/layout.tsx
+import "./globals.css";
+import type { Metadata } from "next";
+import Sidebar from "@/app/components/sidebar/Sidebar";
+import Header from "@/app/components/Header";
+import { Inter, Roboto } from "next/font/google";
+import { cn } from "@/lib/utils";
+import localFont from "next/font/local";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
+import type { SafeUser } from "@/lib/getSafeSession";
+
+export const metadata: Metadata = {
+  title: "Linker",
+  description: "Create, manage and analyze smart links with advanced features",
+};
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+  preload: true,
+  fallback: ["system-ui", "arial"],
+  adjustFontFallback: true,
+});
+
+const roboto = Roboto({
+  weight: ["400", "500", "700"],
+  subsets: ["latin"],
+  variable: "--font-roboto",
+  display: "swap",
+  preload: true,
+  fallback: ["system-ui", "arial"],
+  adjustFontFallback: true,
+});
+
+const mono = localFont({
+  src: "../public/fonts/GeistMono-VariableFont_wght.ttf",
+  display: "swap",
+  variable: "--font-mono",
+  preload: true,
+  fallback: ["ui-monospace", "Cascadia Code", "system-ui", "arial"],
+  //adjustFontFallback: true,
+});
+
+export default async function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const cookieStore = await cookies();
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!;
+
+  const supabase = createServerClient(supabaseUrl, supabaseKey, {
+    cookies: {
+      getAll() {
+        return cookieStore.getAll();
+      },
+    },
+  });
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Extract safe user data
+  const safeUser: SafeUser | null = user
+    ? {
+        id: user.id,
+        email: user.email || "",
+      }
+    : null;
+
+  // Get theme from cookies for server-side rendering
+  const theme = cookieStore.get("theme")?.value || "light";
+
+  return (
+    <html
+      lang="en"
+      className={cn(
+        inter.variable,
+        roboto.variable,
+        mono.variable,
+        theme === "dark" ? "dark" : "",
+        "antialiased",
+      )}
+    >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                const theme = localStorage.getItem('theme');
+                if (theme === 'dark') {
+                  document.documentElement.classList.add('dark');
+                }
+              } catch (e) {}
+            `,
+          }}
+        />
+      </head>
+      <body
+        className={cn(
+          "font-inter antialiased",
+          "bg-background text-foreground",
+          "min-h-screen",
+          "font-feature-settings-normal",
+          "text-rendering-optimizeLegibility",
+        )}
+        style={{
+          WebkitFontSmoothing: "antialiased",
+          MozOsxFontSmoothing: "grayscale",
+        }}
+      >
+        <Sidebar hasSession={!!user} user={safeUser}>
+          <Header user={safeUser}>
+            <div className="py-4">{children}</div>
           </Header>
         </Sidebar>
       </body>

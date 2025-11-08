@@ -58,8 +58,8 @@ interface StatusProps {
 const statusStyles = {
   danger: {
     badge:
-      "bg-destructive/10 [a&]:hover:bg-destructive/5 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 text-destructive",
-    dot: "bg-destructive",
+      "bg-red-500/10 [a&]:hover:bg-destructive/5 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 text-red-500",
+    dot: "bg-red-500",
   },
   active: {
     badge:

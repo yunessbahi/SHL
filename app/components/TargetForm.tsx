@@ -140,7 +140,7 @@ export default function TargetForm({
       {showRemove && (
         <Button
           type="button"
-          variant="ghost"
+          variant="secondary"
           size="sm"
           onClick={onRemove}
           className="absolute top-2 right-2 z-10"
@@ -188,7 +188,7 @@ export default function TargetForm({
               {currentTemplate && (
                 <Button
                   type="button"
-                  variant="ghost"
+                  variant="secondary"
                   size="sm"
                   onClick={() => setShowPreview(!showPreview)}
                 >

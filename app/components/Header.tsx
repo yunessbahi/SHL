@@ -294,9 +294,9 @@ export default function Header({
   }
 
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className="flex flex-col h-screen ">
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-3 border-b ">
+      <header className="flex items-center justify-between px-6 py-3 border-b">
         {/* Left side - Breadcrumb */}
         <div className="flex flex-col">
           <h1 className={"font-black"}>
@@ -360,7 +360,10 @@ export default function Header({
           {/* User Avatar Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+              <Button
+                variant="secondary"
+                className="relative h-8 w-8 rounded-full"
+              >
                 <Avatar className="h-8 w-8">
                   <AvatarImage
                     src={user?.user_metadata?.avatar_url}

@@ -347,7 +347,7 @@ export default function LinksPage({ user }: LinksPageProps) {
         ].map((tab) => (
           <Button
             key={tab.key}
-            variant={filter === tab.key ? "primary" : "outline"}
+            variant={filter === tab.key ? "secondary" : "outline"}
             size="sm"
             onClick={() => setFilter(tab.key)}
             className="text-sm"
@@ -459,7 +459,7 @@ export default function LinksPage({ user }: LinksPageProps) {
                       </span>
                       <Button
                         size="sm"
-                        variant="ghost"
+                        variant="secondary"
                         className="h-auto p-1"
                         onClick={() => window.open(item.short_url, "_blank")}
                       >

@@ -377,9 +377,9 @@ export default function LinksDataTable({
           if (groups && groups.length > 0) {
             // If link.group is a number, look it up; otherwise use the string value directly
             /*const groupId = typeof link.group === 'number' ? link.group : parseInt(link.group);
-                                        if (!isNaN(groupId)) {
-                                            groupName = getGroupName(groups, groupId);
-                                        }*/
+                                                    if (!isNaN(groupId)) {
+                                                        groupName = getGroupName(groups, groupId);
+                                                    }*/
           }
           return {
             id: link.id.toString(),
@@ -805,32 +805,32 @@ export default function LinksDataTable({
     if (status == "active") {
       return (
         /*<Badge variant="success" >
-                            success
-                        </Badge>*/
+                                    success
+                                </Badge>*/
         <Status variant="active" label="Live Now" />
       );
     } else if (status == "expired") {
       return (
         /* <Badge variant="destructive" appearance={"light"}>
-                            <BadgeDot/>
-                            Expired
-                        </Badge>*/
+                                    <BadgeDot/>
+                                    Expired
+                                </Badge>*/
         <Status variant="danger" label="Expired" />
       );
     } else if (status == "paused") {
       return (
         /*<Badge variant="outline" >
-                            <PauseCircle className="h-3 w-3 mr-1"/>
-                            Paused
-                        </Badge>*/
+                                    <PauseCircle className="h-3 w-3 mr-1"/>
+                                    Paused
+                                </Badge>*/
         <Status variant={"warn"} label="Paused" />
       );
     } else if (status == "archived") {
       return (
         /*<Badge variant="outline" >
-                            <ArchiveIcon className="h-3 w-3 mr-1"/>
-                            Archived
-                        </Badge>*/
+                                    <ArchiveIcon className="h-3 w-3 mr-1"/>
+                                    Archived
+                                </Badge>*/
         <Status variant="default" label="Archived" />
       );
     }
@@ -839,9 +839,9 @@ export default function LinksDataTable({
   // Link type badge component
   const TypeBadge = ({ linkType }: { linkType: string }) => {
     return linkType === "smart" ? (
-      <Label className="text-xs">Smart</Label>
+      <Label className="text-xs font-normal uppercase">Smart</Label>
     ) : (
-      <Label className="text-xs">Single</Label>
+      <Label className="text-xs font-normal uppercase">Single</Label>
     );
   };
 
@@ -1100,7 +1100,7 @@ export default function LinksDataTable({
                                   new Date(row.start_at).toLocaleTimeString()
                                 ) : (
                                   <span className={"text-muted-foreground"}>
-                                    "mm/dd/yy hh:mm"
+                                    mm/dd/yy hh:mm
                                   </span>
                                 )}
                               </TableCell>
@@ -1118,7 +1118,7 @@ export default function LinksDataTable({
                                   new Date(row.expires_at).toLocaleTimeString()
                                 ) : (
                                   <span className={"text-muted-foreground"}>
-                                    "mm/dd/yy hh:mm"
+                                    mm/dd/yy hh:mm
                                   </span>
                                 )}
                               </TableCell>
@@ -1272,7 +1272,7 @@ export default function LinksDataTable({
                                             variant="secondary"
                                             className="text-xs font-light"
                                           >
-                                            [Any]
+                                            Any
                                           </Badge>
                                         )}
                                       </div>
@@ -1422,13 +1422,17 @@ export default function LinksDataTable({
         id: "targets_count",
         header: "Targets",
         cell: ({ row }) => (
-          <Badge
-            variant="outline"
-            className="bg-purple-50 text-purple-700 border-purple-200"
-          >
-            {row.original.targets_count} target
-            {row.original.targets_count !== 1 ? "s" : ""}
-          </Badge>
+          /*<Badge
+                      variant="secondary"
+                      size={"md"}
+                      className="font-mono"
+                    >
+                      {row.original.targets_count}
+                      {/!*{row.original.targets_count !== 1 ? "s" : ""}*!/}
+                    </Badge>*/
+          <span className="font-normal text-sm">
+            {row.original.targets_count}
+          </span>
         ),
         size: 100,
         enableSorting: true,
@@ -1439,15 +1443,14 @@ export default function LinksDataTable({
       {
         accessorKey: "click_count",
         id: "click_count",
-        header: ({ column }) => (
-          <DataGridColumnHeader title="Clicks" column={column} />
-        ),
+        /*header: ({ column }) => (
+                  <DataGridColumnHeader title="Clicks" column={column} />
+                ),*/
+        header: "Clicks",
         cell: ({ row }) => (
-          <div className="flex items-center gap-2">
-            <span className="font-normal text-sm">
-              {row.original.click_count}
-            </span>
-          </div>
+          <span className="font-normal text-sm">
+            {row.original.click_count}
+          </span>
         ),
         size: 100,
         enableSorting: true,
@@ -1467,9 +1470,9 @@ export default function LinksDataTable({
         cell: ({ row }) => {
           const campaign = row.original.campaign;
           return campaign ? (
-            <Badge variant="outline">{campaign}</Badge>
+            <span className="text-xs font-normal uppercase">{campaign}</span>
           ) : (
-            <span className="text-gray-400">-</span>
+            <span className="text-muted-foreground/50">―</span>
           );
         },
         size: 140,
@@ -1499,7 +1502,7 @@ export default function LinksDataTable({
           const createdInfo = formatDate(row.original.created_at);
           return createdInfo ? (
             <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-gray-400" />
+              <Calendar className="h-4 w-4 text-muted-foreground/30" />
               <div>
                 <div className="font-normal text-xs">{createdInfo.date}</div>
                 <div className="text-xs text-muted-foreground">
@@ -1533,14 +1536,25 @@ export default function LinksDataTable({
           const expiresInfo = formatDate(row.original.expires_at);
           return expiresInfo ? (
             <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-gray-400" />
+              <Clock
+                className={`h-4 w-4 ${expiresInfo.isPast ? "text-red-500/40" : "text-muted-foreground/30"}`}
+              />
               <div>
+                {/*<div
+                                    className={`text-sm font-medium ${expiresInfo.isPast ? "text-red-500" : "text-gray-900"}`}
+                                >
+                                    {expiresInfo.isPast ? "Expired" : "Expires"}
+                                </div>*/}
                 <div
-                  className={`text-sm font-medium ${expiresInfo.isPast ? "text-red-500" : "text-gray-900"}`}
+                  className={`font-normal text-xs ${expiresInfo.isPast ? "text-red-500" : "text-foreground"}`}
                 >
-                  {expiresInfo.isPast ? "Expired" : "Expires"}
+                  {expiresInfo.date}
                 </div>
-                <div className="text-xs text-gray-500">{expiresInfo.date}</div>
+                <div
+                  className={`text-xs ${expiresInfo.isPast ? "text-red-500" : "text-muted-foreground"}`}
+                >
+                  {expiresInfo.time}
+                </div>
               </div>
             </div>
           ) : (
@@ -1768,8 +1782,8 @@ export default function LinksDataTable({
 
       {/* Async Info Alert - Exact demo structure */}
       <Alert
-        variant="success"
-        appearance="light"
+        variant="info"
+        //appearance="light"
         close={false}
         className="mt-5"
       >

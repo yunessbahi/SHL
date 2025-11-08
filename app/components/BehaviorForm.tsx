@@ -145,7 +145,7 @@ export default function BehaviorForm({
                 </div>
                 <Button
                   type="button"
-                  variant="ghost"
+                  variant="secondary"
                   size="sm"
                   onClick={restoreStartDate}
                   className="h-6 px-2 text-xs"
@@ -178,7 +178,7 @@ export default function BehaviorForm({
                   </div>
                   <Button
                     type="button"
-                    variant="ghost"
+                    variant="secondary"
                     size="sm"
                     onClick={restoreEndDate}
                     className="h-6 px-2 text-xs"

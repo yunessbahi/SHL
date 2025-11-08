@@ -422,7 +422,7 @@ export default function PreviewPage({ user, id }: PreviewPageProps) {
                 {/* Tab Navigation */}
                 <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
                   <Button
-                    variant={activeTab === "summary" ? "primary" : "ghost"}
+                    variant={activeTab === "summary" ? "default" : "secondary"}
                     size="sm"
                     onClick={() => setActiveTab("summary")}
                     className="flex-1"
@@ -430,7 +430,7 @@ export default function PreviewPage({ user, id }: PreviewPageProps) {
                     Summary
                   </Button>
                   <Button
-                    variant={activeTab === "url" ? "primary" : "ghost"}
+                    variant={activeTab === "url" ? "default" : "secondary"}
                     size="sm"
                     onClick={() => setActiveTab("url")}
                     className="flex-1"
@@ -438,7 +438,7 @@ export default function PreviewPage({ user, id }: PreviewPageProps) {
                     Final URL
                   </Button>
                   <Button
-                    variant={activeTab === "trace" ? "primary" : "ghost"}
+                    variant={activeTab === "trace" ? "default" : "secondary"}
                     size="sm"
                     onClick={() => setActiveTab("trace")}
                     className="flex-1"

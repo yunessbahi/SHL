@@ -259,7 +259,7 @@ export default function UTMTemplatesPage({ user }: UTMTemplatesPageProps) {
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
-                          variant="ghost"
+                          variant="secondary"
                           size="sm"
                           className="h-8 w-8 p-0"
                         >
@@ -364,7 +364,11 @@ export default function UTMTemplatesPage({ user }: UTMTemplatesPageProps) {
                   </span>
                   <HoverCard>
                     <HoverCardTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="h-6 w-6 p-0"
+                      >
                         <Badge
                           className={
                             "h-5 min-w-6 font-light font-mono rounded-full px-1 tabular-nums cursor-pointer hover:bg-accent"

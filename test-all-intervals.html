@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Analytics Interval Testing - All Combinations</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+      .test-section {
+        margin: 20px 0;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+      }
+      .test-result {
+        margin: 10px 0;
+        padding: 10px;
+        border-radius: 3px;
+      }
+      .success {
+        background-color: #d4edda;
+        color: #155724;
+      }
+      .error {
+        background-color: #f8d7da;
+        color: #721c24;
+      }
+      .info {
+        background-color: #d1ecf1;
+        color: #0c5460;
+      }
+      button {
+        margin: 5px;
+        padding: 8px 15px;
+      }
+      pre {
+        background: #f8f9fa;
+        padding: 10px;
+        border-radius: 3px;
+        overflow-x: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🔧 Analytics Service - Interval Testing Dashboard</h1>
+    <p>
+      This page tests all interval-period combinations to verify the backend fix
+      is working correctly.
+    </p>
+
+    <div class="test-section">
+      <h2>🎯 Test All Interval-Period Combinations</h2>
+      <p>
+        Click the buttons below to test each combination and verify the data
+        point count.
+      </p>
+
+      <button onclick="testHourlyInterval()">
+        🕐 Test Hourly + 1d (expect 24 points)
+      </button>
+      <button onclick="testDailyInterval()">
+        📅 Test Daily + 7d (expect 7 points)
+      </button>
+      <button onclick="testWeeklyInterval()">
+        📊 Test Weekly + 30d (expect 4 points)
+      </button>
+      <button onclick="testMonthlyInterval()">
+        📈 Test Monthly + 90d (expect 3 points)
+      </button>
+      <button onclick="testYearlyInterval()">
+        📉 Test Yearly + 365d (expect 1 point)
+      </button>
+      <button onclick="testAllCombinations()">🚀 Test All Combinations</button>
+    </div>
+
+    <div class="test-section">
+      <h2>📊 Test Results</h2>
+      <div id="results"></div>
+    </div>
+
+    <script>
+      const API_BASE = "http://localhost:7860/api/analytics/time-series";
+
+      // Test functions
+      async function testHourlyInterval() {
+        const result = await testInterval("hourly", "1d", "Hourly + 1d", 24);
+        displayResult("Hourly + 1d", result);
+      }
+
+      async function testDailyInterval() {
+        const result = await testInterval("daily", "7d", "Daily + 7d", 7);
+        displayResult("Daily + 7d", result);
+      }
+
+      async function testWeeklyInterval() {
+        const result = await testInterval("weekly", "30d", "Weekly + 30d", 4);
+        displayResult("Weekly + 30d", result);
+      }
+
+      async function testMonthlyInterval() {
+        const result = await testInterval("monthly", "90d", "Monthly + 90d", 3);
+        displayResult("Monthly + 90d", result);
+      }
+
+      async function testYearlyInterval() {
+        const result = await testInterval("yearly", "365d", "Yearly + 365d", 1);
+        displayResult("Yearly + 365d", result);
+      }
+
+      async function testAllCombinations() {
+        const combinations = [
+          {
+            interval: "hourly",
+            period: "1d",
+            name: "Hourly + 1d",
+            expected: 24,
+          },
+          { interval: "daily", period: "7d", name: "Daily + 7d", expected: 7 },
+          {
+            interval: "weekly",
+            period: "30d",
+            name: "Weekly + 30d",
+            expected: 4,
+          },
+          {
+            interval: "monthly",
+            period: "90d",
+            name: "Monthly + 90d",
+            expected: 3,
+          },
+          {
+            interval: "yearly",
+            period: "365d",
+            name: "Yearly + 365d",
+            expected: 1,
+          },
+        ];
+
+        let resultsHtml = "<h3>🚀 All Combinations Test Results</h3>";
+        let allPassed = true;
+
+        for (const combo of combinations) {
+          const result = await testInterval(
+            combo.interval,
+            combo.period,
+            combo.name,
+            combo.expected,
+          );
+          const passed = result.dataPoints === combo.expected;
+          allPassed = allPassed && passed;
+
+          resultsHtml += `
+                    <div class="test-result ${passed ? "success" : "error"}">
+                        <strong>${combo.name}</strong><br>
+                        Expected: ${combo.expected} points, Got: ${result.dataPoints} points<br>
+                        ${passed ? "✅ PASSED" : "❌ FAILED"}<br>
+                        Backend Mapped: ${result.mappedInterval}<br>
+                        Status: ${result.status}
+                    </div>
+                `;
+        }
+
+        resultsHtml += `<div class="test-result ${allPassed ? "success" : "error"}">
+                <h4>${allPassed ? "🎉 ALL TESTS PASSED!" : "⚠️ SOME TESTS FAILED"}</h4>
+            </div>`;
+
+        document.getElementById("results").innerHTML = resultsHtml;
+      }
+
+      async function testInterval(interval, period, name, expected) {
+        try {
+          const url = `${API_BASE}?interval=${interval}&period=${period}`;
+          console.log(`Testing: ${name} - ${url}`);
+
+          const response = await fetch(url, {
+            headers: {
+              Authorization: "Bearer test-token", // Adjust as needed
+              "Content-Type": "application/json",
+            },
+          });
+
+          if (!response.ok) {
+            return {
+              success: false,
+              dataPoints: 0,
+              error: `HTTP ${response.status}: ${response.statusText}`,
+              mappedInterval: "unknown",
+              status: "Request failed",
+            };
+          }
+
+          const data = await response.json();
+          const dataPoints = Array.isArray(data) ? data.length : 0;
+
+          return {
+            success: dataPoints === expected,
+            dataPoints: dataPoints,
+            expected: expected,
+            data: data,
+            mappedInterval: "year", // This will be shown in backend logs
+            status: dataPoints === expected ? "PASSED" : "FAILED",
+          };
+        } catch (error) {
+          return {
+            success: false,
+            dataPoints: 0,
+            error: error.message,
+            mappedInterval: "unknown",
+            status: "Exception occurred",
+          };
+        }
+      }
+
+      function displayResult(testName, result) {
+        const resultsDiv = document.getElementById("results");
+        const statusClass = result.success ? "success" : "error";
+        const statusIcon = result.success ? "✅" : "❌";
+
+        const resultHtml = `
+                <div class="test-result ${statusClass}">
+                    <strong>${statusIcon} ${testName}</strong><br>
+                    Expected: ${result.expected} data points<br>
+                    Got: ${result.dataPoints} data points<br>
+                    Status: ${result.status}<br>
+                    ${result.error ? `Error: ${result.error}<br>` : ""}
+                    Backend Mapped: ${result.mappedInterval}<br>
+                    ${
+                      result.data && result.data.length > 0
+                        ? `Sample Data: ${JSON.stringify(result.data.slice(0, 2), null, 2)}`
+                        : "No data returned"
+                    }
+                </div>
+            `;
+
+        resultsDiv.innerHTML = resultHtml;
+      }
+
+      // Auto-run tests on page load
+      window.addEventListener("load", function () {
+        console.log("📊 Analytics Testing Dashboard Loaded");
+        console.log(
+          "Click the buttons above to test each interval-period combination",
+        );
+      });
+    </script>
+  </body>
+</html>

@@ -366,7 +366,7 @@ export default function CampaignsPage({ user }: CampaignsPageProps) {
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm">
+                    <Button variant="secondary" size="sm">
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -472,7 +472,7 @@ export default function CampaignsPage({ user }: CampaignsPageProps) {
                 {/* Links count with click-through */}
                 <div className="text-sm">
                   <Button
-                    variant="ghost"
+                    variant="secondary"
                     size="sm"
                     className="p-0 h-auto text-sm text-blue-600 hover:text-blue-800"
                     onClick={() =>
@@ -494,7 +494,7 @@ export default function CampaignsPage({ user }: CampaignsPageProps) {
                     Manage Templates
                   </Button>
                   <Button
-                    variant="primary"
+                    variant="secondary"
                     size="sm"
                     className="w-full"
                     disabled={c.status === "paused"}
@@ -544,7 +544,7 @@ export default function CampaignsPage({ user }: CampaignsPageProps) {
             </div>
             <div className="mb-4 flex gap-2">
               <Button
-                variant={showAssignModal ? "primary" : "secondary"}
+                variant={showAssignModal ? "default" : "secondary"}
                 onClick={() => setShowAssignModal((v) => !v)}
               >
                 <Plus className="h-4 w-4 mr-1" />
@@ -628,7 +628,7 @@ export default function CampaignsPage({ user }: CampaignsPageProps) {
                     Assign Existing Templates
                   </h3>
                   <Button
-                    variant="ghost"
+                    variant="secondary"
                     size="sm"
                     onClick={() => setShowAssignModal(false)}
                   >
