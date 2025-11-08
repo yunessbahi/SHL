@@ -1,3 +1,4 @@
+// lib/getSafeSession.ts
 import { createServerClient } from "@supabase/ssr";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";

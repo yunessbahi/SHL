@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  BarChart,
+  BarChart as BarChartDefault,
   Bar,
   XAxis,
   YAxis,
@@ -71,7 +71,7 @@ export default function BarChart({
           config={chartConfig}
           className={`min-h-[${height}px] w-full`}
         >
-          <BarChart
+          <BarChartDefault
             data={data}
             margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
           >
@@ -87,7 +87,7 @@ export default function BarChart({
               fill="var(--color-value)"
               radius={[4, 4, 0, 0]}
             />
-          </BarChart>
+          </BarChartDefault>
         </ChartContainer>
       </CardContent>
     </Card>
