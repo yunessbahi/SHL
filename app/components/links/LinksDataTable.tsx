@@ -1,8 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Alert, AlertIcon, AlertTitle } from "@/components/ui/alert";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+//import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge, BadgeDot } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DataGrid, DataGridContainer } from "@/components/ui/data-grid";
@@ -35,48 +42,6 @@ import {
 } from "@tanstack/react-table";
 import { useGroups } from "@/lib/hooks/useGroups";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
-// Removed old custom Progress component - now using ProgressTTL from '@/components/ui/progress-ttl'
-
-// Device icons mapping
-const DeviceIcon = ({ device }: { device: string }) => {
-  switch (device.toLowerCase()) {
-    case "mobile":
-      return <div className="text-blue-500 text-sm">📱</div>;
-    case "desktop":
-      return <div className="text-gray-600 text-sm">🖥️</div>;
-    default:
-      return <div className="text-gray-400 text-sm">📱</div>;
-  }
-};
-
-// Country flag mapping
-const CountryFlag = ({ country }: { country: string }) => {
-  const flagMap: { [key: string]: string } = {
-    US: "🇺🇸",
-    GB: "🇬🇧",
-    CA: "🇨🇦",
-    FR: "🇫🇷",
-    DE: "🇩🇪",
-    JP: "🇯🇵",
-    AU: "🇦🇺",
-    BR: "🇧🇷",
-    IN: "🇮🇳",
-    CN: "🇨🇳",
-    ES: "🇪🇸",
-    IT: "🇮🇹",
-    NL: "🇳🇱",
-    SE: "🇸🇪",
-    NO: "🇳🇴",
-  };
-  return <span className="text-sm">{flagMap[country] || "🌍"}</span>;
-};
-
-// Copy to clipboard function
-const copyToClipboard = (text: string) => {
-  navigator.clipboard.writeText(text);
-  toast.success("Copied to clipboard!");
-};
-
 import {
   BarChart3,
   Calendar,
@@ -107,6 +72,10 @@ import {
   Copy,
   Timer,
   Target,
+  Merge,
+  Split,
+  LucideType,
+  icons,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -291,7 +260,8 @@ interface IData {
   start_at?: string; // link.start_at
   group?: string; // link.group
   fallback_url?: string; // link.fallback_url
-  avatar: string; // generate from link.name
+  //avatar: string; // generate from link.name
+  link_badge: ReactNode;
   rules?: LinkRules; // link rules
   targets?: Target[]; // detailed target information
 }
@@ -377,9 +347,9 @@ export default function LinksDataTable({
           if (groups && groups.length > 0) {
             // If link.group is a number, look it up; otherwise use the string value directly
             /*const groupId = typeof link.group === 'number' ? link.group : parseInt(link.group);
-                                                    if (!isNaN(groupId)) {
-                                                        groupName = getGroupName(groups, groupId);
-                                                    }*/
+                                                                if (!isNaN(groupId)) {
+                                                                    groupName = getGroupName(groups, groupId);
+                                                                }*/
           }
           return {
             id: link.id.toString(),
@@ -396,7 +366,12 @@ export default function LinksDataTable({
             start_at: link.start_datetime,
             group: link.group_name || "--",
             fallback_url: link.fallback_url,
-            avatar: `${Math.floor(Math.random() * 12) + 1}.png`, // Generate avatar for demo
+            link_badge:
+              link.link_type === "smart" ? (
+                <Split className="w-4 h-4 flex-none" />
+              ) : (
+                <Merge className="w-4 h-4 flex-none" />
+              ), //`${Math.floor(Math.random() * 12) + 1}.png`, // Generate link_badge for demo
             rules: undefined, // Will be loaded when expanded
             targets: undefined, // Will be loaded when expanded
           };
@@ -576,15 +551,16 @@ export default function LinksDataTable({
       label: "Name",
       icon: <User className="size-3.5" />,
       type: "text",
-      className: "w-40",
+      className: "w-40 bg-secondary",
       placeholder: "Search names...",
     },
     {
       key: "short_url",
       label: "Short URL",
-      icon: <Globe className="size-3.5" />,
+      icon: <Globe className="size-3.5  " />,
       type: "text",
-      className: "w-48",
+
+      className: "w-48 bg-secondary",
       placeholder: "Search URLs...",
     },
     {
@@ -593,7 +569,7 @@ export default function LinksDataTable({
       icon: <List className="size-3.5" />,
       type: "select",
       searchable: true,
-      className: "w-[140px]",
+      className: "w-[140px] bg-secondary",
       options: [
         { value: "single", label: "Single Link" },
         { value: "smart", label: "Smart Link" },
@@ -605,7 +581,7 @@ export default function LinksDataTable({
       icon: <CheckCircle className="size-3.5" />,
       type: "select",
       searchable: false,
-      className: "w-[140px]",
+      className: "w-[140px] bg-secondary",
       options: [
         {
           value: "active",
@@ -635,7 +611,7 @@ export default function LinksDataTable({
       icon: <BarChart3 className="size-3.5" />,
       type: "select",
       searchable: true,
-      className: "w-[160px]",
+      className: "w-[160px] bg-secondary",
       options: useMemo(() => {
         const campaigns = Array.from(
           new Set(linksData.map((link) => link.campaign).filter(Boolean)),
@@ -651,7 +627,7 @@ export default function LinksDataTable({
       label: "Created Date",
       icon: <CalendarDays className="size-3.5" />,
       type: "date",
-      className: "w-36",
+      className: "w-36 bg-secondary",
     },
     {
       key: "click_count",
@@ -661,7 +637,7 @@ export default function LinksDataTable({
       min: 0,
       max: 100000,
       step: 1,
-      className: "w-32",
+      className: "w-32 bg-secondary",
     },
   ];
 
@@ -805,32 +781,32 @@ export default function LinksDataTable({
     if (status == "active") {
       return (
         /*<Badge variant="success" >
-                                    success
-                                </Badge>*/
+                                            success
+                                        </Badge>*/
         <Status variant="active" label="Live Now" />
       );
     } else if (status == "expired") {
       return (
         /* <Badge variant="destructive" appearance={"light"}>
-                                    <BadgeDot/>
-                                    Expired
-                                </Badge>*/
+                                            <BadgeDot/>
+                                            Expired
+                                        </Badge>*/
         <Status variant="danger" label="Expired" />
       );
     } else if (status == "paused") {
       return (
         /*<Badge variant="outline" >
-                                    <PauseCircle className="h-3 w-3 mr-1"/>
-                                    Paused
-                                </Badge>*/
+                                            <PauseCircle className="h-3 w-3 mr-1"/>
+                                            Paused
+                                        </Badge>*/
         <Status variant={"warn"} label="Paused" />
       );
     } else if (status == "archived") {
       return (
         /*<Badge variant="outline" >
-                                    <ArchiveIcon className="h-3 w-3 mr-1"/>
-                                    Archived
-                                </Badge>*/
+                                            <ArchiveIcon className="h-3 w-3 mr-1"/>
+                                            Archived
+                                        </Badge>*/
         <Status variant="default" label="Archived" />
       );
     }
@@ -863,15 +839,15 @@ export default function LinksDataTable({
     };
   };
 
-  // Avatar fallback
-  const getAvatarFallback = (name: string) => {
-    return name
-      .split(" ")
-      .map((word) => word[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  };
+  // link_badge fallback
+  /*const getAvatarFallback = (name: string) => {
+        return name
+            .split(" ")
+            .map((word) => word[0])
+            .join("")
+            .toUpperCase()
+            .slice(0, 2);
+    };*/
 
   // Handle pause/archive actions
   const handlePauseArchiveAction = async (linkId: string, action: string) => {
@@ -932,15 +908,20 @@ export default function LinksDataTable({
           }, [isExpanded, linkId, fetchExpandedData]);
 
           return row.getCanExpand() ? (
-            <Button
-              className={"bg-transparent text-red-500"}
-              onClick={row.getToggleExpandedHandler()}
-            >
-              {row.getIsExpanded() ? <ChevronUp /> : <ChevronDown />}
-            </Button>
+            <div className="flex items-center justify-center">
+              <Button
+                size={"icon"}
+                className={"p-2 rounded-full"}
+                variant={"ghost"}
+                //className={"bg-transparent text-red-500"}
+                onClick={row.getToggleExpandedHandler()}
+              >
+                {row.getIsExpanded() ? <ChevronUp /> : <ChevronDown />}
+              </Button>
+            </div>
           ) : null;
         },
-        size: 22,
+        size: 60,
         meta: {
           expandedContent: (row) => {
             const linkId = row.id;
@@ -1299,7 +1280,7 @@ export default function LinksDataTable({
                                   <h4 className="font-medium mb-3">
                                     UTM Parameters
                                   </h4>
-                                  <div className="border rounded-lg overflow-hidden bg-gray-50">
+                                  <div className="border rounded-lg overflow-hidden">
                                     {/* Display UTM parameters */}
                                     {(() => {
                                       // Access UTM overrides directly from target.utm_overrides
@@ -1311,12 +1292,12 @@ export default function LinksDataTable({
                                           ([key, value], index) => (
                                             <div
                                               key={key}
-                                              className={`grid grid-cols-2 gap-4 p-3 ${index < Object.keys(utmOverrides).length - 1 ? "border-b" : ""} bg-white`}
+                                              className={`grid grid-cols-2 gap-4 p-3 ${index < Object.keys(utmOverrides).length - 1 ? "border-b" : ""}`}
                                             >
                                               <span className="font-medium text-accent-foreground">
                                                 {key}:
                                               </span>
-                                              <span className="text-muted-foreground font-mono">
+                                              <span className="text-xs text-muted-foreground font-mono">
                                                 {String(value) ||
                                                   "Not configured"}
                                               </span>
@@ -1324,11 +1305,11 @@ export default function LinksDataTable({
                                           ),
                                         )
                                       ) : (
-                                        <div className="grid grid-cols-2 gap-4 p-3 bg-white">
-                                          <span className="font-medium text-gray-700">
+                                        <div className="grid grid-cols-2 gap-4 p-3">
+                                          <span className="text-xs text-muted-foreground">
                                             No UTM parameters configured
                                           </span>
-                                          <span className="text-gray-500 font-mono">
+                                          <span className="text-xs text-muted-foreground font-mono">
                                             Default template will be used
                                           </span>
                                         </div>
@@ -1343,7 +1324,7 @@ export default function LinksDataTable({
                       </Accordion>
                     ) : (
                       <div className="text-center py-8">
-                        <p className="text-sm text-gray-500">
+                        <p className="text-xs text-muted-foreground">
                           No targets configured
                         </p>
                       </div>
@@ -1365,15 +1346,7 @@ export default function LinksDataTable({
         cell: ({ row }) => {
           return (
             <div className="flex items-center gap-3">
-              <Avatar className="size-8">
-                <AvatarImage
-                  src={`/media/avatars/${row.original.avatar}`}
-                  alt={row.original.name}
-                />
-                <AvatarFallback>
-                  {getAvatarFallback(row.original.name)}
-                </AvatarFallback>
-              </Avatar>
+              {row.original.link_badge}
               <div className="space-y-px">
                 <div className="font-medium text-foreground">
                   {row.original.name}
@@ -1423,13 +1396,13 @@ export default function LinksDataTable({
         header: "Targets",
         cell: ({ row }) => (
           /*<Badge
-                      variant="secondary"
-                      size={"md"}
-                      className="font-mono"
-                    >
-                      {row.original.targets_count}
-                      {/!*{row.original.targets_count !== 1 ? "s" : ""}*!/}
-                    </Badge>*/
+                                variant="secondary"
+                                size={"md"}
+                                className="font-mono"
+                              >
+                                {row.original.targets_count}
+                                {/!*{row.original.targets_count !== 1 ? "s" : ""}*!/}
+                              </Badge>*/
           <span className="font-normal text-sm">
             {row.original.targets_count}
           </span>
@@ -1444,8 +1417,8 @@ export default function LinksDataTable({
         accessorKey: "click_count",
         id: "click_count",
         /*header: ({ column }) => (
-                  <DataGridColumnHeader title="Clicks" column={column} />
-                ),*/
+                          <DataGridColumnHeader title="Clicks" column={column} />
+                        ),*/
         header: "Clicks",
         cell: ({ row }) => (
           <span className="font-normal text-sm">

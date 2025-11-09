@@ -632,7 +632,7 @@ function FilterInput<T = unknown>({
 
       <div className="w-full flex items-stretch">
         <input
-          className="w-full outline-none"
+          className="w-full outline-none bg-secondary"
           aria-invalid={!isValid}
           aria-describedby={
             !isValid && validationMessage
