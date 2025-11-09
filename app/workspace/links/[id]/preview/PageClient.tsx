@@ -31,7 +31,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { DateTimePicker } from "@/components/ui/date-time-picker";
+import { DateTimePicker24h } from "@/components/ui/date-time-picker-24h";
 import {
   CheckCircle,
   XCircle,
@@ -377,7 +377,7 @@ export default function PreviewPage({ user, id }: PreviewPageProps) {
                     </div>
 
                     <div className="space-y-2">
-                      <DateTimePicker
+                      <DateTimePicker24h
                         label="Custom DateTime (for testing time rules)"
                         value={context.custom_datetime}
                         onChange={(value) =>

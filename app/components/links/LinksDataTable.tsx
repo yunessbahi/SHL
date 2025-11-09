@@ -12,6 +12,13 @@ import { Alert, AlertIcon, AlertTitle } from "@/components/ui/alert";
 //import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge, BadgeDot } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CalendarReUI } from "@/components/ui/calendarReUI";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import { DataGrid, DataGridContainer } from "@/components/ui/data-grid";
 import { DataGridColumnHeader } from "@/components/ui/data-grid-column-header";
 import { DataGridPagination } from "@/components/ui/data-grid-pagination";
@@ -43,6 +50,25 @@ import {
 import { useGroups } from "@/lib/hooks/useGroups";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import {
+  endOfMonth,
+  endOfYear,
+  format,
+  isEqual,
+  startOfDay,
+  startOfMonth,
+  startOfYear,
+  subDays,
+  subMonths,
+  subYears,
+} from "date-fns";
+import { DateRange } from "react-day-picker";
+
+// Type for custom renderer props
+type CustomRendererProps = {
+  values: unknown[];
+  onChange: (values: unknown[]) => void;
+};
+import {
   BarChart3,
   Calendar,
   CircleAlert,
@@ -64,7 +90,7 @@ import {
   XCircle,
   PauseCircle,
   Archive as ArchiveIcon,
-  User,
+  Megaphone,
   AlertTriangle,
   XCircle as FunnelX,
   ChevronUp,
@@ -76,6 +102,8 @@ import {
   Split,
   LucideType,
   icons,
+  Link2,
+  MegaphoneIcon,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -544,12 +572,182 @@ export default function LinksDataTable({
     }
   }, [utmTemplates, expandedDataCache]);
 
+  // Custom Date Range with Presets Input Component
+  function CustomDateRangeWithPresetsInput({
+    values,
+    onChange,
+  }: CustomRendererProps) {
+    const today = useMemo(() => new Date(), []);
+
+    const presets = useMemo(
+      () => [
+        { label: "Today", range: { from: today, to: today } },
+        {
+          label: "Yesterday",
+          range: { from: subDays(today, 1), to: subDays(today, 1) },
+        },
+        { label: "Last 7 days", range: { from: subDays(today, 6), to: today } },
+        {
+          label: "Last 30 days",
+          range: { from: subDays(today, 29), to: today },
+        },
+        {
+          label: "Month to date",
+          range: { from: startOfMonth(today), to: today },
+        },
+        {
+          label: "Last month",
+          range: {
+            from: startOfMonth(subMonths(today, 1)),
+            to: endOfMonth(subMonths(today, 1)),
+          },
+        },
+        {
+          label: "Year to date",
+          range: { from: startOfYear(today), to: today },
+        },
+        {
+          label: "Last year",
+          range: {
+            from: startOfYear(subYears(today, 1)),
+            to: endOfYear(subYears(today, 1)),
+          },
+        },
+      ],
+      [today],
+    );
+
+    const [month, setMonth] = useState(today);
+    const [date, setDate] = useState<DateRange | undefined>(
+      values?.[0] && typeof values[0] === "string"
+        ? {
+            from: new Date(values[0] as string),
+            to:
+              values[1] && typeof values[1] === "string"
+                ? new Date(values[1] as string)
+                : undefined,
+          }
+        : undefined,
+    );
+    const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
+    const [isOpen, setIsOpen] = useState(false);
+
+    useEffect(() => {
+      const matchedPreset = presets.find(
+        (preset) =>
+          isEqual(
+            startOfDay(preset.range.from),
+            startOfDay(date?.from || new Date(0)),
+          ) &&
+          isEqual(
+            startOfDay(preset.range.to),
+            startOfDay(date?.to || new Date(0)),
+          ),
+      );
+      setSelectedPreset(matchedPreset?.label || null);
+    }, [date, presets]);
+
+    const handleApply = () => {
+      if (date?.from) {
+        // Format dates as YYYY-MM-DD in local timezone to avoid timezone conversion issues
+        const formatLocalDate = (d: Date) => {
+          const year = d.getFullYear();
+          const month = String(d.getMonth() + 1).padStart(2, "0");
+          const day = String(d.getDate()).padStart(2, "0");
+          return `${year}-${month}-${day}`;
+        };
+
+        const fromStr = formatLocalDate(date.from);
+        const toStr = date.to ? formatLocalDate(date.to) : fromStr;
+        onChange([fromStr, toStr]);
+      }
+      setIsOpen(false);
+    };
+
+    const handleCancel = () => {
+      setIsOpen(false);
+    };
+
+    const handleSelect = (selected: DateRange | undefined) => {
+      setDate({
+        from: selected?.from || undefined,
+        to: selected?.to || undefined,
+      });
+      setSelectedPreset(null);
+    };
+
+    const handlePresetSelect = (preset: (typeof presets)[0]) => {
+      setDate(preset.range);
+      setMonth(preset.range.from || today);
+      setSelectedPreset(preset.label);
+    };
+
+    return (
+      <Popover open={isOpen} onOpenChange={setIsOpen}>
+        <PopoverTrigger className="cursor-pointer">
+          {date?.from ? (
+            date.to ? (
+              <>
+                {format(date.from, "LLL dd, y")} -{" "}
+                {format(date.to, "LLL dd, y")}
+              </>
+            ) : (
+              format(date.from, "LLL dd, y")
+            )
+          ) : (
+            <span>Pick a date range with presets</span>
+          )}
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="center" sideOffset={8}>
+          <div className="flex max-sm:flex-col">
+            <div className="relative border-border max-sm:order-1 max-sm:border-t sm:w-32">
+              <div className="h-full border-border sm:border-e py-2">
+                <div className="flex flex-col px-2 gap-[2px]">
+                  {presets.map((preset, index) => (
+                    <Button
+                      key={index}
+                      type="button"
+                      variant="ghost"
+                      className={cn(
+                        "h-8 w-full justify-start",
+                        selectedPreset === preset.label && "bg-accent",
+                      )}
+                      onClick={() => handlePresetSelect(preset)}
+                    >
+                      {preset.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <CalendarReUI
+              autoFocus
+              mode="range"
+              month={month}
+              onMonthChange={setMonth}
+              showOutsideDays={false}
+              selected={date}
+              onSelect={handleSelect}
+              numberOfMonths={2}
+            />
+          </div>
+          <div className="flex items-center justify-end gap-1.5 border-t border-border p-3">
+            <Button variant="outline" onClick={handleCancel}>
+              Cancel
+            </Button>
+            <Button onClick={handleApply}>Apply</Button>
+          </div>
+        </PopoverContent>
+      </Popover>
+    );
+  }
+
   // Filter field configurations - exact demo structure
   const fields: FilterFieldConfig[] = [
     {
       key: "name",
       label: "Name",
-      icon: <User className="size-3.5" />,
+      icon: <Link2 className="size-3.5" />,
       type: "text",
       className: "w-40 bg-secondary",
       placeholder: "Search names...",
@@ -608,7 +806,7 @@ export default function LinksDataTable({
     {
       key: "campaign",
       label: "Campaign",
-      icon: <BarChart3 className="size-3.5" />,
+      icon: <MegaphoneIcon className="size-3.5" />,
       type: "select",
       searchable: true,
       className: "w-[160px] bg-secondary",
@@ -626,8 +824,33 @@ export default function LinksDataTable({
       key: "created_at",
       label: "Created Date",
       icon: <CalendarDays className="size-3.5" />,
-      type: "date",
-      className: "w-36 bg-secondary",
+      type: "custom",
+      operators: [
+        { value: "between", label: "between" },
+        { value: "not_between", label: "not between" },
+        { value: "before", label: "before" },
+        { value: "after", label: "after" },
+      ],
+      customRenderer: ({ values, onChange }) => (
+        <CustomDateRangeWithPresetsInput values={values} onChange={onChange} />
+      ),
+      className: "w-48 bg-secondary",
+    },
+    {
+      key: "expires_at",
+      label: "Expires At",
+      icon: <Clock className="size-3.5" />,
+      type: "custom",
+      operators: [
+        { value: "between", label: "between" },
+        { value: "not_between", label: "not between" },
+        { value: "before", label: "before" },
+        { value: "after", label: "after" },
+      ],
+      customRenderer: ({ values, onChange }) => (
+        <CustomDateRangeWithPresetsInput values={values} onChange={onChange} />
+      ),
+      className: "w-48 bg-secondary",
     },
     {
       key: "click_count",
@@ -708,17 +931,39 @@ export default function LinksDataTable({
             case "less_than_or_equal":
               return Number(fieldValue) <= Number(values[0]);
             case "between":
-              if (values.length >= 2) {
-                const min = Number(values[0]);
-                const max = Number(values[1]);
-                return Number(fieldValue) >= min && Number(fieldValue) <= max;
+              if (field === "expires_at" || field === "created_at") {
+                // Date range filtering for date fields
+                if (values.length >= 2) {
+                  const fromDate = new Date(String(values[0]));
+                  const toDate = new Date(String(values[1]));
+                  const fieldDate = new Date(String(fieldValue));
+                  return fieldDate >= fromDate && fieldDate <= toDate;
+                }
+              } else {
+                // Number range filtering for other fields
+                if (values.length >= 2) {
+                  const min = Number(values[0]);
+                  const max = Number(values[1]);
+                  return Number(fieldValue) >= min && Number(fieldValue) <= max;
+                }
               }
               return true;
             case "not_between":
-              if (values.length >= 2) {
-                const min = Number(values[0]);
-                const max = Number(values[1]);
-                return Number(fieldValue) < min || Number(fieldValue) > max;
+              if (field === "expires_at" || field === "created_at") {
+                // Date range filtering for date fields
+                if (values.length >= 2) {
+                  const fromDate = new Date(String(values[0]));
+                  const toDate = new Date(String(values[1]));
+                  const fieldDate = new Date(String(fieldValue));
+                  return fieldDate < fromDate || fieldDate > toDate;
+                }
+              } else {
+                // Number range filtering for other fields
+                if (values.length >= 2) {
+                  const min = Number(values[0]);
+                  const max = Number(values[1]);
+                  return Number(fieldValue) < min || Number(fieldValue) > max;
+                }
               }
               return true;
             case "before":
@@ -1736,6 +1981,7 @@ export default function LinksDataTable({
         loadingMode="skeleton"
         recordCount={filteredData?.length || 0}
         tableLayout={{
+          width: "auto",
           dense: true,
           columnsMovable: true,
           headerSticky: true,
@@ -1752,21 +1998,6 @@ export default function LinksDataTable({
           <DataGridPagination />
         </div>
       </DataGrid>
-
-      {/* Async Info Alert - Exact demo structure */}
-      <Alert
-        variant="info"
-        //appearance="light"
-        close={false}
-        className="mt-5"
-      >
-        <AlertIcon>
-          <CircleAlert />
-        </AlertIcon>
-        <AlertTitle>
-          Async Mode: Simulated API Delay of <strong>800-2000ms</strong>
-        </AlertTitle>
-      </Alert>
 
       {/* Confirmation Dialog - Using proper Dialog component */}
       <Dialog
