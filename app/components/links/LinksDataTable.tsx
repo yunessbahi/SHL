@@ -1,4 +1,3 @@
-/*
 "use client";
 
 import {
@@ -247,6 +246,7 @@ import { BadgeDefault, Status } from "@/app/components/ui/badges-var1";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import ProgressTTL from "@/components/ui/progress-ttl";
+import { SafeUser } from "@/lib/getSafeSession";
 
 // Enhanced link data interface with all metadata for expanded row
 interface Target {
@@ -298,12 +298,15 @@ interface IData {
 interface LinksDataTableProps {
   className?: string;
   onRefresh?: () => void;
+  user: SafeUser;
 }
 
 export default function LinksDataTable({
+  user,
   className,
   onRefresh,
 }: LinksDataTableProps) {
+  //console.log(user);
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 10,
@@ -375,10 +378,10 @@ export default function LinksDataTable({
           const groupName = link.group;
           if (groups && groups.length > 0) {
             // If link.group is a number, look it up; otherwise use the string value directly
-            /!*const groupId = typeof link.group === 'number' ? link.group : parseInt(link.group);
+            /*const groupId = typeof link.group === 'number' ? link.group : parseInt(link.group);
                                                                 if (!isNaN(groupId)) {
                                                                     groupName = getGroupName(groups, groupId);
-                                                                }*!/
+                                                                }*/
           }
           return {
             id: link.id.toString(),
@@ -1025,36 +1028,13 @@ export default function LinksDataTable({
   // Status badge component - adapted for links
   const StatusBadge = ({ status }: { status: string }) => {
     if (status == "active") {
-      return (
-        /!*<Badge variant="success" >
-                                            success
-                                        </Badge>*!/
-        <Status variant="active" label="Live Now" />
-      );
+      return <Status variant="active" label="Live Now" />;
     } else if (status == "expired") {
-      return (
-        /!* <Badge variant="destructive" appearance={"light"}>
-                                            <BadgeDot/>
-                                            Expired
-                                        </Badge>*!/
-        <Status variant="danger" label="Expired" />
-      );
+      return <Status variant="danger" label="Expired" />;
     } else if (status == "paused") {
-      return (
-        /!*<Badge variant="outline" >
-                                            <PauseCircle className="h-3 w-3 mr-1"/>
-                                            Paused
-                                        </Badge>*!/
-        <Status variant={"warn"} label="Paused" />
-      );
+      return <Status variant={"warn"} label="Paused" />;
     } else if (status == "archived") {
-      return (
-        /!*<Badge variant="outline" >
-                                            <ArchiveIcon className="h-3 w-3 mr-1"/>
-                                            Archived
-                                        </Badge>*!/
-        <Status variant="default" label="Archived" />
-      );
+      return <Status variant="default" label="Archived" />;
     }
   };
 
@@ -1086,14 +1066,14 @@ export default function LinksDataTable({
   };
 
   // link_badge fallback
-  /!*const getAvatarFallback = (name: string) => {
+  /*const getAvatarFallback = (name: string) => {
         return name
             .split(" ")
             .map((word) => word[0])
             .join("")
             .toUpperCase()
             .slice(0, 2);
-    };*!/
+    };*/
 
   // Handle pause/archive actions
   const handlePauseArchiveAction = async (linkId: string, action: string) => {
@@ -1176,9 +1156,9 @@ export default function LinksDataTable({
             const utmParams = expandedData?.utm_params || {};
             return (
               <div className="p-6  rounded-lg mx-4 mb-2">
-                {/!* 2-Column Grid Layout *!/}
+                {/* 2-Column Grid Layout */}
                 <div className="grid grid-cols-3 gap-6">
-                  {/!* Grid Column 1 - LINK INFORMATION *!/}
+                  {/* Grid Column 1 - LINK INFORMATION */}
                   <div className="space-y-4">
                     <h3 className="font-semibold text-lg border-b pb-2">
                       LINK INFORMATION
@@ -1230,7 +1210,7 @@ export default function LinksDataTable({
                                 Short URL
                               </TableCell>
                               <TableCell className="py-2">
-                                {/!*{row.short_url ? (
+                                {/*{row.short_url ? (
                                             <a
                                                 href={row.short_url}
                                                 className="text-blue-600 hover:underline"
@@ -1241,9 +1221,9 @@ export default function LinksDataTable({
                                             <span className="text-muted-foreground/50">
                                       --
                                     </span>
-                                        )}*!/}
+                                        )}*/}
 
-                                {/!* <GlimpsePreview url={row.short_url} label={row.short_url} />*!/}
+                                {/* <GlimpsePreview url={row.short_url} label={row.short_url} />*/}
                                 {row.short_url}
                               </TableCell>
                             </TableRow>
@@ -1373,7 +1353,7 @@ export default function LinksDataTable({
                       </div>
                     </div>
 
-                    {/!*<div className="border border-border rounded-lg overflow-hidden">
+                    {/*<div className="border border-border rounded-lg overflow-hidden">
                           <Table className="w-full text-xs md:w-[350px]">
                               <TableBody>
                                   <TableRow className="*:border-border hover:bg-transparent [&>:not(:last-child)]:border-r">
@@ -1394,10 +1374,10 @@ export default function LinksDataTable({
                                   </TableRow>
                               </TableBody>
                           </Table>
-                      </div>*!/}
+                      </div>*/}
                   </div>
 
-                  {/!* Grid Column 2 - TARGETS *!/}
+                  {/* Grid Column 2 - TARGETS */}
                   <div>
                     <div className="w-full inline-flex items-center font-semibold text-lg border-b pb-2 gap-1">
                       <h3>{row.targets_count > 1 ? "TARGETS" : "TARGET"}</h3>
@@ -1436,7 +1416,7 @@ export default function LinksDataTable({
                                     Audience Rules
                                   </h4>
 
-                                  {/!* Allowed Countries *!/}
+                                  {/* Allowed Countries */}
                                   <div className="space-y-2">
                                     <div className="flex items-center gap-3">
                                       <span className="font-medium text-xs min-w-[120px]">
@@ -1467,7 +1447,7 @@ export default function LinksDataTable({
                                       </div>
                                     </div>
 
-                                    {/!* Allowed Device *!/}
+                                    {/* Allowed Device */}
                                     <div className="flex text-xs items-center gap-3">
                                       <span className="font-medium min-w-[120px]">
                                         Allowed Device:
@@ -1505,7 +1485,7 @@ export default function LinksDataTable({
                                       </div>
                                     </div>
 
-                                    {/!* UTM Template *!/}
+                                    {/* UTM Template */}
                                     <div className="flex items-center gap-3">
                                       <span className="font-medium min-w-[120px]">
                                         UTM Template:
@@ -1521,13 +1501,13 @@ export default function LinksDataTable({
                                   </div>
                                 </div>
 
-                                {/!* UTM Fields Table *!/}
+                                {/* UTM Fields Table */}
                                 <div>
                                   <h4 className="font-medium mb-3">
                                     UTM Parameters
                                   </h4>
                                   <div className="border rounded-lg overflow-hidden">
-                                    {/!* Display UTM parameters *!/}
+                                    {/* Display UTM parameters */}
                                     {(() => {
                                       // Access UTM overrides directly from target.utm_overrides
                                       const utmOverrides = target.utm_overrides;
@@ -1601,9 +1581,9 @@ export default function LinksDataTable({
                   <Globe className="h-3 w-3" />
                   {row.original.short_url}
                 </div>
-                {/!*{row.original.description && (
+                {/*{row.original.description && (
                   <div className="text-xs text-gray-500 truncate">{row.original.description}</div>
-                )}*!/}
+                )}*/}
               </div>
             </div>
           );
@@ -1618,7 +1598,7 @@ export default function LinksDataTable({
               <div className="space-y-1">
                 <Skeleton className="h-4 w-40" />
                 <Skeleton className="h-3 w-60" />
-                {/!*<Skeleton className="h-3 w-20" />*!/}
+                {/*<Skeleton className="h-3 w-20" />*/}
               </div>
             </div>
           ),
@@ -1641,14 +1621,6 @@ export default function LinksDataTable({
         id: "targets_count",
         header: "Targets",
         cell: ({ row }) => (
-          /!*<Badge
-                                variant="secondary"
-                                size={"md"}
-                                className="font-mono"
-                              >
-                                {row.original.targets_count}
-                                {/!*{row.original.targets_count !== 1 ? "s" : ""}*!/}
-                              </Badge>*!/
           <span className="font-normal text-sm">
             {row.original.targets_count}
           </span>
@@ -1662,9 +1634,9 @@ export default function LinksDataTable({
       {
         accessorKey: "click_count",
         id: "click_count",
-        /!*header: ({ column }) => (
+        /*header: ({ column }) => (
                           <DataGridColumnHeader title="Clicks" column={column} />
-                        ),*!/
+                        ),*/
         header: "Clicks",
         cell: ({ row }) => (
           <span className="font-normal text-sm">
@@ -1759,11 +1731,11 @@ export default function LinksDataTable({
                 className={`h-4 w-4 ${expiresInfo.isPast ? "text-red-500/40" : "text-muted-foreground/30"}`}
               />
               <div>
-                {/!*<div
+                {/*<div
                                     className={`text-sm font-medium ${expiresInfo.isPast ? "text-red-500" : "text-gray-900"}`}
                                 >
                                     {expiresInfo.isPast ? "Expired" : "Expires"}
-                                </div>*!/}
+                                </div>*/}
                 <div
                   className={`font-normal text-xs ${expiresInfo.isPast ? "text-red-500" : "text-foreground"}`}
                 >
@@ -1816,7 +1788,7 @@ export default function LinksDataTable({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
-                  {/!* Visit Link - Always Available *!/}
+                  {/* Visit Link - Always Available */}
                   <DropdownMenuItem
                     onClick={() => window.open(link.short_url, "_blank")}
                     className="flex items-center"
@@ -1825,7 +1797,7 @@ export default function LinksDataTable({
                     Visit
                   </DropdownMenuItem>
 
-                  {/!* Preview Link - Always Available *!/}
+                  {/* Preview Link - Always Available */}
                   <DropdownMenuItem asChild>
                     <Link
                       href={`/workspace/links/${link.id}/preview`}
@@ -1836,7 +1808,7 @@ export default function LinksDataTable({
                     </Link>
                   </DropdownMenuItem>
 
-                  {/!* Edit Link - Always Available *!/}
+                  {/* Edit Link - Always Available */}
                   <DropdownMenuItem asChild>
                     <Link
                       href={`/workspace/edit/${link.id}`}
@@ -1849,7 +1821,7 @@ export default function LinksDataTable({
 
                   <DropdownMenuSeparator />
 
-                  {/!* Status-dependent Actions *!/}
+                  {/* Status-dependent Actions */}
                   {link.status === "active" && (
                     <>
                       <DropdownMenuItem
@@ -1941,6 +1913,7 @@ export default function LinksDataTable({
     onPaginationChange: setPagination,
     onSortingChange: setSorting,
     columnResizeMode: "onChange",
+    autoResetPageIndex: false,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -1949,7 +1922,7 @@ export default function LinksDataTable({
 
   return (
     <div className={`w-full self-start ${className}`}>
-      {/!* Filters Section - Exact demo structure *!/}
+      {/* Filters Section - Exact demo structure */}
       <div className="flex items-start gap-2.5 mb-3.5">
         <div className="flex-1">
           <Filters
@@ -1975,7 +1948,7 @@ export default function LinksDataTable({
         )}
       </div>
 
-      {/!* Data Grid - Exact demo structure *!/}
+      {/* Data Grid - Exact demo structure */}
       <DataGrid
         table={table}
         isLoading={isLoading}
@@ -2000,7 +1973,7 @@ export default function LinksDataTable({
         </div>
       </DataGrid>
 
-      {/!* Confirmation Dialog - Using proper Dialog component *!/}
+      {/* Confirmation Dialog - Using proper Dialog component */}
       <Dialog
         open={confirmDialog.isOpen}
         onOpenChange={(open) =>
@@ -2064,4 +2037,3 @@ export default function LinksDataTable({
     </div>
   );
 }
-*/
