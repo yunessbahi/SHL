@@ -6,7 +6,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx,.mts,.cts --max-warnings=0",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf .next node_modules pnpm-lock.yaml .turbo && pnpm store prune && pnpm install && pnpm tsc --noEmit && pnpm run build"
   },
   "dependencies": {
     "@base-ui-components/react": "1.0.0-beta.4",

@@ -320,6 +320,7 @@ export default function LinksDataTable({
   // Link management state
   const [linksData, setLinksData] = useState<IData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isTableLoading, setIsTableLoading] = useState(true);
 
   // Expanded row data cache
   const [expandedDataCache, setExpandedDataCache] = useState<Map<string, any>>(
@@ -360,6 +361,7 @@ export default function LinksDataTable({
   // Load links data - replace demoData with actual API call
   const loadLinks = async () => {
     setLoading(true);
+    setIsTableLoading(true);
     try {
       const res = await authFetch("/api/links/");
 
@@ -379,9 +381,9 @@ export default function LinksDataTable({
           if (groups && groups.length > 0) {
             // If link.group is a number, look it up; otherwise use the string value directly
             /*const groupId = typeof link.group === 'number' ? link.group : parseInt(link.group);
-                                                                if (!isNaN(groupId)) {
-                                                                    groupName = getGroupName(groups, groupId);
-                                                                }*/
+                                                                 if (!isNaN(groupId)) {
+                                                                     groupName = getGroupName(groups, groupId);
+                                                                 }*/
           }
           return {
             id: link.id.toString(),
@@ -416,6 +418,7 @@ export default function LinksDataTable({
       }
     } catch (error) {
       toast.error("Failed to load links");
+      setIsTableLoading(false);
     } finally {
       setLoading(false);
     }
@@ -1019,9 +1022,11 @@ export default function LinksDataTable({
     if (linksData.length > 0) {
       const filtered = applyFiltersToData(filters);
       setFilteredData(filtered);
+      setIsTableLoading(false);
     } else if (linksData.length === 0 && !loading) {
       // Clear filteredData when no linksData is available
       setFilteredData([]);
+      setIsTableLoading(false);
     }
   }, [linksData, applyFiltersToData, filters, loading]);
 
@@ -1149,6 +1154,11 @@ export default function LinksDataTable({
         },
         size: 60,
         meta: {
+          skeleton: (
+            <div className="p-2 flex items-center justify-center">
+              <Skeleton className="h-4 w-4 rounded-full" />
+            </div>
+          ),
           expandedContent: (row) => {
             const linkId = row.id;
             const isLoadingExpanded = loadingExpanded.has(linkId);
@@ -1628,7 +1638,7 @@ export default function LinksDataTable({
         size: 100,
         enableSorting: true,
         meta: {
-          skeleton: <Skeleton className="h-4 w-16 rounded-full" />,
+          skeleton: <Skeleton className="h-4 w-6 rounded-full" />,
         },
       },
       {
@@ -1649,7 +1659,6 @@ export default function LinksDataTable({
           skeleton: (
             <div className="flex items-center gap-2">
               <Skeleton className="h-4 w-4 rounded" />
-              <Skeleton className="h-4 w-8" />
             </div>
           ),
         },
@@ -1951,7 +1960,7 @@ export default function LinksDataTable({
       {/* Data Grid - Exact demo structure */}
       <DataGrid
         table={table}
-        isLoading={isLoading}
+        isLoading={isTableLoading || isLoading}
         loadingMode="skeleton"
         recordCount={filteredData?.length || 0}
         tableLayout={{
