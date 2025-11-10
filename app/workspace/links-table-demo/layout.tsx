@@ -1,3 +1,4 @@
+/*
 import type { Metadata } from "next";
 import { getSafeSession } from "@/lib/getSafeSession";
 import { redirect } from "next/navigation";
@@ -25,3 +26,4 @@ export default async function LinksTableDemoLayout() {
 
   return <LinksTableDemoPage user={sessionResult.user} />;
 }
+*/

@@ -1,3 +1,4 @@
+/*
 "use client";
 
 import React, { useState } from "react";
@@ -16,7 +17,7 @@ export default function LinksTableDemoPage({ user }: LinksTableDemoPageProps) {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/!* Header *!/}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-accent-foreground">
@@ -36,7 +37,7 @@ export default function LinksTableDemoPage({ user }: LinksTableDemoPageProps) {
         </div>
       </div>
 
-      {/* Demo Info */}
+      {/!* Demo Info *!/}
       <div className="bg-card border border-muted-foreground-200 rounded-lg p-4">
         <div className="flex items-start space-x-3">
           <div className="bg-secondary rounded-full p-2">
@@ -77,7 +78,7 @@ export default function LinksTableDemoPage({ user }: LinksTableDemoPageProps) {
         </div>
       </div>
 
-      {/* View Toggle */}
+      {/!* View Toggle *!/}
       <div className="flex items-center space-x-2">
         <span className="text-sm font-medium text-gray-700">View:</span>
         <div className="flex bg-gray-100 rounded-lg p-1">
@@ -134,7 +135,7 @@ export default function LinksTableDemoPage({ user }: LinksTableDemoPageProps) {
         </div>
       </div>
 
-      {/* View Content */}
+      {/!* View Content *!/}
       {activeView === "table" ? (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -159,7 +160,7 @@ export default function LinksTableDemoPage({ user }: LinksTableDemoPageProps) {
         </div>
       )}
 
-      {/* Feature Comparison */}
+      {/!* Feature Comparison *!/}
       <div className="bg-gray-50 rounded-lg p-6">
         <h3 className="text-lg font-semibold mb-4">Feature Comparison</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -190,7 +191,7 @@ export default function LinksTableDemoPage({ user }: LinksTableDemoPageProps) {
         </div>
       </div>
 
-      {/* Implementation Notes */}
+      {/!* Implementation Notes *!/}
       <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
         <div className="flex items-start space-x-3">
           <svg
@@ -239,3 +240,4 @@ export default function LinksTableDemoPage({ user }: LinksTableDemoPageProps) {
     </div>
   );
 }
+*/
