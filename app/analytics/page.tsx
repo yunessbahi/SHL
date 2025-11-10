@@ -263,7 +263,7 @@ export default function AnalyticsOverview() {
         </div>
 
         {/* Filters Section - Max 2/6 width */}
-        <div className="min-w-80 px-6">
+        <div className="px-6">
           <AnalyticsFilters
             selectedPeriod={period}
             selectedInterval={interval}

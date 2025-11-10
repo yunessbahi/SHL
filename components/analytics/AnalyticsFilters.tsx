@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown, TimerReset } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Calendar, BarChart3 } from "lucide-react";
@@ -19,6 +19,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Label } from "../ui/label";
+import { Separator } from "../ui/separator";
 
 interface PeriodPreset {
   value: string;
@@ -156,9 +158,6 @@ export default function AnalyticsFilters({
     <div className={`flex flex-col gap-4 ${className}`}>
       {/* Period Selector */}
       <div className="flex flex-row items-center gap-1">
-        <label className="text-xs font-medium text-muted-foreground">
-          Period
-        </label>
         <div className={""}>
           <Popover open={periodOpen} onOpenChange={setPeriodOpen}>
             <PopoverTrigger asChild>
@@ -166,8 +165,16 @@ export default function AnalyticsFilters({
                 variant="outline"
                 role="combobox"
                 aria-expanded={periodOpen}
-                className="w-[180px] justify-between text-xs h-8"
+                className="min-w-[220px] justify-between w-full text-xs h-8"
               >
+                <div className="flex">
+                  <label
+                    className="text-muted-foreground/80 font-normal text-xs"
+                    title="Period"
+                  >
+                    Period
+                  </label>
+                </div>
                 {getCurrentPeriodLabel()}
                 <ChevronsUpDown className="opacity-50 h-3 w-3" />
               </Button>
@@ -227,17 +234,22 @@ export default function AnalyticsFilters({
 
       {/* Interval Selector */}
       <div className="flex flex-row gap-1 items-center">
-        <label className="text-xs font-medium text-muted-foreground">
-          Interval
-        </label>
         <Popover open={intervalOpen} onOpenChange={setIntervalOpen}>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
               role="combobox"
               aria-expanded={intervalOpen}
-              className="w-[140px] justify-between text-xs h-8"
+              className="min-w-[170px] justify-between w-full text-xs h-8"
             >
+              {/* <TimerReset className="m-0"/> */}
+              <Label
+                className="text-muted-foreground/80 font-normal text-xs"
+                title="Interval"
+              >
+                Interval
+              </Label>
+
               {getCurrentIntervalLabel()}
               <ChevronsUpDown className="opacity-50 h-3 w-3" />
             </Button>
