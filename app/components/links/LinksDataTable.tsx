@@ -1392,15 +1392,20 @@ export default function LinksDataTable({
                     <div className="w-full inline-flex items-center font-semibold text-lg border-b pb-2 gap-1">
                       <h3>{row.targets_count > 1 ? "TARGETS" : "TARGET"}</h3>
 
-                      <Badge size="xs" shape="circle" variant="primary">
-                        {row.targets_count}
-                      </Badge>
+                      {!row.targets ? (
+                        <Skeleton className="h-4 w-8 rounded-full" />
+                      ) : (
+                        <Badge size="xs" shape="circle" variant="primary">
+                          {row.targets_count}
+                        </Badge>
+                      )}
                     </div>
 
                     {isLoadingExpanded ? (
-                      <div className="text-center py-8">
-                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900 mx-auto mb-2"></div>
-                        <p className="text-sm text-gray-500">Loading...</p>
+                      <div className="space-y-4">
+                        <Skeleton className="h-6 w-full" />
+                        <Skeleton className="h-20 w-full" />
+                        <Skeleton className="h-6 w-3/4" />
                       </div>
                     ) : row.targets && row.targets.length > 0 ? (
                       <Accordion type="multiple" className="w-full">
@@ -1560,9 +1565,7 @@ export default function LinksDataTable({
                       </Accordion>
                     ) : (
                       <div className="text-center py-8">
-                        <p className="text-xs text-muted-foreground">
-                          No targets configured
-                        </p>
+                        <Skeleton className="flex flex-1 w-full justify-between py-4" />
                       </div>
                     )}
                   </div>
@@ -1624,21 +1627,6 @@ export default function LinksDataTable({
         enableHiding: false,
         meta: {
           skeleton: <Skeleton className="h-4 w-16 rounded-full" />,
-        },
-      },
-      {
-        accessorKey: "targets_count",
-        id: "targets_count",
-        header: "Targets",
-        cell: ({ row }) => (
-          <span className="font-normal text-sm">
-            {row.original.targets_count}
-          </span>
-        ),
-        size: 100,
-        enableSorting: true,
-        meta: {
-          skeleton: <Skeleton className="h-4 w-6 rounded-full" />,
         },
       },
       {
