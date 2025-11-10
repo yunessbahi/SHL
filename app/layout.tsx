@@ -206,7 +206,7 @@ export default async function RootLayout({
         className={cn(
           "font-inter antialiased",
           "bg-background text-foreground",
-          "min-h-screen",
+          "min-h-screen overflow-hidden",
           "font-feature-settings-normal",
           "text-rendering-optimizeLegibility",
         )}

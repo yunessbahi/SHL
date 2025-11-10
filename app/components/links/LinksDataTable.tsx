@@ -1165,7 +1165,7 @@ export default function LinksDataTable({
             const expandedData = expandedDataCache.get(linkId);
             const utmParams = expandedData?.utm_params || {};
             return (
-              <div className="p-6  rounded-lg mx-4 mb-2">
+              <div className="p-6 rounded-lg mx-4 mb-2">
                 {/* 2-Column Grid Layout */}
                 <div className="grid grid-cols-3 gap-6">
                   {/* Grid Column 1 - LINK INFORMATION */}
@@ -1408,7 +1408,12 @@ export default function LinksDataTable({
                         <Skeleton className="h-6 w-3/4" />
                       </div>
                     ) : row.targets && row.targets.length > 0 ? (
-                      <Accordion type="multiple" className="w-full">
+                      <Accordion
+                        type="single"
+                        collapsible
+                        //defaultValue={}
+                        className="w-full"
+                      >
                         {row.targets.map((target, i) => (
                           <AccordionItem key={target.id} value={target.id}>
                             <AccordionTrigger className="text-left hover:no-underline">
@@ -1440,17 +1445,30 @@ export default function LinksDataTable({
                                       <div className="flex flex-wrap gap-1">
                                         {target.allowed_countries &&
                                         target.allowed_countries.length > 0 ? (
-                                          target.allowed_countries.map(
-                                            (country, j) => (
+                                          <>
+                                            {target.allowed_countries
+                                              .slice(0, 5)
+                                              .map((country, j) => (
+                                                <Badge
+                                                  key={j}
+                                                  variant="secondary"
+                                                  className="text-xs font-light"
+                                                >
+                                                  {country}
+                                                </Badge>
+                                              ))}
+                                            {target.allowed_countries.length >
+                                              5 && (
                                               <Badge
-                                                key={j}
                                                 variant="secondary"
                                                 className="text-xs font-light"
                                               >
-                                                {country}
+                                                +
+                                                {target.allowed_countries
+                                                  .length - 5}
                                               </Badge>
-                                            ),
-                                          )
+                                            )}
+                                          </>
                                         ) : (
                                           <Badge
                                             variant="secondary"
@@ -1961,7 +1979,7 @@ export default function LinksDataTable({
       >
         <div className="w-full space-y-2.5">
           <DataGridContainer>
-            <ScrollArea className="max-h-196">
+            <ScrollArea className="max-h-196 overflow-hidden">
               <DataGridTable />
               <ScrollBar orientation="horizontal" />
             </ScrollArea>

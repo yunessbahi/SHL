@@ -294,7 +294,8 @@ export default function Header({
   }
 
   return (
-    <div className="flex flex-col h-screen ">
+    // h-screen
+    <div className="flex flex-col ">
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-3 border-b">
         {/* Left side - Breadcrumb */}
