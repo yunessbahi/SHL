@@ -36,6 +36,7 @@ import {
 } from "@/lib/analytics-api";
 import ProjectDashboardCard from "@/components/analytics/ClickOverTimePerDevice";
 import { Spinner } from "@/components/ui/spinner";
+import SalesCountryChart from "@/components/analytics/TopCountriesChartV2";
 
 const INTERVALS = [
   { value: "hourly", label: "Hourly", description: "Last 24 hours" },
@@ -384,18 +385,6 @@ export default function AnalyticsOverview() {
                   />
                 }
               />
-
-              /* // Without project list (full-width chart)
-                             <ProjectDashboardCard
-                                 chartComponent={<TimeSeriesChart {...props} />}
-                                 showProjectList={false}
-                             />
-
-                             // With custom projects
-                             <ProjectDashboardCard
-                                 chartComponent={<TimeSeriesChart {...props} />}
-                                 projects={customProjectsArray}
-                             />*/
             )}
           </div>
         </TabsContent>
@@ -417,11 +406,11 @@ export default function AnalyticsOverview() {
             </Card>
 
             {/* Top Countries */}
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 h-auto">
               <TopCountriesChart
                 period={period}
                 granularity="country"
-                topN={10}
+                topN={5}
                 title="Top Countries"
                 description="Geographic distribution of your clicks"
                 className="h-full"
@@ -429,8 +418,17 @@ export default function AnalyticsOverview() {
 
               <TopCountriesChart
                 period={period}
+                granularity="city"
+                topN={5}
+                title="Top Cities"
+                description="Geographic distribution of your clicks"
+                className="h-full"
+              />
+
+              <TopCountriesChart
+                period={period}
                 granularity="region"
-                topN={10}
+                topN={5}
                 title="Top Regions"
                 description="Regional distribution of your clicks"
                 className="h-full"

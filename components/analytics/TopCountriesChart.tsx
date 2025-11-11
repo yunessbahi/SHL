@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Globe } from "lucide-react";
+import { Globe, RefreshCw } from "lucide-react";
 import {
   analyticsAPI,
   type GeoBreakdownPoint,
@@ -112,32 +112,38 @@ export default function TopCountriesChart({
   return (
     <Card className={className}>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex justify-between items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-6">
           <div>
-            <CardTitle className="flex items-center gap-2">
-              <Globe className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2 pb-1">
+              <Globe className="h-5 w-5 text-muted-foreground" />
               {title}
             </CardTitle>
-            {description && <CardDescription>{description}</CardDescription>}
+            {description && (
+              <CardDescription className="text-sm">
+                {description}
+              </CardDescription>
+            )}
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">
+            {/* <span className="text-sm text-muted-foreground">
               {granularity.charAt(0).toUpperCase() + granularity.slice(1)}
-            </span>
+            </span> */}
             <Button
               variant="outline"
               size="sm"
               onClick={fetchData}
               disabled={loading}
             >
-              {loading ? "Loading..." : "Refresh"}
+              <RefreshCw
+                className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}
+              />
             </Button>
           </div>
         </div>
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="h-64 flex items-center justify-center">
+          <div className="flex items-center justify-center">
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-2"></div>
               <p className="text-sm text-gray-500">Loading top countries...</p>
@@ -170,7 +176,7 @@ export default function TopCountriesChart({
                 </div>
 
                 {/* Country name */}
-                <div className="w-24 text-sm font-medium truncate">
+                <div className="w-24 text-sm font-normal truncate">
                   {item.location}
                 </div>
 
@@ -186,7 +192,11 @@ export default function TopCountriesChart({
                   </div>
 
                   {/* Click count label */}
-                  <div className="absolute inset-0 flex items-center justify-end px-2 text-xs font-medium text-muted-foreground">
+                  <div
+                    className={`absolute inset-0 flex items-center justify-end px-2 text-xs font-mono 
+                  ${(item.click_count / maxClicks) * 100 <= 80 ? "text-foreground" : "text-background"}
+                  `}
+                  >
                     {formatNumber(item.click_count)}
                   </div>
                 </div>

@@ -2,6 +2,28 @@ import React from "react";
 import { WorldMap } from "react-svg-worldmap";
 
 function MapCompact() {
+  const [isDark, setIsDark] = React.useState(false);
+
+  React.useEffect(() => {
+    const checkTheme = () => {
+      const theme = document.documentElement.classList.contains("dark")
+        ? "dark"
+        : "light";
+      setIsDark(theme === "dark");
+    };
+
+    checkTheme();
+
+    // Listen for theme changes
+    const observer = new MutationObserver(checkTheme);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
   const data = [
     {
       country: "DE",
@@ -385,7 +407,7 @@ function MapCompact() {
             backgroundColor=""
             borderColor="transparent"
             strokeOpacity={0.02}
-            color="#03ff8e"
+            color={isDark ? "#fff" : "#000"}
             tooltipBgColor="#31323f"
             title=""
             valueSuffix="visit"
@@ -403,11 +425,15 @@ function MapCompact() {
         <div className="space-y-4 text-gray-300">
           <div>
             <p className="text-sm text-gray-400">Total Visits</p>
-            <p className="text-2xl font-bold text-green-400">1,500</p>
+            <p className="text-2xl font-bold text-foreground">1,500</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-400">Unique Visits</p>
+            <p className="text-2xl font-bold text-foreground">1,250</p>
           </div>
           <div>
             <p className="text-sm text-gray-400">Countries</p>
-            <p className="text-2xl font-bold text-green-400">2</p>
+            <p className="text-2xl font-bold text-foreground">2</p>
           </div>
           <div className="pt-4 border-t border-gray-700">
             <p className="text-sm">Additional content can go here</p>
