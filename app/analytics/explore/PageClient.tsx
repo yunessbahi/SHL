@@ -61,6 +61,7 @@ import { toast } from "sonner";
 import MultipleSelector, { type Option } from "@/components/ui/multi-select";
 import { useCampaigns } from "@/lib/hooks/useCampaigns";
 import { useLinks } from "@/lib/hooks/useLinks";
+import { Span } from "next/dist/trace";
 
 interface ExplorePageClientProps {
   user: SafeUser;
@@ -386,9 +387,155 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="grid grid-cols-6 gap-4 ">
       {/* Controls Section */}
-      <Card>
+
+      <div className="col-span-4 h-full flex flex-col gap-4">
+        {/* Results Section */}
+        <Tabs defaultValue="chart" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="chart">Chart View</TabsTrigger>
+            <TabsTrigger value="table">Data Table</TabsTrigger>
+            <TabsTrigger value="map">Geographic View</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="chart" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5" />
+                  Analytics Chart
+                  {selectedDimensions.length > 1 && (
+                    <Badge variant="secondary" className="text-xs">
+                      Multiple Dimensions Selected
+                    </Badge>
+                  )}
+                </CardTitle>
+                {selectedDimensions.length > 1 && (
+                  <p className="text-sm text-muted-foreground">
+                    Showing combined dimension values from:{" "}
+                    {selectedDimensions.join(", ")}
+                  </p>
+                )}
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="flex items-center justify-center h-96">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  </div>
+                ) : (
+                  renderChart()
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="table" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5" />
+                  Raw Data
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="flex items-center justify-center h-96">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  </div>
+                ) : (
+                  <ScrollArea className="h-96">{renderDataTable()}</ScrollArea>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="map" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Globe className="w-5 h-5" />
+                  Geographic Distribution
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <MapCompact />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        {/* Summary Stats */}
+        {exploreData && (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Total Records
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {formatNumber(exploreData.total_count)}
+                    </p>
+                  </div>
+                  <BarChart3 className="h-8 w-8 text-muted-foreground" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Metrics
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {selectedMetrics.length}
+                    </p>
+                  </div>
+                  <TrendingUp className="h-8 w-8 text-muted-foreground" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Dimensions
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {selectedDimensions.length}
+                    </p>
+                  </div>
+                  <Filter className="h-8 w-8 text-muted-foreground" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Time Period
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {selectedPeriod.toUpperCase()}
+                    </p>
+                  </div>
+                  <CalendarDays className="h-8 w-8 text-muted-foreground" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
+
+      <Card className="col-span-2">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Filter className="w-5 h-5" />
@@ -422,9 +569,11 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
               defaultOptions={METRICS}
               placeholder="Select metrics"
               emptyIndicator={
-                <p className="text-center text-sm">No metrics found</p>
+                <p className="text-center text-xs text-muted-foreground">
+                  No metrics found
+                </p>
               }
-              className="w-full"
+              className="w-full text-sm focus:border-ring"
             />
           </div>
 
@@ -449,7 +598,7 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
           ) && (
             <div className="space-y-4">
               <Label className="text-sm font-medium">Context Filters</Label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 {(() => {
                   const orderedFilters = selectedDimensions
                     .filter((d) => ["campaign", "link"].includes(d.value))
@@ -459,9 +608,6 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                     if (dimension === "campaign") {
                       return (
                         <div key="campaign" className="space-y-2">
-                          <Label className="text-xs text-muted-foreground">
-                            Campaign
-                          </Label>
                           <Select
                             value={filters.campaign_id?.toString() || "all"}
                             onValueChange={(value) =>
@@ -473,10 +619,24 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                             }
                           >
                             <SelectTrigger className="h-8">
-                              <SelectValue placeholder="All campaigns" />
+                              <div className="flex gap-2 items-center animate-fadeIn bg-background text-secondary-foreground hover:bg-background relative inline-flex cursor-default items-center text-xs font-medium transition-all disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-fixed:pr-2">
+                                <Label className="w-15 text-left text-xs text-muted-foreground/60">
+                                  Campaigns
+                                </Label>
+                                <SelectValue
+                                  className="text-right "
+                                  placeholder="All campaigns"
+                                />
+                              </div>
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="all">All campaigns</SelectItem>
+                              <Label className="text-xs text-muted-foreground/70">
+                                Campaigns
+                              </Label>
+                              <Separator className="mt-2" />
+                              <SelectItem className="text-left" value="all">
+                                All campaigns
+                              </SelectItem>
                               {filteredCampaigns.map((campaign) => (
                                 <SelectItem
                                   key={campaign.id}
@@ -492,9 +652,6 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                     } else if (dimension === "link") {
                       return (
                         <div key="link" className="space-y-2">
-                          <Label className="text-xs text-muted-foreground">
-                            Link
-                          </Label>
                           <Select
                             value={filters.link_id?.toString() || "all"}
                             onValueChange={(value) =>
@@ -506,12 +663,34 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                             }
                           >
                             <SelectTrigger className="h-8">
-                              <SelectValue placeholder="All links" />
+                              <div className="flex gap-2 items-center animate-fadeIn bg-background text-secondary-foreground hover:bg-background relative inline-flex cursor-default items-center text-xs font-medium transition-all disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-fixed:pr-2">
+                                <Label className="w-15 text-left text-xs text-muted-foreground/60">
+                                  Links
+                                </Label>
+                                <SelectValue
+                                  className="text-xs text-foreground"
+                                  placeholder="All links"
+                                />
+                              </div>
                             </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="all">All links</SelectItem>
+                            <SelectContent className="">
+                              <Label className="text-xs text-muted-foreground/70">
+                                Links
+                              </Label>
+                              <Separator className="mt-2" />
+
+                              <SelectItem
+                                className="text-muted-foreground"
+                                value="all"
+                              >
+                                All links
+                              </SelectItem>
                               {filteredLinks.map((link) => (
-                                <SelectItem key={link.id} value={link.id}>
+                                <SelectItem
+                                  className="font-normal"
+                                  key={link.id}
+                                  value={link.id.toString()}
+                                >
                                   {link.name || link.short_url}
                                 </SelectItem>
                               ))}
@@ -530,12 +709,9 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
           {/* Advanced Filters */}
           <div className="space-y-4">
             <Label className="text-sm font-medium">Advanced Filters</Label>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               {/* Device Type Filter - Always shown */}
               <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">
-                  Device Type
-                </Label>
                 <Select
                   value={filters.device_type || "all"}
                   onValueChange={(value) =>
@@ -546,9 +722,21 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                   }
                 >
                   <SelectTrigger className="h-8">
-                    <SelectValue placeholder="All devices" />
+                    <div className="flex gap-2 items-center animate-fadeIn bg-background text-secondary-foreground hover:bg-background relative inline-flex cursor-default items-center text-xs font-medium transition-all disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-fixed:pr-2">
+                      <Label className="w-15 text-left text-xs text-muted-foreground/60">
+                        Device Type
+                      </Label>
+                      <SelectValue
+                        className="text-xs text-foreground"
+                        placeholder="All devices"
+                      />
+                    </div>
                   </SelectTrigger>
                   <SelectContent>
+                    <Label className="text-xs text-muted-foreground/70">
+                      Device Type
+                    </Label>
+                    <Separator className="mt-2" />
                     <SelectItem value="all">All devices</SelectItem>
                     {DEVICE_TYPES.map((device) => (
                       <SelectItem key={device} value={device}>
@@ -562,9 +750,6 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
               {/* Dynamic filters based on selected dimensions */}
               {selectedDimensions.some((d) => d.value === "browser_name") && (
                 <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">
-                    Browser
-                  </Label>
                   <Select
                     value={filters.browser_name || "all"}
                     onValueChange={(value) =>
@@ -575,9 +760,21 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                     }
                   >
                     <SelectTrigger className="h-8">
-                      <SelectValue placeholder="All browsers" />
+                      <div className="flex gap-2 items-center animate-fadeIn bg-background text-secondary-foreground hover:bg-background relative inline-flex cursor-default items-center text-xs font-medium transition-all disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-fixed:pr-2">
+                        <Label className="w-15 text-left text-xs text-muted-foreground/60">
+                          Browser
+                        </Label>
+                        <SelectValue
+                          className="text-xs text-foreground"
+                          placeholder="All browsers"
+                        />
+                      </div>
                     </SelectTrigger>
                     <SelectContent>
+                      <Label className="text-xs text-muted-foreground/70">
+                        Browser
+                      </Label>
+                      <Separator className="mt-2" />
                       <SelectItem value="all">All browsers</SelectItem>
                       {filterOptions.browser_name?.map((browser) => (
                         <SelectItem key={browser} value={browser}>
@@ -591,9 +788,6 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
 
               {selectedDimensions.some((d) => d.value === "country") && (
                 <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">
-                    Country
-                  </Label>
                   <Select
                     value={filters.country || "all"}
                     onValueChange={(value) =>
@@ -604,9 +798,21 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                     }
                   >
                     <SelectTrigger className="h-8">
-                      <SelectValue placeholder="All countries" />
+                      <div className="flex gap-2 items-center animate-fadeIn bg-background text-secondary-foreground hover:bg-background relative inline-flex cursor-default items-center text-xs font-medium transition-all disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-fixed:pr-2">
+                        <Label className="w-15 text-left text-xs text-muted-foreground/60">
+                          Country
+                        </Label>
+                        <SelectValue
+                          className="text-xs text-foreground"
+                          placeholder="All countries"
+                        />
+                      </div>
                     </SelectTrigger>
                     <SelectContent>
+                      <Label className="text-xs text-muted-foreground/70">
+                        Country
+                      </Label>
+                      <Separator className="mt-2" />
                       <SelectItem value="all">All countries</SelectItem>
                       {filterOptions.country?.map((country) => (
                         <SelectItem key={country} value={country}>
@@ -620,9 +826,6 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
 
               {selectedDimensions.some((d) => d.value === "region") && (
                 <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">
-                    Region
-                  </Label>
                   <Select
                     value={filters.region || "all"}
                     onValueChange={(value) =>
@@ -633,9 +836,21 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                     }
                   >
                     <SelectTrigger className="h-8">
-                      <SelectValue placeholder="All regions" />
+                      <div className="flex gap-2 items-center animate-fadeIn bg-background text-secondary-foreground hover:bg-background relative inline-flex cursor-default items-center text-xs font-medium transition-all disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-fixed:pr-2">
+                        <Label className="w-15 text-left text-xs text-muted-foreground/60">
+                          Region
+                        </Label>
+                        <SelectValue
+                          className="text-xs text-foreground"
+                          placeholder="All regions"
+                        />
+                      </div>
                     </SelectTrigger>
                     <SelectContent>
+                      <Label className="text-xs text-muted-foreground/70">
+                        Region
+                      </Label>
+                      <Separator className="mt-2" />
                       <SelectItem value="all">All regions</SelectItem>
                       {filterOptions.region?.map((region) => (
                         <SelectItem key={region} value={region}>
@@ -649,7 +864,6 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
 
               {selectedDimensions.some((d) => d.value === "city") && (
                 <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">City</Label>
                   <Select
                     value={filters.city || "all"}
                     onValueChange={(value) =>
@@ -660,9 +874,21 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                     }
                   >
                     <SelectTrigger className="h-8">
-                      <SelectValue placeholder="All cities" />
+                      <div className="flex gap-2 items-center animate-fadeIn bg-background text-secondary-foreground hover:bg-background relative inline-flex cursor-default items-center text-xs font-medium transition-all disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-fixed:pr-2">
+                        <Label className="w-15 text-left text-xs text-muted-foreground/60">
+                          City
+                        </Label>
+                        <SelectValue
+                          className="text-xs text-foreground"
+                          placeholder="All cities"
+                        />
+                      </div>
                     </SelectTrigger>
                     <SelectContent>
+                      <Label className="text-xs text-muted-foreground/70">
+                        City
+                      </Label>
+                      <Separator className="mt-2" />
                       <SelectItem value="all">All cities</SelectItem>
                       {filterOptions.city?.map((city) => (
                         <SelectItem key={city} value={city}>
@@ -676,9 +902,6 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
 
               {selectedDimensions.some((d) => d.value === "ref_source") && (
                 <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">
-                    Referral Source
-                  </Label>
                   <Select
                     value={filters.ref_source || "all"}
                     onValueChange={(value) =>
@@ -689,9 +912,21 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                     }
                   >
                     <SelectTrigger className="h-8">
-                      <SelectValue placeholder="All sources" />
+                      <div className="flex gap-2 items-center animate-fadeIn bg-background text-secondary-foreground hover:bg-background relative inline-flex cursor-default items-center text-xs font-medium transition-all disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-fixed:pr-2">
+                        <Label className="w-15 text-left text-xs text-muted-foreground/60">
+                          Referral Source
+                        </Label>
+                        <SelectValue
+                          className="text-xs text-foreground"
+                          placeholder="All sources"
+                        />
+                      </div>
                     </SelectTrigger>
                     <SelectContent>
+                      <Label className="text-xs text-muted-foreground/70">
+                        Referral Source
+                      </Label>
+                      <Separator className="mt-2" />
                       <SelectItem value="all">All sources</SelectItem>
                       {filterOptions.ref_source?.map((source) => (
                         <SelectItem key={source} value={source}>
@@ -705,9 +940,6 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
 
               {selectedDimensions.some((d) => d.value === "ref_type") && (
                 <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">
-                    Referral Type
-                  </Label>
                   <Select
                     value={filters.ref_type || "all"}
                     onValueChange={(value) =>
@@ -718,9 +950,21 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                     }
                   >
                     <SelectTrigger className="h-8">
-                      <SelectValue placeholder="All types" />
+                      <div className="flex gap-2 items-center animate-fadeIn bg-background text-secondary-foreground hover:bg-background relative inline-flex cursor-default items-center text-xs font-medium transition-all disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-fixed:pr-2">
+                        <Label className="w-15 text-left text-xs text-muted-foreground/60">
+                          Referral Type
+                        </Label>
+                        <SelectValue
+                          className="text-xs text-foreground"
+                          placeholder="All types"
+                        />
+                      </div>
                     </SelectTrigger>
                     <SelectContent>
+                      <Label className="text-xs text-muted-foreground/70">
+                        Referral Type
+                      </Label>
+                      <Separator className="mt-2" />
                       <SelectItem value="all">All types</SelectItem>
                       {filterOptions.ref_type?.map((type) => (
                         <SelectItem key={type} value={type}>
@@ -775,147 +1019,6 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
           </div>
         </CardContent>
       </Card>
-
-      {/* Results Section */}
-      <Tabs defaultValue="chart" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="chart">Chart View</TabsTrigger>
-          <TabsTrigger value="table">Data Table</TabsTrigger>
-          <TabsTrigger value="map">Geographic View</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="chart" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="w-5 h-5" />
-                Analytics Chart
-                {selectedDimensions.length > 1 && (
-                  <Badge variant="secondary" className="text-xs">
-                    Multiple Dimensions Selected
-                  </Badge>
-                )}
-              </CardTitle>
-              {selectedDimensions.length > 1 && (
-                <p className="text-sm text-muted-foreground">
-                  Showing combined dimension values from:{" "}
-                  {selectedDimensions.join(", ")}
-                </p>
-              )}
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="flex items-center justify-center h-96">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                </div>
-              ) : (
-                renderChart()
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="table" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="w-5 h-5" />
-                Raw Data
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="flex items-center justify-center h-96">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                </div>
-              ) : (
-                <ScrollArea className="h-96">{renderDataTable()}</ScrollArea>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="map" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Globe className="w-5 h-5" />
-                Geographic Distribution
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <MapCompact />
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-
-      {/* Summary Stats */}
-      {exploreData && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Total Records
-                  </p>
-                  <p className="text-2xl font-bold">
-                    {formatNumber(exploreData.total_count)}
-                  </p>
-                </div>
-                <BarChart3 className="h-8 w-8 text-muted-foreground" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Metrics
-                  </p>
-                  <p className="text-2xl font-bold">{selectedMetrics.length}</p>
-                </div>
-                <TrendingUp className="h-8 w-8 text-muted-foreground" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Dimensions
-                  </p>
-                  <p className="text-2xl font-bold">
-                    {selectedDimensions.length}
-                  </p>
-                </div>
-                <Filter className="h-8 w-8 text-muted-foreground" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Time Period
-                  </p>
-                  <p className="text-2xl font-bold">
-                    {selectedPeriod.toUpperCase()}
-                  </p>
-                </div>
-                <CalendarDays className="h-8 w-8 text-muted-foreground" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
     </div>
   );
 }
