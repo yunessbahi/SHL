@@ -3,10 +3,13 @@ import { useCallback, useEffect, useState } from "react";
 import { authFetch } from "@/lib/api";
 
 export type LinkItem = {
+  id: string;
   short_url: string;
   target_url: string;
   expires_at: string | null;
   created_at: string;
+  name?: string;
+  campaign_id?: number;
 };
 
 export function useLinks() {

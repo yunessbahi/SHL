@@ -15,6 +15,12 @@ import {
   type GeoBreakdownPoint,
   formatNumber,
 } from "@/lib/analytics-api";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/global-tooltip";
 
 interface TopCountriesChartProps {
   data?: GeoBreakdownPoint[];
@@ -168,40 +174,60 @@ export default function TopCountriesChart({
           </div>
         ) : (
           <div className="space-y-3">
-            {data.map((item, index) => (
-              <div key={item.location} className="flex items-center gap-3">
-                {/* Rank number */}
-                <div className="w-6 text-center text-sm font-medium text-muted-foreground">
-                  {index + 1}
-                </div>
-
-                {/* Country name */}
-                <div className="w-24 text-sm font-normal truncate">
-                  {item.location}
-                </div>
-
-                {/* Bar */}
-                <div className="flex-1 relative">
-                  <div className="h-6 bg-muted rounded-md overflow-hidden">
+            <TooltipProvider>
+              {data.map((item, index) => (
+                <Tooltip key={index}>
+                  <TooltipTrigger>
                     <div
-                      className="h-full bg-primary rounded-md transition-all duration-500 ease-out"
-                      style={{
-                        width: `${(item.click_count / maxClicks) * 100}%`,
-                      }}
-                    />
-                  </div>
+                      key={item.location}
+                      className="flex items-center gap-3"
+                    >
+                      {/* Rank number */}
+                      <div className="w-6 text-center text-sm font-medium text-muted-foreground">
+                        {index + 1}
+                      </div>
 
-                  {/* Click count label */}
-                  <div
-                    className={`absolute inset-0 flex items-center justify-end px-2 text-xs font-mono 
+                      {/* Country name */}
+                      <div className="w-24 text-sm font-normal truncate">
+                        {item.location}
+                      </div>
+
+                      {/* Bar */}
+                      <div className="flex-1 relative">
+                        <div className="h-6 bg-muted rounded-md overflow-hidden">
+                          <div
+                            className="h-full bg-primary rounded-md transition-all duration-500 ease-out"
+                            style={{
+                              width: `${(item.click_count / maxClicks) * 100}%`,
+                            }}
+                          />
+                        </div>
+
+                        {/* Click count label */}
+                        <div
+                          className={`absolute inset-0 flex items-center justify-end px-2 text-xs font-mono 
                   ${(item.click_count / maxClicks) * 100 <= 80 ? "text-foreground" : "text-background"}
                   `}
-                  >
-                    {formatNumber(item.click_count)}
-                  </div>
-                </div>
-              </div>
-            ))}
+                        >
+                          {formatNumber(item.click_count)}
+                        </div>
+                      </div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {
+                      <div className="flex gap-2">
+                        {item.location}:
+                        <span className="font-mono">{item.click_count}</span>
+                        <span className="font-mono text-muted-foreground">
+                          {item.percentage.toFixed(2)}%
+                        </span>
+                      </div>
+                    }
+                  </TooltipContent>
+                </Tooltip>
+              ))}
+            </TooltipProvider>
           </div>
         )}
       </CardContent>

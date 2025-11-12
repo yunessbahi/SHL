@@ -374,29 +374,6 @@ function MapCompact() {
   };
 
   return (
-    /*<div className="flex flex-row flex-wrap justify-between gap-2">
-            <div className="max-w-80 flex-shrink">
-                <WorldMap
-                    richInteraction={true}
-                    backgroundColor={""}
-                    borderColor={"transparent"}
-                    strokeOpacity={0.02}
-                    color={"#03ff8e"}
-                    tooltipBgColor={"#31323f"}
-                    title=""
-                    //valueSuffix="% grant rate"
-                    valueSuffix="visit"
-                    valuePrefix=":"
-                    size="lg"
-                    data={data}
-
-                    styleFunction={stylingFunction}
-                />
-            </div>
-            <div className={"w-[500px] md:min-w-[500px] text-foreground z-50"}>
-                hello
-            </div>
-        </div>*/
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
       {/* Map section - 3 columns on large screens */}
       <div className="lg:col-span-3">
@@ -420,7 +397,7 @@ function MapCompact() {
       </div>
 
       {/* Sidebar section - 1 column on large screens */}
-      <div className="lg:col-span-1 bg-teal-950/10  shadow-lg shadow-black/20 rounded-2xl bg-gradient-to-tl p-6">
+      <div className="flex flex-col justify-center">
         <h2 className="text-xl font-bold text-white mb-4">Statistics</h2>
         <div className="space-y-4 text-gray-300">
           <div>

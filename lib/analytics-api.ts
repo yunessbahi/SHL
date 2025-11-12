@@ -65,8 +65,12 @@ export interface AnalyticsFilters {
   device_type?: string;
   browser_name?: string;
   country?: string;
+  region?: string;
+  city?: string;
   campaign_id?: number;
   link_id?: number;
+  ref_source?: string;
+  ref_type?: string;
 }
 
 export interface ExploreResponse {
@@ -260,4 +264,34 @@ export const getChangeColor = (change: number): string => {
 // Utility function to get change icon
 export const getChangeIcon = (change: number): string => {
   return change >= 0 ? "↗" : "↘";
+};
+
+// Utility function to get date range for analytics
+export const getDateRange = (
+  period: string,
+): { start_date: Date; end_date: Date } => {
+  const end_date = new Date();
+  let start_date = new Date();
+
+  switch (period) {
+    case "1d":
+      start_date.setDate(end_date.getDate() - 1);
+      break;
+    case "7d":
+      start_date.setDate(end_date.getDate() - 7);
+      break;
+    case "30d":
+      start_date.setDate(end_date.getDate() - 30);
+      break;
+    case "90d":
+      start_date.setDate(end_date.getDate() - 90);
+      break;
+    case "365d":
+      start_date.setDate(end_date.getDate() - 365);
+      break;
+    default:
+      start_date.setDate(end_date.getDate() - 7);
+  }
+
+  return { start_date, end_date };
 };
