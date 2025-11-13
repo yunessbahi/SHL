@@ -6,6 +6,7 @@ import { useEffect } from "react";
 
 import { Command as CommandPrimitive, useCommandState } from "cmdk";
 import { XIcon } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 import {
   Command,
@@ -498,7 +499,16 @@ const MultipleSelector = ({
                 data-fixed={option.fixed}
                 data-disabled={disabled || undefined}
               >
-                {option.label}
+                {option.label.includes("(UTM)") ? (
+                  <>
+                    {option.label.replace(" (UTM)", "")}{" "}
+                    <Badge variant="outline" className="text-xs">
+                      UTM
+                    </Badge>
+                  </>
+                ) : (
+                  option.label
+                )}
                 <button
                   className="text-muted-foreground/80 hover:text-foreground focus-visible:border-ring focus-visible:ring-ring/50 absolute -inset-y-px -right-px flex size-7 items-center justify-center rounded-r-md border border-transparent p-0 outline-hidden transition-[color,box-shadow] outline-none focus-visible:ring-[3px]"
                   onKeyDown={(e) => {
@@ -602,7 +612,7 @@ const MultipleSelector = ({
         >
           {open && (
             <CommandList
-              className="bg-popover z-[9999] text-popover-foreground shadow-lg outline-hidden"
+              className="bg-popover text-popover-foreground shadow-lg outline-hidden"
               onMouseLeave={() => {
                 setOnScrollbar(false);
               }}
@@ -626,7 +636,7 @@ const MultipleSelector = ({
                     <CommandGroup
                       key={key}
                       heading={key}
-                      className="h-full overflow-auto"
+                      className="h-full overflow-auto "
                     >
                       <>
                         {dropdowns.map((option) => {
@@ -653,12 +663,24 @@ const MultipleSelector = ({
                                 onChange?.(newOptions);
                               }}
                               className={cn(
-                                "cursor-pointer",
+                                "cursor-pointer text-xs",
                                 option.disable &&
                                   "pointer-events-none cursor-not-allowed opacity-50",
                               )}
                             >
-                              {option.label}
+                              {option.label.includes("(UTM)") ? (
+                                <>
+                                  {option.label.replace(" (UTM)", "")}{" "}
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-xs"
+                                  >
+                                    UTM
+                                  </Badge>
+                                </>
+                              ) : (
+                                option.label
+                              )}
                             </CommandItem>
                           );
                         })}

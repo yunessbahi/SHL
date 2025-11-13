@@ -675,12 +675,16 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                   value={selectedPeriod}
                   onValueChange={setSelectedPeriod}
                 >
-                  <SelectTrigger className="w-48">
+                  <SelectTrigger className="w-48 text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {TIME_PERIODS.map((period) => (
-                      <SelectItem key={period.value} value={period.value}>
+                      <SelectItem
+                        key={period.value}
+                        value={period.value}
+                        className="text-xs"
+                      >
                         {period.label}
                       </SelectItem>
                     ))}
@@ -723,15 +727,16 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
               </AccordionTrigger>
               <AccordionContent className="space-y-3 pt-2">
                 <MultipleSelector
+                  badgeClassName="text-xs"
                   value={selectedDimensions}
                   onChange={setSelectedDimensions}
                   defaultOptions={availableDimensions}
                   options={availableDimensions}
                   placeholder="Select dimensions"
                   emptyIndicator={
-                    <p className="text-center text-sm">No dimensions found</p>
+                    <p className="text-center text-xs">No dimensions found</p>
                   }
-                  className="w-full"
+                  className="w-full text-xs"
                 />
               </AccordionContent>
             </AccordionItem>
@@ -793,14 +798,18 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                                     </Label>
                                     <Separator className="mt-2" />
                                     <SelectItem
-                                      className="text-left"
+                                      className="text-left text-xs"
                                       value="all"
                                     >
                                       All campaigns
                                     </SelectItem>
                                     {filterOptions.campaign?.map(
                                       (value: string) => (
-                                        <SelectItem key={value} value={value}>
+                                        <SelectItem
+                                          key={value}
+                                          value={value}
+                                          className="text-xs"
+                                        >
                                           {value}
                                         </SelectItem>
                                       ),
@@ -839,7 +848,7 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                                     <Separator className="mt-2" />
 
                                     <SelectItem
-                                      className="text-muted-foreground"
+                                      className="text-muted-foreground text-xs"
                                       value="all"
                                     >
                                       All links
@@ -847,7 +856,7 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                                     {filterOptions.link?.map(
                                       (value: string) => (
                                         <SelectItem
-                                          className="font-normal"
+                                          className="font-normal text-xs"
                                           key={value}
                                           value={value}
                                         >
@@ -903,12 +912,16 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                                       {displayName} (UTM)
                                     </Label>
                                     <Separator className="mt-2" />
-                                    <SelectItem value="all">
+                                    <SelectItem className="text-xs" value="all">
                                       All {displayName.toLowerCase()}
                                     </SelectItem>
                                     {filterOptions[dimension]?.map(
                                       (value: string) => (
-                                        <SelectItem key={value} value={value}>
+                                        <SelectItem
+                                          key={value}
+                                          value={value}
+                                          className="text-xs"
+                                        >
                                           {value}
                                         </SelectItem>
                                       ),
@@ -963,9 +976,15 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                           Device Type
                         </Label>
                         <Separator className="mt-2" />
-                        <SelectItem value="all">All devices</SelectItem>
+                        <SelectItem className="text-xs" value="all">
+                          All devices
+                        </SelectItem>
                         {filterOptions.device_type?.map((device) => (
-                          <SelectItem key={device} value={device}>
+                          <SelectItem
+                            key={device}
+                            value={device}
+                            className="text-xs"
+                          >
                             {device}
                           </SelectItem>
                         ))}
@@ -1003,9 +1022,15 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                             Browser
                           </Label>
                           <Separator className="mt-2" />
-                          <SelectItem value="all">All browsers</SelectItem>
+                          <SelectItem className="text-xs" value="all">
+                            All browsers
+                          </SelectItem>
                           {filterOptions.browser_name?.map((browser) => (
-                            <SelectItem key={browser} value={browser}>
+                            <SelectItem
+                              key={browser}
+                              value={browser}
+                              className="text-xs"
+                            >
                               {browser}
                             </SelectItem>
                           ))}
@@ -1041,9 +1066,15 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                             Country
                           </Label>
                           <Separator className="mt-2" />
-                          <SelectItem value="all">All countries</SelectItem>
+                          <SelectItem className="text-xs" value="all">
+                            All countries
+                          </SelectItem>
                           {filterOptions.country?.map((country) => (
-                            <SelectItem key={country} value={country}>
+                            <SelectItem
+                              key={country}
+                              value={country}
+                              className="text-xs"
+                            >
                               {country}
                             </SelectItem>
                           ))}
@@ -1079,9 +1110,15 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                             Region
                           </Label>
                           <Separator className="mt-2" />
-                          <SelectItem value="all">All regions</SelectItem>
+                          <SelectItem className="text-xs" value="all">
+                            All regions
+                          </SelectItem>
                           {filterOptions.region?.map((region) => (
-                            <SelectItem key={region} value={region}>
+                            <SelectItem
+                              key={region}
+                              value={region}
+                              className="text-xs"
+                            >
                               {region}
                             </SelectItem>
                           ))}
@@ -1117,9 +1154,15 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                             City
                           </Label>
                           <Separator className="mt-2" />
-                          <SelectItem value="all">All cities</SelectItem>
+                          <SelectItem className="text-xs" value="all">
+                            All cities
+                          </SelectItem>
                           {filterOptions.city?.map((city) => (
-                            <SelectItem key={city} value={city}>
+                            <SelectItem
+                              key={city}
+                              value={city}
+                              className="text-xs"
+                            >
                               {city}
                             </SelectItem>
                           ))}
@@ -1155,9 +1198,15 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                             Referral Source
                           </Label>
                           <Separator className="mt-2" />
-                          <SelectItem value="all">All sources</SelectItem>
+                          <SelectItem className="text-xs" value="all">
+                            All sources
+                          </SelectItem>
                           {filterOptions.ref_source?.map((source) => (
-                            <SelectItem key={source} value={source}>
+                            <SelectItem
+                              key={source}
+                              value={source}
+                              className="text-xs"
+                            >
                               {source}
                             </SelectItem>
                           ))}
@@ -1193,9 +1242,15 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                             Referral Type
                           </Label>
                           <Separator className="mt-2" />
-                          <SelectItem value="all">All types</SelectItem>
+                          <SelectItem className="text-xs" value="all">
+                            All types
+                          </SelectItem>
                           {filterOptions.ref_type?.map((type) => (
-                            <SelectItem key={type} value={type}>
+                            <SelectItem
+                              key={type}
+                              value={type}
+                              className="text-xs"
+                            >
                               {type}
                             </SelectItem>
                           ))}
