@@ -59,9 +59,6 @@ import MapCompact from "@/components/analytics/mapCompact";
 import { SafeUser } from "@/lib/getSafeSession";
 import { toast } from "sonner";
 import MultipleSelector, { type Option } from "@/components/ui/multi-select";
-import { useCampaigns } from "@/lib/hooks/useCampaigns";
-import { useLinks } from "@/lib/hooks/useLinks";
-import { Span } from "next/dist/trace";
 import {
   Accordion,
   AccordionContent,
@@ -98,8 +95,6 @@ const DIMENSIONS: Option[] = [
   { value: "campaign", label: "Campaign" },
   { value: "link", label: "Link" },
 ];
-
-const DEVICE_TYPES = ["Mobile", "Desktop"];
 
 const TIME_PERIODS = [
   { value: "1d", label: "Last 24 Hours" },
@@ -152,32 +147,91 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
   const [availableDimensions, setAvailableDimensions] =
     useState<Option[]>(DIMENSIONS);
 
-  // Use existing hooks for campaigns and links
-  const { campaigns, loading: loadingCampaigns } = useCampaigns();
-  const { links, loading: loadingLinks } = useLinks();
-
-  // Filter links based on selected campaign filter
-  const filteredLinks = useMemo(() => {
-    if (!filters.campaign_id) return links;
-    return links.filter((link) => link.campaign_id === filters.campaign_id);
-  }, [links, filters.campaign_id]);
-
-  // Filter campaigns based on selected link filter
-  const filteredCampaigns = useMemo(() => {
-    if (!filters.link_id) return campaigns;
-    const selectedLink = links.find(
-      (link) => link.id === filters.link_id?.toString(),
-    );
-    if (!selectedLink?.campaign_id) return campaigns;
-    return campaigns.filter(
-      (campaign) => campaign.id === selectedLink.campaign_id,
-    );
-  }, [campaigns, links, filters.link_id]);
+  // Note: campaigns and links are now sourced from filterOptions for single source of truth
 
   // Dynamic filter options based on selected dimensions
-  const [filterOptions, setFilterOptions] = useState<Record<string, string[]>>(
-    {},
-  );
+  const filterOptions = useMemo(() => {
+    if (!exploreData?.data) return {};
+
+    // Base filtered data (exclude invalid combinations)
+    const baseFiltered = exploreData.data.filter((item) => {
+      return (
+        item.coalesce &&
+        !item.coalesce.includes("Unknown") &&
+        !item.coalesce.includes("No Campaign")
+      );
+    });
+
+    // Filtered by dimensions + context filters (for advanced options)
+    const contextFiltered = baseFiltered.filter((item) => {
+      // Check campaign filter
+      if (filters.campaign !== undefined && item.campaign !== filters.campaign)
+        return false;
+
+      // Check link filter
+      if (filters.link !== undefined && item.link !== filters.link)
+        return false;
+
+      // Check UTM filters
+      for (const key in filters) {
+        if (
+          key.startsWith("utm_") &&
+          filters[key] !== undefined &&
+          item[key] !== filters[key]
+        ) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+
+    const newFilterOptions: Record<string, string[]> = {};
+
+    // Compute options for all selected dimensions from contextFiltered
+    selectedDimensions.forEach((dimension) => {
+      const values = new Set<string>();
+      contextFiltered.forEach((item) => {
+        const value = item[dimension.value];
+        if (value !== undefined && value !== null && value !== "") {
+          values.add(String(value));
+        }
+      });
+      newFilterOptions[dimension.value] = Array.from(values).sort();
+    });
+
+    // Also compute options for advanced dimensions that are not selected but shown in filters
+    DIMENSIONS.forEach((dim) => {
+      if (!selectedDimensions.some((d) => d.value === dim.value)) {
+        const values = new Set<string>();
+        contextFiltered.forEach((item) => {
+          const value = item[dim.value];
+          if (value !== undefined && value !== null && value !== "") {
+            values.add(String(value));
+          }
+        });
+        newFilterOptions[dim.value] = Array.from(values).sort();
+      }
+    });
+
+    // Also add UTM dimensions to filter options (already handled above)
+    if (exploreData.available_dimensions) {
+      exploreData.available_dimensions.forEach((utmDim) => {
+        if (!newFilterOptions[utmDim]) {
+          const values = new Set<string>();
+          baseFiltered.forEach((item) => {
+            const value = item[utmDim];
+            if (value !== undefined && value !== null && value !== "") {
+              values.add(String(value));
+            }
+          });
+          newFilterOptions[utmDim] = Array.from(values).sort();
+        }
+      });
+    }
+
+    return newFilterOptions;
+  }, [exploreData, selectedDimensions, filters]);
 
   const fetchExploreData = async () => {
     setLoading(true);
@@ -235,76 +289,31 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
     fetchExploreData();
   }, [selectedMetrics, selectedDimensions, selectedPeriod, filters]);
 
-  // Extract filter options from explore data
-  useEffect(() => {
-    if (exploreData?.data) {
-      const newFilterOptions: Record<string, string[]> = {};
-
-      selectedDimensions.forEach((dimension) => {
-        const values = new Set<string>();
-        exploreData.data.forEach((item) => {
-          const value = item[dimension.value];
-          if (value !== undefined && value !== null && value !== "") {
-            values.add(String(value));
-          }
-        });
-        newFilterOptions[dimension.value] = Array.from(values).sort();
-      });
-
-      // Also add UTM dimensions to filter options
-      if (exploreData.available_dimensions) {
-        exploreData.available_dimensions.forEach((utmDim) => {
-          if (!newFilterOptions[utmDim]) {
-            const values = new Set<string>();
-            exploreData.data.forEach((item) => {
-              const value = item[utmDim];
-              if (value !== undefined && value !== null && value !== "") {
-                values.add(String(value));
-              }
-            });
-            newFilterOptions[utmDim] = Array.from(values).sort();
-          }
-        });
-      }
-
-      setFilterOptions(newFilterOptions);
-    }
-  }, [exploreData, selectedDimensions]);
-
   const chartData = useMemo(() => {
     if (!exploreData?.data) return [];
 
     // Apply client-side filtering
     const filteredData = exploreData.data.filter((item) => {
-      if (!item.coalesce) return false;
+      if (
+        !item.coalesce ||
+        item.coalesce.includes("Unknown") ||
+        item.coalesce.includes("No Campaign")
+      )
+        return false;
 
       // Check campaign filter
-      if (filters.campaign_id !== undefined) {
-        const selectedCampaign = campaigns.find(
-          (c) => c.id.toString() == filters.campaign_id?.toString(),
-        );
-        if (selectedCampaign && item.campaign !== selectedCampaign.name)
-          return false;
-      }
+      if (filters.campaign !== undefined && item.campaign !== filters.campaign)
+        return false;
 
       // Check link filter
-      if (filters.link_id !== undefined) {
-        const selectedLink = links.find(
-          (l) => l.id.toString() == filters.link_id?.toString(),
-        );
-        if (
-          selectedLink &&
-          item.link !== selectedLink.name &&
-          item.link !== selectedLink.short_url
-        )
-          return false;
-      }
+      if (filters.link !== undefined && item.link !== filters.link)
+        return false;
 
       // Check other filters
       for (const key in filters) {
         if (
-          key !== "campaign_id" &&
-          key !== "link_id" &&
+          key !== "campaign" &&
+          key !== "link" &&
           filters[key] !== undefined &&
           item[key] !== filters[key]
         ) {
@@ -324,7 +333,7 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
         fill: COLORS[index % COLORS.length],
       };
     });
-  }, [exploreData, filters, campaigns, links]);
+  }, [exploreData, filters]);
 
   const mapData = useMemo(() => {
     if (
@@ -335,36 +344,28 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
 
     // Apply client-side filtering
     const filteredData = exploreData.data.filter((item: any) => {
-      if (!item.coalesce || !item.country || item.country.length !== 2)
+      if (
+        !item.coalesce ||
+        item.coalesce.includes("Unknown") ||
+        item.coalesce.includes("No Campaign") ||
+        !item.country ||
+        item.country.length !== 2
+      )
         return false;
 
       // Check campaign filter
-      if (filters.campaign_id !== undefined) {
-        const selectedCampaign = campaigns.find(
-          (c) => c.id.toString() == filters.campaign_id?.toString(),
-        );
-        if (selectedCampaign && item.campaign !== selectedCampaign.name)
-          return false;
-      }
+      if (filters.campaign !== undefined && item.campaign !== filters.campaign)
+        return false;
 
       // Check link filter
-      if (filters.link_id !== undefined) {
-        const selectedLink = links.find(
-          (l) => l.id.toString() == filters.link_id?.toString(),
-        );
-        if (
-          selectedLink &&
-          item.link !== selectedLink.name &&
-          item.link !== selectedLink.short_url
-        )
-          return false;
-      }
+      if (filters.link !== undefined && item.link !== filters.link)
+        return false;
 
       // Check other filters
       for (const key in filters) {
         if (
-          key !== "campaign_id" &&
-          key !== "link_id" &&
+          key !== "campaign" &&
+          key !== "link" &&
           filters[key] !== undefined &&
           item[key] !== filters[key]
         ) {
@@ -389,7 +390,7 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
       country,
       value,
     }));
-  }, [exploreData, selectedDimensions, filters, campaigns, links]);
+  }, [exploreData, selectedDimensions, filters]);
 
   const renderChart = () => {
     if (!chartData.length) return null;
@@ -501,35 +502,25 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
 
     // Filter out rows with empty coalesce values and apply client-side filters
     const filteredData = exploreData.data.filter((row) => {
-      if (!row.coalesce) return false;
+      if (
+        !row.coalesce ||
+        row.coalesce.includes("Unknown") ||
+        row.coalesce.includes("No Campaign")
+      )
+        return false;
 
       // Check campaign filter
-      if (filters.campaign_id !== undefined) {
-        const selectedCampaign = campaigns.find(
-          (c) => c.id.toString() == filters.campaign_id?.toString(),
-        );
-        if (selectedCampaign && row.campaign !== selectedCampaign.name)
-          return false;
-      }
+      if (filters.campaign !== undefined && row.campaign !== filters.campaign)
+        return false;
 
       // Check link filter
-      if (filters.link_id !== undefined) {
-        const selectedLink = links.find(
-          (l) => l.id.toString() == filters.link_id?.toString(),
-        );
-        if (
-          selectedLink &&
-          row.link !== selectedLink.name &&
-          row.link !== selectedLink.short_url
-        )
-          return false;
-      }
+      if (filters.link !== undefined && row.link !== filters.link) return false;
 
       // Check other filters
       for (const key in filters) {
         if (
-          key !== "campaign_id" &&
-          key !== "link_id" &&
+          key !== "campaign" &&
+          key !== "link" &&
           filters[key] !== undefined &&
           row[key] !== filters[key]
         ) {
@@ -834,16 +825,12 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                             return (
                               <div key="campaign" className="space-y-2">
                                 <Select
-                                  value={
-                                    filters.campaign_id?.toString() || "all"
-                                  }
+                                  value={filters.campaign || "all"}
                                   onValueChange={(value) =>
                                     setFilters({
                                       ...filters,
-                                      campaign_id:
-                                        value === "all"
-                                          ? undefined
-                                          : parseInt(value),
+                                      campaign:
+                                        value === "all" ? undefined : value,
                                     })
                                   }
                                 >
@@ -869,14 +856,13 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                                     >
                                       All campaigns
                                     </SelectItem>
-                                    {filteredCampaigns.map((campaign) => (
-                                      <SelectItem
-                                        key={campaign.id}
-                                        value={campaign.id.toString()}
-                                      >
-                                        {campaign.name}
-                                      </SelectItem>
-                                    ))}
+                                    {filterOptions.campaign?.map(
+                                      (value: string) => (
+                                        <SelectItem key={value} value={value}>
+                                          {value}
+                                        </SelectItem>
+                                      ),
+                                    )}
                                   </SelectContent>
                                 </Select>
                               </div>
@@ -885,14 +871,11 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                             return (
                               <div key="link" className="space-y-2">
                                 <Select
-                                  value={filters.link_id?.toString() || "all"}
+                                  value={filters.link || "all"}
                                   onValueChange={(value) =>
                                     setFilters({
                                       ...filters,
-                                      link_id:
-                                        value === "all"
-                                          ? undefined
-                                          : parseInt(value),
+                                      link: value === "all" ? undefined : value,
                                     })
                                   }
                                 >
@@ -919,15 +902,17 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                                     >
                                       All links
                                     </SelectItem>
-                                    {filteredLinks.map((link) => (
-                                      <SelectItem
-                                        className="font-normal"
-                                        key={link.id}
-                                        value={link.id.toString()}
-                                      >
-                                        {link.name || link.short_url}
-                                      </SelectItem>
-                                    ))}
+                                    {filterOptions.link?.map(
+                                      (value: string) => (
+                                        <SelectItem
+                                          className="font-normal"
+                                          key={value}
+                                          value={value}
+                                        >
+                                          {value}
+                                        </SelectItem>
+                                      ),
+                                    )}
                                   </SelectContent>
                                 </Select>
                               </div>
@@ -1037,7 +1022,7 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                         </Label>
                         <Separator className="mt-2" />
                         <SelectItem value="all">All devices</SelectItem>
-                        {DEVICE_TYPES.map((device) => (
+                        {filterOptions.device_type?.map((device) => (
                           <SelectItem key={device} value={device}>
                             {device}
                           </SelectItem>
@@ -1284,8 +1269,8 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                   filters.country ||
                   filters.region ||
                   filters.city ||
-                  filters.campaign_id ||
-                  filters.link_id ||
+                  filters.campaign ||
+                  filters.link ||
                   filters.ref_source ||
                   filters.ref_type) && (
                   <Button
