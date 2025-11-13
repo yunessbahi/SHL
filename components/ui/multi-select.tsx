@@ -502,7 +502,10 @@ const MultipleSelector = ({
                 {option.label.includes("(UTM)") ? (
                   <>
                     {option.label.replace(" (UTM)", "")}{" "}
-                    <Badge variant="outline" className="text-xs">
+                    <Badge
+                      variant="primary"
+                      className="-ml-2 -mr-4 text-sm scale-50"
+                    >
                       UTM
                     </Badge>
                   </>
@@ -673,7 +676,7 @@ const MultipleSelector = ({
                                   {option.label.replace(" (UTM)", "")}{" "}
                                   <Badge
                                     variant="secondary"
-                                    className="text-xs"
+                                    className="text-xs scale-75"
                                   >
                                     UTM
                                   </Badge>
