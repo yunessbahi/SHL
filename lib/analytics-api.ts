@@ -71,6 +71,8 @@ export interface AnalyticsFilters {
   link_id?: number;
   ref_source?: string;
   ref_type?: string;
+  // Allow arbitrary UTM fields
+  [key: string]: any;
 }
 
 export interface ExploreResponse {

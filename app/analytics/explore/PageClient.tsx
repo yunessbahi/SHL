@@ -79,6 +79,7 @@ interface ExploreData {
   filters_applied: AnalyticsFilters;
   metrics_requested: string[];
   dimensions_requested: string[];
+  available_dimensions?: string[];
 }
 
 const METRICS: Option[] = [
@@ -148,6 +149,8 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
   const [selectedPeriod, setSelectedPeriod] = useState("30d");
   const [chartType, setChartType] = useState("bar");
   const [filters, setFilters] = useState<AnalyticsFilters>({});
+  const [availableDimensions, setAvailableDimensions] =
+    useState<Option[]>(DIMENSIONS);
 
   // Use existing hooks for campaigns and links
   const { campaigns, loading: loadingCampaigns } = useCampaigns();
@@ -206,6 +209,28 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
     }
   };
 
+  // Update available dimensions when explore data changes
+  useEffect(() => {
+    if (
+      exploreData?.available_dimensions &&
+      exploreData.available_dimensions.length > 0
+    ) {
+      const utmOptions: Option[] = exploreData.available_dimensions.map(
+        (dim) => ({
+          value: dim,
+          label:
+            dim
+              .replace(/^utm_/, "")
+              .replace(/_/g, " ")
+              .replace(/\b\w/g, (l) => l.toUpperCase()) + " (UTM)",
+        }),
+      );
+      setAvailableDimensions([...DIMENSIONS, ...utmOptions]);
+    } else {
+      setAvailableDimensions(DIMENSIONS);
+    }
+  }, [exploreData]);
+
   useEffect(() => {
     fetchExploreData();
   }, [selectedMetrics, selectedDimensions, selectedPeriod, filters]);
@@ -226,6 +251,22 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
         newFilterOptions[dimension.value] = Array.from(values).sort();
       });
 
+      // Also add UTM dimensions to filter options
+      if (exploreData.available_dimensions) {
+        exploreData.available_dimensions.forEach((utmDim) => {
+          if (!newFilterOptions[utmDim]) {
+            const values = new Set<string>();
+            exploreData.data.forEach((item) => {
+              const value = item[utmDim];
+              if (value !== undefined && value !== null && value !== "") {
+                values.add(String(value));
+              }
+            });
+            newFilterOptions[utmDim] = Array.from(values).sort();
+          }
+        });
+      }
+
       setFilterOptions(newFilterOptions);
     }
   }, [exploreData, selectedDimensions]);
@@ -233,9 +274,49 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
   const chartData = useMemo(() => {
     if (!exploreData?.data) return [];
 
-    return exploreData.data.map((item, index) => {
+    // Apply client-side filtering
+    const filteredData = exploreData.data.filter((item) => {
+      if (!item.coalesce) return false;
+
+      // Check campaign filter
+      if (filters.campaign_id !== undefined) {
+        const selectedCampaign = campaigns.find(
+          (c) => c.id.toString() == filters.campaign_id?.toString(),
+        );
+        if (selectedCampaign && item.campaign !== selectedCampaign.name)
+          return false;
+      }
+
+      // Check link filter
+      if (filters.link_id !== undefined) {
+        const selectedLink = links.find(
+          (l) => l.id.toString() == filters.link_id?.toString(),
+        );
+        if (
+          selectedLink &&
+          item.link !== selectedLink.name &&
+          item.link !== selectedLink.short_url
+        )
+          return false;
+      }
+
+      // Check other filters
+      for (const key in filters) {
+        if (
+          key !== "campaign_id" &&
+          key !== "link_id" &&
+          filters[key] !== undefined &&
+          item[key] !== filters[key]
+        ) {
+          return false;
+        }
+      }
+      return true;
+    });
+
+    return filteredData.map((item, index) => {
       // Use the coalesce variable from the data as the name
-      const coalesceValue = item.coalesce || "Unknown";
+      const coalesceValue = item.coalesce;
 
       return {
         ...item,
@@ -243,7 +324,72 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
         fill: COLORS[index % COLORS.length],
       };
     });
-  }, [exploreData]);
+  }, [exploreData, filters, campaigns, links]);
+
+  const mapData = useMemo(() => {
+    if (
+      !selectedDimensions.some((d) => d.value === "country") ||
+      !exploreData?.data
+    )
+      return undefined;
+
+    // Apply client-side filtering
+    const filteredData = exploreData.data.filter((item: any) => {
+      if (!item.coalesce || !item.country || item.country.length !== 2)
+        return false;
+
+      // Check campaign filter
+      if (filters.campaign_id !== undefined) {
+        const selectedCampaign = campaigns.find(
+          (c) => c.id.toString() == filters.campaign_id?.toString(),
+        );
+        if (selectedCampaign && item.campaign !== selectedCampaign.name)
+          return false;
+      }
+
+      // Check link filter
+      if (filters.link_id !== undefined) {
+        const selectedLink = links.find(
+          (l) => l.id.toString() == filters.link_id?.toString(),
+        );
+        if (
+          selectedLink &&
+          item.link !== selectedLink.name &&
+          item.link !== selectedLink.short_url
+        )
+          return false;
+      }
+
+      // Check other filters
+      for (const key in filters) {
+        if (
+          key !== "campaign_id" &&
+          key !== "link_id" &&
+          filters[key] !== undefined &&
+          item[key] !== filters[key]
+        ) {
+          return false;
+        }
+      }
+      return true;
+    });
+
+    // Aggregate clicks by country
+    const countrySums = filteredData.reduce(
+      (acc: Record<string, number>, item: any) => {
+        const country = item.country;
+        const clicks = item.clicks || 0;
+        acc[country] = (acc[country] || 0) + clicks;
+        return acc;
+      },
+      {},
+    );
+
+    return Object.entries(countrySums).map(([country, value]) => ({
+      country,
+      value,
+    }));
+  }, [exploreData, selectedDimensions, filters, campaigns, links]);
 
   const renderChart = () => {
     if (!chartData.length) return null;
@@ -353,6 +499,48 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
   const renderDataTable = () => {
     if (!exploreData?.data?.length) return null;
 
+    // Filter out rows with empty coalesce values and apply client-side filters
+    const filteredData = exploreData.data.filter((row) => {
+      if (!row.coalesce) return false;
+
+      // Check campaign filter
+      if (filters.campaign_id !== undefined) {
+        const selectedCampaign = campaigns.find(
+          (c) => c.id.toString() == filters.campaign_id?.toString(),
+        );
+        if (selectedCampaign && row.campaign !== selectedCampaign.name)
+          return false;
+      }
+
+      // Check link filter
+      if (filters.link_id !== undefined) {
+        const selectedLink = links.find(
+          (l) => l.id.toString() == filters.link_id?.toString(),
+        );
+        if (
+          selectedLink &&
+          row.link !== selectedLink.name &&
+          row.link !== selectedLink.short_url
+        )
+          return false;
+      }
+
+      // Check other filters
+      for (const key in filters) {
+        if (
+          key !== "campaign_id" &&
+          key !== "link_id" &&
+          filters[key] !== undefined &&
+          row[key] !== filters[key]
+        ) {
+          return false;
+        }
+      }
+      return true;
+    });
+
+    if (!filteredData.length) return null;
+
     const columns = ["coalesce", ...selectedMetrics.map((m) => m.value)];
 
     return (
@@ -375,7 +563,7 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
             </tr>
           </thead>
           <tbody>
-            {exploreData.data.map((row, index) => (
+            {filteredData.map((row, index) => (
               <tr key={index} className="hover:bg-muted/30">
                 {columns.map((col) => (
                   <td key={col} className="border border-border px-4 py-2">
@@ -465,29 +653,7 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <MapCompact
-                  data={(exploreData?.data || [])
-                    .filter(
-                      (item: any) => item.country && item.country.length === 2,
-                    )
-                    .reduce((acc: any[], item: any) => {
-                      const existing = acc.find(
-                        (x: any) => x.country === item.country,
-                      );
-                      if (existing) {
-                        existing.value += item.clicks || 0;
-                      } else {
-                        acc.push({
-                          country: item.country,
-                          value: item.clicks || 0,
-                        });
-                      }
-                      return acc;
-                    }, [])}
-                  size="responsive"
-                  period={selectedPeriod}
-                  filters={filters}
-                />
+                <MapCompact size="responsive" data={mapData} />
               </CardContent>
             </Card>
           </TabsContent>
@@ -626,7 +792,8 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                 <MultipleSelector
                   value={selectedDimensions}
                   onChange={setSelectedDimensions}
-                  defaultOptions={DIMENSIONS}
+                  defaultOptions={availableDimensions}
+                  options={availableDimensions}
                   placeholder="Select dimensions"
                   emptyIndicator={
                     <p className="text-center text-sm">No dimensions found</p>
@@ -636,9 +803,12 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
               </AccordionContent>
             </AccordionItem>
 
-            {/* Context Filters - Campaign and Link filters when their dimensions are selected */}
-            {selectedDimensions.some((d) =>
-              ["campaign", "link"].includes(d.value),
+            {/* Context Filters - Campaign, Link, and UTM filters when their dimensions are selected */}
+            {selectedDimensions.some(
+              (d) =>
+                ["campaign", "link"].includes(d.value) ||
+                d.value.startsWith("utm_") ||
+                !DIMENSIONS.some((baseDim) => baseDim.value === d.value),
             ) && (
               <Accordion type="single" collapsible className="w-full">
                 <AccordionItem value="context-filters">
@@ -649,7 +819,14 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                     <div className="grid grid-cols-1 gap-4">
                       {(() => {
                         const orderedFilters = selectedDimensions
-                          .filter((d) => ["campaign", "link"].includes(d.value))
+                          .filter(
+                            (d) =>
+                              ["campaign", "link"].includes(d.value) ||
+                              d.value.startsWith("utm_") ||
+                              !DIMENSIONS.some(
+                                (baseDim) => baseDim.value === d.value,
+                              ),
+                          )
                           .map((d) => d.value);
 
                         return orderedFilters.map((dimension) => {
@@ -751,6 +928,64 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                                         {link.name || link.short_url}
                                       </SelectItem>
                                     ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            );
+                          } else if (
+                            dimension.startsWith("utm_") ||
+                            !DIMENSIONS.some(
+                              (baseDim) => baseDim.value === dimension,
+                            )
+                          ) {
+                            // Handle UTM dimensions dynamically
+                            const utmKey = dimension.startsWith("utm_")
+                              ? dimension
+                              : dimension;
+                            const displayName = dimension
+                              .replace(/^utm_/, "")
+                              .replace(/_/g, " ")
+                              .replace(/\b\w/g, (l) => l.toUpperCase());
+                            const filterKey = dimension;
+
+                            return (
+                              <div key={dimension} className="space-y-2">
+                                <Select
+                                  value={(filters as any)[filterKey] || "all"}
+                                  onValueChange={(value) =>
+                                    setFilters({
+                                      ...filters,
+                                      [filterKey]:
+                                        value === "all" ? undefined : value,
+                                    })
+                                  }
+                                >
+                                  <SelectTrigger className="h-8">
+                                    <div className="flex gap-2 items-center animate-fadeIn bg-background text-secondary-foreground hover:bg-background relative inline-flex cursor-default items-center text-xs font-medium transition-all disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-fixed:pr-2">
+                                      <Label className="w-15 text-left text-xs text-muted-foreground/60">
+                                        {displayName} (UTM)
+                                      </Label>
+                                      <SelectValue
+                                        className="text-xs text-foreground"
+                                        placeholder={`All ${displayName.toLowerCase()}`}
+                                      />
+                                    </div>
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <Label className="text-xs text-muted-foreground/70">
+                                      {displayName} (UTM)
+                                    </Label>
+                                    <Separator className="mt-2" />
+                                    <SelectItem value="all">
+                                      All {displayName.toLowerCase()}
+                                    </SelectItem>
+                                    {filterOptions[dimension]?.map(
+                                      (value: string) => (
+                                        <SelectItem key={value} value={value}>
+                                          {value}
+                                        </SelectItem>
+                                      ),
+                                    )}
                                   </SelectContent>
                                 </Select>
                               </div>

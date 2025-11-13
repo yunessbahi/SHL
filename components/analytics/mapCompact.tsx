@@ -41,11 +41,12 @@ function MapCompact({
     return () => observer.disconnect();
   }, []);
 
-  // Use provided data if available, otherwise show empty map
+  // Use data from props only - no fetching from endpoints
   React.useEffect(() => {
-    if (data && data.length > 0) {
+    if (data) {
       setMapData(data);
     } else {
+      // If no data provided, show empty map
       setMapData([]);
     }
     setLoading(false);
