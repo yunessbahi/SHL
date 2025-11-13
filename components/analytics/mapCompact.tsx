@@ -1,8 +1,25 @@
 import React from "react";
 import { WorldMap } from "react-svg-worldmap";
+import { AnalyticsFilters } from "@/lib/analytics-api";
 
-function MapCompact() {
+interface MapCompactProps {
+  data?: Array<{ country: string; value: string | number }>;
+  size?: "responsive" | number;
+  period?: string;
+  filters?: AnalyticsFilters;
+}
+
+function MapCompact({
+  data,
+  size = "responsive",
+  period = "30d",
+  filters,
+}: MapCompactProps) {
   const [isDark, setIsDark] = React.useState(false);
+  const [mapData, setMapData] = React.useState<
+    Array<{ country: string; value: string | number }>
+  >([]);
+  const [loading, setLoading] = React.useState(false);
 
   React.useEffect(() => {
     const checkTheme = () => {
@@ -24,7 +41,17 @@ function MapCompact() {
     return () => observer.disconnect();
   }, []);
 
-  const data = [
+  // Use provided data if available, otherwise show empty map
+  React.useEffect(() => {
+    if (data && data.length > 0) {
+      setMapData(data);
+    } else {
+      setMapData([]);
+    }
+    setLoading(false);
+  }, [data]);
+
+  const defaultData = [
     {
       country: "DE",
       value: "121224",
@@ -335,6 +362,12 @@ function MapCompact() {
     },
   ];
 
+  // Calculate the maximum clicks value from the data for dynamic scaling
+  const maxClicks =
+    mapData.length > 0
+      ? Math.max(...mapData.map((item) => Number(item.value) || 0))
+      : 0;
+  console.log("max: ", maxClicks);
   // const stylingFunction = (context: any) => {
   //   const opacityLevel =
   //     0.1 +
@@ -357,12 +390,19 @@ function MapCompact() {
     });*/
 
   const stylingFunction = (context: any) => {
-    context.maxValue = 121224;
-    const opacityLevel =
-      0.3 +
-      (1.5 * (context.countryValue - context.minValue)) /
-        (context.maxValue - context.minValue);
-    //console.log(context);
+    context.maxValue = maxClicks;
+    let opacityLevel;
+
+    if (context.maxValue === context.minValue) {
+      // When all values are the same (e.g., single country or all countries have same clicks)
+      opacityLevel = context.countryValue > 0 ? 0.8 : 0.1; // Full opacity only for countries with data
+    } else {
+      opacityLevel =
+        0.3 +
+        (1.5 * (context.countryValue - context.minValue)) /
+          (context.maxValue - context.minValue);
+    }
+
     return {
       fill: context.color,
       fillOpacity: isNaN(opacityLevel) ? 0.1 : opacityLevel,
@@ -373,8 +413,16 @@ function MapCompact() {
     };
   };
 
+  if (loading) {
+    return (
+      <div className="w-full h-64 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+    <div className="w-full">
       {/* Map section - 3 columns on large screens */}
       <div className="lg:col-span-3">
         {/* Responsive SVG wrapper */}
@@ -389,32 +437,10 @@ function MapCompact() {
             title=""
             valueSuffix="visit"
             valuePrefix=":"
-            size="responsive"
-            data={data}
+            size={size}
+            data={mapData}
             styleFunction={stylingFunction}
           />
-        </div>
-      </div>
-
-      {/* Sidebar section - 1 column on large screens */}
-      <div className="flex flex-col justify-center">
-        <h2 className="text-xl font-bold text-white mb-4">Statistics</h2>
-        <div className="space-y-4 text-gray-300">
-          <div>
-            <p className="text-sm text-gray-400">Total Visits</p>
-            <p className="text-2xl font-bold text-foreground">1,500</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-400">Unique Visits</p>
-            <p className="text-2xl font-bold text-foreground">1,250</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-400">Countries</p>
-            <p className="text-2xl font-bold text-foreground">2</p>
-          </div>
-          <div className="pt-4 border-t border-gray-700">
-            <p className="text-sm">Additional content can go here</p>
-          </div>
         </div>
       </div>
     </div>

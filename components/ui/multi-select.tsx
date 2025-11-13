@@ -582,15 +582,27 @@ const MultipleSelector = ({
       <div className="relative">
         <div
           className={cn(
-            "border-input absolute top-2 z-10 w-full overflow-hidden rounded-md border",
-            "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+            "border-input fixed w-full rounded-md border overflow-hidden",
+            "data-[state=open]:animate-in  data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
             !open && "hidden",
           )}
           data-state={open ? "open" : "closed"}
+          style={{
+            zIndex: 10000,
+            top: inputRef.current
+              ? inputRef.current.getBoundingClientRect().bottom + 4
+              : "auto",
+            left: inputRef.current
+              ? inputRef.current.getBoundingClientRect().left
+              : "auto",
+            width: inputRef.current
+              ? inputRef.current.getBoundingClientRect().width
+              : "auto",
+          }}
         >
           {open && (
             <CommandList
-              className="bg-popover text-popover-foreground shadow-lg outline-hidden"
+              className="bg-popover z-[9999] text-popover-foreground shadow-lg outline-hidden"
               onMouseLeave={() => {
                 setOnScrollbar(false);
               }}

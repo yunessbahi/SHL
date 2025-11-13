@@ -62,6 +62,12 @@ import MultipleSelector, { type Option } from "@/components/ui/multi-select";
 import { useCampaigns } from "@/lib/hooks/useCampaigns";
 import { useLinks } from "@/lib/hooks/useLinks";
 import { Span } from "next/dist/trace";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 interface ExplorePageClientProps {
   user: SafeUser;
@@ -459,7 +465,29 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <MapCompact />
+                <MapCompact
+                  data={(exploreData?.data || [])
+                    .filter(
+                      (item: any) => item.country && item.country.length === 2,
+                    )
+                    .reduce((acc: any[], item: any) => {
+                      const existing = acc.find(
+                        (x: any) => x.country === item.country,
+                      );
+                      if (existing) {
+                        existing.value += item.clicks || 0;
+                      } else {
+                        acc.push({
+                          country: item.country,
+                          value: item.clicks || 0,
+                        });
+                      }
+                      return acc;
+                    }, [])}
+                  size="responsive"
+                  period={selectedPeriod}
+                  filters={filters}
+                />
               </CardContent>
             </Card>
           </TabsContent>
@@ -543,461 +571,501 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Time Period */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Time Period</Label>
-            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-              <SelectTrigger className="w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {TIME_PERIODS.map((period) => (
-                  <SelectItem key={period.value} value={period.value}>
-                    {period.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Metrics Selection */}
-          <div className="space-y-3">
-            <Label className="text-sm font-medium">Metrics</Label>
-            <MultipleSelector
-              value={selectedMetrics}
-              onChange={setSelectedMetrics}
-              defaultOptions={METRICS}
-              placeholder="Select metrics"
-              emptyIndicator={
-                <p className="text-center text-xs text-muted-foreground">
-                  No metrics found
-                </p>
-              }
-              className="w-full text-sm focus:border-ring"
-            />
-          </div>
-
-          {/* Dimensions Selection */}
-          <div className="space-y-3">
-            <Label className="text-sm font-medium">Dimensions</Label>
-            <MultipleSelector
-              value={selectedDimensions}
-              onChange={setSelectedDimensions}
-              defaultOptions={DIMENSIONS}
-              placeholder="Select dimensions"
-              emptyIndicator={
-                <p className="text-center text-sm">No dimensions found</p>
-              }
-              className="w-full"
-            />
-          </div>
-
-          {/* Context Filters - Campaign and Link filters when their dimensions are selected */}
-          {selectedDimensions.some((d) =>
-            ["campaign", "link"].includes(d.value),
-          ) && (
-            <div className="space-y-4">
-              <Label className="text-sm font-medium">Context Filters</Label>
-              <div className="grid grid-cols-1 gap-4">
-                {(() => {
-                  const orderedFilters = selectedDimensions
-                    .filter((d) => ["campaign", "link"].includes(d.value))
-                    .map((d) => d.value);
-
-                  return orderedFilters.map((dimension) => {
-                    if (dimension === "campaign") {
-                      return (
-                        <div key="campaign" className="space-y-2">
-                          <Select
-                            value={filters.campaign_id?.toString() || "all"}
-                            onValueChange={(value) =>
-                              setFilters({
-                                ...filters,
-                                campaign_id:
-                                  value === "all" ? undefined : parseInt(value),
-                              })
-                            }
-                          >
-                            <SelectTrigger className="h-8">
-                              <div className="flex gap-2 items-center animate-fadeIn bg-background text-secondary-foreground hover:bg-background relative inline-flex cursor-default items-center text-xs font-medium transition-all disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-fixed:pr-2">
-                                <Label className="w-15 text-left text-xs text-muted-foreground/60">
-                                  Campaigns
-                                </Label>
-                                <SelectValue
-                                  className="text-right "
-                                  placeholder="All campaigns"
-                                />
-                              </div>
-                            </SelectTrigger>
-                            <SelectContent>
-                              <Label className="text-xs text-muted-foreground/70">
-                                Campaigns
-                              </Label>
-                              <Separator className="mt-2" />
-                              <SelectItem className="text-left" value="all">
-                                All campaigns
-                              </SelectItem>
-                              {filteredCampaigns.map((campaign) => (
-                                <SelectItem
-                                  key={campaign.id}
-                                  value={campaign.id.toString()}
-                                >
-                                  {campaign.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      );
-                    } else if (dimension === "link") {
-                      return (
-                        <div key="link" className="space-y-2">
-                          <Select
-                            value={filters.link_id?.toString() || "all"}
-                            onValueChange={(value) =>
-                              setFilters({
-                                ...filters,
-                                link_id:
-                                  value === "all" ? undefined : parseInt(value),
-                              })
-                            }
-                          >
-                            <SelectTrigger className="h-8">
-                              <div className="flex gap-2 items-center animate-fadeIn bg-background text-secondary-foreground hover:bg-background relative inline-flex cursor-default items-center text-xs font-medium transition-all disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-fixed:pr-2">
-                                <Label className="w-15 text-left text-xs text-muted-foreground/60">
-                                  Links
-                                </Label>
-                                <SelectValue
-                                  className="text-xs text-foreground"
-                                  placeholder="All links"
-                                />
-                              </div>
-                            </SelectTrigger>
-                            <SelectContent className="">
-                              <Label className="text-xs text-muted-foreground/70">
-                                Links
-                              </Label>
-                              <Separator className="mt-2" />
-
-                              <SelectItem
-                                className="text-muted-foreground"
-                                value="all"
-                              >
-                                All links
-                              </SelectItem>
-                              {filteredLinks.map((link) => (
-                                <SelectItem
-                                  className="font-normal"
-                                  key={link.id}
-                                  value={link.id.toString()}
-                                >
-                                  {link.name || link.short_url}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      );
-                    }
-                    return null;
-                  });
-                })()}
-              </div>
-            </div>
-          )}
-
-          {/* Advanced Filters */}
-          <div className="space-y-4">
-            <Label className="text-sm font-medium">Advanced Filters</Label>
-            <div className="grid grid-cols-1 gap-4">
-              {/* Device Type Filter - Always shown */}
-              <div className="space-y-2">
+          <Accordion type="single" collapsible className="w-full">
+            {/* Time Period */}
+            <AccordionItem value="time-period">
+              <AccordionTrigger className="text-sm font-medium">
+                Time Period
+              </AccordionTrigger>
+              <AccordionContent className="space-y-2 pt-2">
                 <Select
-                  value={filters.device_type || "all"}
-                  onValueChange={(value) =>
-                    setFilters({
-                      ...filters,
-                      device_type: value === "all" ? undefined : value,
-                    })
-                  }
+                  value={selectedPeriod}
+                  onValueChange={setSelectedPeriod}
                 >
-                  <SelectTrigger className="h-8">
-                    <div className="flex gap-2 items-center animate-fadeIn bg-background text-secondary-foreground hover:bg-background relative inline-flex cursor-default items-center text-xs font-medium transition-all disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-fixed:pr-2">
-                      <Label className="w-15 text-left text-xs text-muted-foreground/60">
-                        Device Type
-                      </Label>
-                      <SelectValue
-                        className="text-xs text-foreground"
-                        placeholder="All devices"
-                      />
-                    </div>
+                  <SelectTrigger className="w-48">
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <Label className="text-xs text-muted-foreground/70">
-                      Device Type
-                    </Label>
-                    <Separator className="mt-2" />
-                    <SelectItem value="all">All devices</SelectItem>
-                    {DEVICE_TYPES.map((device) => (
-                      <SelectItem key={device} value={device}>
-                        {device}
+                    {TIME_PERIODS.map((period) => (
+                      <SelectItem key={period.value} value={period.value}>
+                        {period.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
+              </AccordionContent>
+            </AccordionItem>
 
-              {/* Dynamic filters based on selected dimensions */}
-              {selectedDimensions.some((d) => d.value === "browser_name") && (
-                <div className="space-y-2">
-                  <Select
-                    value={filters.browser_name || "all"}
-                    onValueChange={(value) =>
-                      setFilters({
-                        ...filters,
-                        browser_name: value === "all" ? undefined : value,
-                      })
-                    }
-                  >
-                    <SelectTrigger className="h-8">
-                      <div className="flex gap-2 items-center animate-fadeIn bg-background text-secondary-foreground hover:bg-background relative inline-flex cursor-default items-center text-xs font-medium transition-all disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-fixed:pr-2">
-                        <Label className="w-15 text-left text-xs text-muted-foreground/60">
-                          Browser
-                        </Label>
-                        <SelectValue
-                          className="text-xs text-foreground"
-                          placeholder="All browsers"
-                        />
-                      </div>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <Label className="text-xs text-muted-foreground/70">
-                        Browser
-                      </Label>
-                      <Separator className="mt-2" />
-                      <SelectItem value="all">All browsers</SelectItem>
-                      {filterOptions.browser_name?.map((browser) => (
-                        <SelectItem key={browser} value={browser}>
-                          {browser}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
+            {/* Metrics Selection */}
+            <AccordionItem value="metrics">
+              <AccordionTrigger className="text-sm font-medium">
+                Metrics
+              </AccordionTrigger>
+              <AccordionContent className="space-y-3 pt-2">
+                <MultipleSelector
+                  value={selectedMetrics}
+                  onChange={setSelectedMetrics}
+                  defaultOptions={METRICS}
+                  placeholder="Select metrics"
+                  emptyIndicator={
+                    <p className="text-center text-xs text-muted-foreground">
+                      No metrics found
+                    </p>
+                  }
+                  className="w-full text-sm focus:border-ring"
+                />
+              </AccordionContent>
+            </AccordionItem>
 
-              {selectedDimensions.some((d) => d.value === "country") && (
-                <div className="space-y-2">
-                  <Select
-                    value={filters.country || "all"}
-                    onValueChange={(value) =>
-                      setFilters({
-                        ...filters,
-                        country: value === "all" ? undefined : value,
-                      })
-                    }
-                  >
-                    <SelectTrigger className="h-8">
-                      <div className="flex gap-2 items-center animate-fadeIn bg-background text-secondary-foreground hover:bg-background relative inline-flex cursor-default items-center text-xs font-medium transition-all disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-fixed:pr-2">
-                        <Label className="w-15 text-left text-xs text-muted-foreground/60">
-                          Country
-                        </Label>
-                        <SelectValue
-                          className="text-xs text-foreground"
-                          placeholder="All countries"
-                        />
-                      </div>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <Label className="text-xs text-muted-foreground/70">
-                        Country
-                      </Label>
-                      <Separator className="mt-2" />
-                      <SelectItem value="all">All countries</SelectItem>
-                      {filterOptions.country?.map((country) => (
-                        <SelectItem key={country} value={country}>
-                          {country}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
+            {/* Dimensions Selection */}
+            <AccordionItem value="dimensions">
+              <AccordionTrigger className="text-sm font-medium">
+                Dimensions
+              </AccordionTrigger>
+              <AccordionContent className="space-y-3 pt-2">
+                <MultipleSelector
+                  value={selectedDimensions}
+                  onChange={setSelectedDimensions}
+                  defaultOptions={DIMENSIONS}
+                  placeholder="Select dimensions"
+                  emptyIndicator={
+                    <p className="text-center text-sm">No dimensions found</p>
+                  }
+                  className="w-full"
+                />
+              </AccordionContent>
+            </AccordionItem>
 
-              {selectedDimensions.some((d) => d.value === "region") && (
-                <div className="space-y-2">
-                  <Select
-                    value={filters.region || "all"}
-                    onValueChange={(value) =>
-                      setFilters({
-                        ...filters,
-                        region: value === "all" ? undefined : value,
-                      })
-                    }
-                  >
-                    <SelectTrigger className="h-8">
-                      <div className="flex gap-2 items-center animate-fadeIn bg-background text-secondary-foreground hover:bg-background relative inline-flex cursor-default items-center text-xs font-medium transition-all disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-fixed:pr-2">
-                        <Label className="w-15 text-left text-xs text-muted-foreground/60">
-                          Region
-                        </Label>
-                        <SelectValue
-                          className="text-xs text-foreground"
-                          placeholder="All regions"
-                        />
-                      </div>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <Label className="text-xs text-muted-foreground/70">
-                        Region
-                      </Label>
-                      <Separator className="mt-2" />
-                      <SelectItem value="all">All regions</SelectItem>
-                      {filterOptions.region?.map((region) => (
-                        <SelectItem key={region} value={region}>
-                          {region}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
+            {/* Context Filters - Campaign and Link filters when their dimensions are selected */}
+            {selectedDimensions.some((d) =>
+              ["campaign", "link"].includes(d.value),
+            ) && (
+              <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="context-filters">
+                  <AccordionTrigger className="text-sm font-medium">
+                    Context Filters
+                  </AccordionTrigger>
+                  <AccordionContent className="space-y-4 pt-2">
+                    <div className="grid grid-cols-1 gap-4">
+                      {(() => {
+                        const orderedFilters = selectedDimensions
+                          .filter((d) => ["campaign", "link"].includes(d.value))
+                          .map((d) => d.value);
 
-              {selectedDimensions.some((d) => d.value === "city") && (
-                <div className="space-y-2">
-                  <Select
-                    value={filters.city || "all"}
-                    onValueChange={(value) =>
-                      setFilters({
-                        ...filters,
-                        city: value === "all" ? undefined : value,
-                      })
-                    }
-                  >
-                    <SelectTrigger className="h-8">
-                      <div className="flex gap-2 items-center animate-fadeIn bg-background text-secondary-foreground hover:bg-background relative inline-flex cursor-default items-center text-xs font-medium transition-all disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-fixed:pr-2">
-                        <Label className="w-15 text-left text-xs text-muted-foreground/60">
-                          City
-                        </Label>
-                        <SelectValue
-                          className="text-xs text-foreground"
-                          placeholder="All cities"
-                        />
-                      </div>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <Label className="text-xs text-muted-foreground/70">
-                        City
-                      </Label>
-                      <Separator className="mt-2" />
-                      <SelectItem value="all">All cities</SelectItem>
-                      {filterOptions.city?.map((city) => (
-                        <SelectItem key={city} value={city}>
-                          {city}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
+                        return orderedFilters.map((dimension) => {
+                          if (dimension === "campaign") {
+                            return (
+                              <div key="campaign" className="space-y-2">
+                                <Select
+                                  value={
+                                    filters.campaign_id?.toString() || "all"
+                                  }
+                                  onValueChange={(value) =>
+                                    setFilters({
+                                      ...filters,
+                                      campaign_id:
+                                        value === "all"
+                                          ? undefined
+                                          : parseInt(value),
+                                    })
+                                  }
+                                >
+                                  <SelectTrigger className="h-8">
+                                    <div className="flex gap-2 items-center animate-fadeIn bg-background text-secondary-foreground hover:bg-background relative inline-flex cursor-default items-center text-xs font-medium transition-all disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-fixed:pr-2">
+                                      <Label className="w-15 text-left text-xs text-muted-foreground/60">
+                                        Campaigns
+                                      </Label>
+                                      <SelectValue
+                                        className="text-right "
+                                        placeholder="All campaigns"
+                                      />
+                                    </div>
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <Label className="text-xs text-muted-foreground/70">
+                                      Campaigns
+                                    </Label>
+                                    <Separator className="mt-2" />
+                                    <SelectItem
+                                      className="text-left"
+                                      value="all"
+                                    >
+                                      All campaigns
+                                    </SelectItem>
+                                    {filteredCampaigns.map((campaign) => (
+                                      <SelectItem
+                                        key={campaign.id}
+                                        value={campaign.id.toString()}
+                                      >
+                                        {campaign.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            );
+                          } else if (dimension === "link") {
+                            return (
+                              <div key="link" className="space-y-2">
+                                <Select
+                                  value={filters.link_id?.toString() || "all"}
+                                  onValueChange={(value) =>
+                                    setFilters({
+                                      ...filters,
+                                      link_id:
+                                        value === "all"
+                                          ? undefined
+                                          : parseInt(value),
+                                    })
+                                  }
+                                >
+                                  <SelectTrigger className="h-8">
+                                    <div className="flex gap-2 items-center animate-fadeIn bg-background text-secondary-foreground hover:bg-background relative inline-flex cursor-default items-center text-xs font-medium transition-all disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-fixed:pr-2">
+                                      <Label className="w-15 text-left text-xs text-muted-foreground/60">
+                                        Links
+                                      </Label>
+                                      <SelectValue
+                                        className="text-xs text-foreground"
+                                        placeholder="All links"
+                                      />
+                                    </div>
+                                  </SelectTrigger>
+                                  <SelectContent className="">
+                                    <Label className="text-xs text-muted-foreground/70">
+                                      Links
+                                    </Label>
+                                    <Separator className="mt-2" />
 
-              {selectedDimensions.some((d) => d.value === "ref_source") && (
-                <div className="space-y-2">
-                  <Select
-                    value={filters.ref_source || "all"}
-                    onValueChange={(value) =>
-                      setFilters({
-                        ...filters,
-                        ref_source: value === "all" ? undefined : value,
-                      })
-                    }
-                  >
-                    <SelectTrigger className="h-8">
-                      <div className="flex gap-2 items-center animate-fadeIn bg-background text-secondary-foreground hover:bg-background relative inline-flex cursor-default items-center text-xs font-medium transition-all disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-fixed:pr-2">
-                        <Label className="w-15 text-left text-xs text-muted-foreground/60">
-                          Referral Source
-                        </Label>
-                        <SelectValue
-                          className="text-xs text-foreground"
-                          placeholder="All sources"
-                        />
-                      </div>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <Label className="text-xs text-muted-foreground/70">
-                        Referral Source
-                      </Label>
-                      <Separator className="mt-2" />
-                      <SelectItem value="all">All sources</SelectItem>
-                      {filterOptions.ref_source?.map((source) => (
-                        <SelectItem key={source} value={source}>
-                          {source}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {selectedDimensions.some((d) => d.value === "ref_type") && (
-                <div className="space-y-2">
-                  <Select
-                    value={filters.ref_type || "all"}
-                    onValueChange={(value) =>
-                      setFilters({
-                        ...filters,
-                        ref_type: value === "all" ? undefined : value,
-                      })
-                    }
-                  >
-                    <SelectTrigger className="h-8">
-                      <div className="flex gap-2 items-center animate-fadeIn bg-background text-secondary-foreground hover:bg-background relative inline-flex cursor-default items-center text-xs font-medium transition-all disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-fixed:pr-2">
-                        <Label className="w-15 text-left text-xs text-muted-foreground/60">
-                          Referral Type
-                        </Label>
-                        <SelectValue
-                          className="text-xs text-foreground"
-                          placeholder="All types"
-                        />
-                      </div>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <Label className="text-xs text-muted-foreground/70">
-                        Referral Type
-                      </Label>
-                      <Separator className="mt-2" />
-                      <SelectItem value="all">All types</SelectItem>
-                      {filterOptions.ref_type?.map((type) => (
-                        <SelectItem key={type} value={type}>
-                          {type}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-            </div>
-
-            {/* Clear Filters Button */}
-            {(filters.device_type ||
-              filters.browser_name ||
-              filters.country ||
-              filters.region ||
-              filters.city ||
-              filters.campaign_id ||
-              filters.link_id ||
-              filters.ref_source ||
-              filters.ref_type) && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setFilters({})}
-                className="flex items-center gap-2"
-              >
-                <X className="w-4 h-4" />
-                Clear Filters
-              </Button>
+                                    <SelectItem
+                                      className="text-muted-foreground"
+                                      value="all"
+                                    >
+                                      All links
+                                    </SelectItem>
+                                    {filteredLinks.map((link) => (
+                                      <SelectItem
+                                        className="font-normal"
+                                        key={link.id}
+                                        value={link.id.toString()}
+                                      >
+                                        {link.name || link.short_url}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            );
+                          }
+                          return null;
+                        });
+                      })()}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             )}
-          </div>
+
+            {/* Advanced Filters */}
+          </Accordion>
+          <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="advanced-filters">
+              <AccordionTrigger className="text-sm font-medium">
+                Advanced Filters
+              </AccordionTrigger>
+              <AccordionContent className="space-y-4 pt-2">
+                <div className="grid grid-cols-1 gap-4">
+                  {/* Device Type Filter - Always shown */}
+                  <div className="space-y-2">
+                    <Select
+                      value={filters.device_type || "all"}
+                      onValueChange={(value) =>
+                        setFilters({
+                          ...filters,
+                          device_type: value === "all" ? undefined : value,
+                        })
+                      }
+                    >
+                      <SelectTrigger className="h-8">
+                        <div className="flex gap-2 items-center animate-fadeIn bg-background text-secondary-foreground hover:bg-background relative inline-flex cursor-default items-center text-xs font-medium transition-all disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-fixed:pr-2">
+                          <Label className="w-15 text-left text-xs text-muted-foreground/60">
+                            Device Type
+                          </Label>
+                          <SelectValue
+                            className="text-xs text-foreground"
+                            placeholder="All devices"
+                          />
+                        </div>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <Label className="text-xs text-muted-foreground/70">
+                          Device Type
+                        </Label>
+                        <Separator className="mt-2" />
+                        <SelectItem value="all">All devices</SelectItem>
+                        {DEVICE_TYPES.map((device) => (
+                          <SelectItem key={device} value={device}>
+                            {device}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Dynamic filters based on selected dimensions */}
+                  {selectedDimensions.some(
+                    (d) => d.value === "browser_name",
+                  ) && (
+                    <div className="space-y-2">
+                      <Select
+                        value={filters.browser_name || "all"}
+                        onValueChange={(value) =>
+                          setFilters({
+                            ...filters,
+                            browser_name: value === "all" ? undefined : value,
+                          })
+                        }
+                      >
+                        <SelectTrigger className="h-8">
+                          <div className="flex gap-2 items-center animate-fadeIn bg-background text-secondary-foreground hover:bg-background relative inline-flex cursor-default items-center text-xs font-medium transition-all disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-fixed:pr-2">
+                            <Label className="w-15 text-left text-xs text-muted-foreground/60">
+                              Browser
+                            </Label>
+                            <SelectValue
+                              className="text-xs text-foreground"
+                              placeholder="All browsers"
+                            />
+                          </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <Label className="text-xs text-muted-foreground/70">
+                            Browser
+                          </Label>
+                          <Separator className="mt-2" />
+                          <SelectItem value="all">All browsers</SelectItem>
+                          {filterOptions.browser_name?.map((browser) => (
+                            <SelectItem key={browser} value={browser}>
+                              {browser}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {selectedDimensions.some((d) => d.value === "country") && (
+                    <div className="space-y-2">
+                      <Select
+                        value={filters.country || "all"}
+                        onValueChange={(value) =>
+                          setFilters({
+                            ...filters,
+                            country: value === "all" ? undefined : value,
+                          })
+                        }
+                      >
+                        <SelectTrigger className="h-8">
+                          <div className="flex gap-2 items-center animate-fadeIn bg-background text-secondary-foreground hover:bg-background relative inline-flex cursor-default items-center text-xs font-medium transition-all disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-fixed:pr-2">
+                            <Label className="w-15 text-left text-xs text-muted-foreground/60">
+                              Country
+                            </Label>
+                            <SelectValue
+                              className="text-xs text-foreground"
+                              placeholder="All countries"
+                            />
+                          </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <Label className="text-xs text-muted-foreground/70">
+                            Country
+                          </Label>
+                          <Separator className="mt-2" />
+                          <SelectItem value="all">All countries</SelectItem>
+                          {filterOptions.country?.map((country) => (
+                            <SelectItem key={country} value={country}>
+                              {country}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {selectedDimensions.some((d) => d.value === "region") && (
+                    <div className="space-y-2">
+                      <Select
+                        value={filters.region || "all"}
+                        onValueChange={(value) =>
+                          setFilters({
+                            ...filters,
+                            region: value === "all" ? undefined : value,
+                          })
+                        }
+                      >
+                        <SelectTrigger className="h-8">
+                          <div className="flex gap-2 items-center animate-fadeIn bg-background text-secondary-foreground hover:bg-background relative inline-flex cursor-default items-center text-xs font-medium transition-all disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-fixed:pr-2">
+                            <Label className="w-15 text-left text-xs text-muted-foreground/60">
+                              Region
+                            </Label>
+                            <SelectValue
+                              className="text-xs text-foreground"
+                              placeholder="All regions"
+                            />
+                          </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <Label className="text-xs text-muted-foreground/70">
+                            Region
+                          </Label>
+                          <Separator className="mt-2" />
+                          <SelectItem value="all">All regions</SelectItem>
+                          {filterOptions.region?.map((region) => (
+                            <SelectItem key={region} value={region}>
+                              {region}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {selectedDimensions.some((d) => d.value === "city") && (
+                    <div className="space-y-2">
+                      <Select
+                        value={filters.city || "all"}
+                        onValueChange={(value) =>
+                          setFilters({
+                            ...filters,
+                            city: value === "all" ? undefined : value,
+                          })
+                        }
+                      >
+                        <SelectTrigger className="h-8">
+                          <div className="flex gap-2 items-center animate-fadeIn bg-background text-secondary-foreground hover:bg-background relative inline-flex cursor-default items-center text-xs font-medium transition-all disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-fixed:pr-2">
+                            <Label className="w-15 text-left text-xs text-muted-foreground/60">
+                              City
+                            </Label>
+                            <SelectValue
+                              className="text-xs text-foreground"
+                              placeholder="All cities"
+                            />
+                          </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <Label className="text-xs text-muted-foreground/70">
+                            City
+                          </Label>
+                          <Separator className="mt-2" />
+                          <SelectItem value="all">All cities</SelectItem>
+                          {filterOptions.city?.map((city) => (
+                            <SelectItem key={city} value={city}>
+                              {city}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {selectedDimensions.some((d) => d.value === "ref_source") && (
+                    <div className="space-y-2">
+                      <Select
+                        value={filters.ref_source || "all"}
+                        onValueChange={(value) =>
+                          setFilters({
+                            ...filters,
+                            ref_source: value === "all" ? undefined : value,
+                          })
+                        }
+                      >
+                        <SelectTrigger className="h-8">
+                          <div className="flex gap-2 items-center animate-fadeIn bg-background text-secondary-foreground hover:bg-background relative inline-flex cursor-default items-center text-xs font-medium transition-all disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-fixed:pr-2">
+                            <Label className="w-15 text-left text-xs text-muted-foreground/60">
+                              Referral Source
+                            </Label>
+                            <SelectValue
+                              className="text-xs text-foreground"
+                              placeholder="All sources"
+                            />
+                          </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <Label className="text-xs text-muted-foreground/70">
+                            Referral Source
+                          </Label>
+                          <Separator className="mt-2" />
+                          <SelectItem value="all">All sources</SelectItem>
+                          {filterOptions.ref_source?.map((source) => (
+                            <SelectItem key={source} value={source}>
+                              {source}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {selectedDimensions.some((d) => d.value === "ref_type") && (
+                    <div className="space-y-2">
+                      <Select
+                        value={filters.ref_type || "all"}
+                        onValueChange={(value) =>
+                          setFilters({
+                            ...filters,
+                            ref_type: value === "all" ? undefined : value,
+                          })
+                        }
+                      >
+                        <SelectTrigger className="h-8">
+                          <div className="flex gap-2 items-center animate-fadeIn bg-background text-secondary-foreground hover:bg-background relative inline-flex cursor-default items-center text-xs font-medium transition-all disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-fixed:pr-2">
+                            <Label className="w-15 text-left text-xs text-muted-foreground/60">
+                              Referral Type
+                            </Label>
+                            <SelectValue
+                              className="text-xs text-foreground"
+                              placeholder="All types"
+                            />
+                          </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <Label className="text-xs text-muted-foreground/70">
+                            Referral Type
+                          </Label>
+                          <Separator className="mt-2" />
+                          <SelectItem value="all">All types</SelectItem>
+                          {filterOptions.ref_type?.map((type) => (
+                            <SelectItem key={type} value={type}>
+                              {type}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+
+                {/* Clear Filters Button */}
+                {(filters.device_type ||
+                  filters.browser_name ||
+                  filters.country ||
+                  filters.region ||
+                  filters.city ||
+                  filters.campaign_id ||
+                  filters.link_id ||
+                  filters.ref_source ||
+                  filters.ref_type) && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setFilters({})}
+                    className="flex items-center gap-2"
+                  >
+                    <X className="w-4 h-4" />
+                    Clear Filters
+                  </Button>
+                )}
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
 
           {/* Chart Type Selection */}
           <div className="space-y-2">

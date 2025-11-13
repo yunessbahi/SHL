@@ -401,7 +401,7 @@ export default function AnalyticsOverview() {
                 <span className="text-sm text-muted-foreground">{period}</span>
               </div>
               <div className="h-auto">
-                <MapCompact />
+                <MapCompact period={period} />
               </div>
             </Card>
 
