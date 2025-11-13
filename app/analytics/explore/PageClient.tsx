@@ -649,75 +649,6 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
             </Card>
           </TabsContent>
         </Tabs>
-
-        {/* Summary Stats */}
-        {exploreData && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Total Records
-                    </p>
-                    <p className="text-2xl font-bold">
-                      {formatNumber(exploreData.total_count)}
-                    </p>
-                  </div>
-                  <BarChart3 className="h-8 w-8 text-muted-foreground" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Metrics
-                    </p>
-                    <p className="text-2xl font-bold">
-                      {selectedMetrics.length}
-                    </p>
-                  </div>
-                  <TrendingUp className="h-8 w-8 text-muted-foreground" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Dimensions
-                    </p>
-                    <p className="text-2xl font-bold">
-                      {selectedDimensions.length}
-                    </p>
-                  </div>
-                  <Filter className="h-8 w-8 text-muted-foreground" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Time Period
-                    </p>
-                    <p className="text-2xl font-bold">
-                      {selectedPeriod.toUpperCase()}
-                    </p>
-                  </div>
-                  <CalendarDays className="h-8 w-8 text-muted-foreground" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
       </div>
 
       <Card className="col-span-2">
@@ -732,7 +663,12 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
             {/* Time Period */}
             <AccordionItem value="time-period">
               <AccordionTrigger className="text-sm font-medium">
-                Time Period
+                <div className="flex gap-2 items-center">
+                  Time Period
+                  <Badge variant="secondary">
+                    {selectedPeriod.toUpperCase()}
+                  </Badge>
+                </div>
               </AccordionTrigger>
               <AccordionContent className="space-y-2 pt-2">
                 <Select
@@ -756,7 +692,10 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
             {/* Metrics Selection */}
             <AccordionItem value="metrics">
               <AccordionTrigger className="text-sm font-medium">
-                Metrics
+                <div className="flex gap-2 items-center">
+                  Metrics
+                  <Badge variant="secondary">{selectedMetrics.length}</Badge>
+                </div>
               </AccordionTrigger>
               <AccordionContent className="space-y-3 pt-2">
                 <MultipleSelector
@@ -777,7 +716,10 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
             {/* Dimensions Selection */}
             <AccordionItem value="dimensions">
               <AccordionTrigger className="text-sm font-medium">
-                Dimensions
+                <div className="flex gap-2 items-center">
+                  Dimensions
+                  <Badge variant="secondary">{selectedDimensions.length}</Badge>
+                </div>
               </AccordionTrigger>
               <AccordionContent className="space-y-3 pt-2">
                 <MultipleSelector
