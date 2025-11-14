@@ -30,7 +30,10 @@ import {
   Target,
   Zap,
   X,
+  Plus,
+  Minus,
 } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import {
   LineChart,
   Line,
@@ -47,6 +50,7 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  ComposedChart,
 } from "recharts";
 import {
   analyticsAPI,
@@ -104,23 +108,7 @@ const TIME_PERIODS = [
   { value: "365d", label: "Last Year" },
 ];
 
-const CHART_TYPES = [
-  { value: "bar", label: "Bar Chart", icon: <BarChart3 className="w-4 h-4" /> },
-  {
-    value: "line",
-    label: "Line Chart",
-    icon: <TrendingUp className="w-4 h-4" />,
-  },
-  {
-    value: "area",
-    label: "Area Chart",
-    icon: <TrendingUp className="w-4 h-4" />,
-  },
-];
-
 const COLORS = [
-  "#3b82f6",
-  "#10b981",
   "#f59e0b",
   "#ef4444",
   "#8b5cf6",
@@ -142,7 +130,6 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
     { value: "campaign", label: "Campaign" },
   ]);
   const [selectedPeriod, setSelectedPeriod] = useState("30d");
-  const [chartType, setChartType] = useState("bar");
   const [filters, setFilters] = useState<AnalyticsFilters>({});
   const [availableDimensions, setAvailableDimensions] =
     useState<Option[]>(DIMENSIONS);
@@ -330,7 +317,6 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
       return {
         ...item,
         name: coalesceValue,
-        fill: COLORS[index % COLORS.length],
       };
     });
   }, [exploreData, filters]);
@@ -395,106 +381,123 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
   const renderChart = () => {
     if (!chartData.length) return null;
 
-    const commonProps = {
-      data: chartData,
-      margin: { top: 20, right: 30, left: 20, bottom: 5 },
+    // Custom tooltip to match the screenshot style
+    const CustomTooltip = ({ active, payload, label }: any) => {
+      if (active && payload && payload.length) {
+        // Get unique metrics (since we render Area + Line for each metric)
+        const uniquePayload = payload.filter(
+          (item: any, index: number, self: any[]) =>
+            index === self.findIndex((t) => t.dataKey === item.dataKey),
+        );
+
+        return (
+          <div
+            style={{
+              backgroundColor: "rgba(30, 30, 30, 0.95)",
+              border: "1px solid rgba(255, 255, 255, 0.1)",
+              borderRadius: "8px",
+              padding: "12px 16px",
+              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
+            }}
+          >
+            <p
+              style={{
+                color: "#fff",
+                margin: "0 0 8px 0",
+                fontSize: "14px",
+                fontWeight: "500",
+              }}
+            >
+              {label}
+            </p>
+            {uniquePayload.map((entry: any, index: number) => (
+              <div
+                key={index}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  marginTop: "4px",
+                }}
+              >
+                <div
+                  style={{
+                    width: "12px",
+                    height: "12px",
+                    backgroundColor: entry.color || entry.stroke,
+                    borderRadius: "2px",
+                  }}
+                />
+                <span style={{ color: "#fff", fontSize: "13px" }}>
+                  {entry.name}: <strong>{entry.value}</strong>
+                </span>
+              </div>
+            ))}
+          </div>
+        );
+      }
+      return null;
     };
 
-    switch (chartType) {
-      case "line":
-        return (
-          <ResponsiveContainer width="100%" height={400}>
-            <LineChart {...commonProps}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              {selectedMetrics.map((metric, index) => (
-                <Line
-                  key={metric.value}
-                  type="monotone"
-                  dataKey={metric.value}
-                  stroke={COLORS[index % COLORS.length]}
-                  strokeWidth={2}
-                />
-              ))}
-            </LineChart>
-          </ResponsiveContainer>
-        );
-
-      case "area":
-        return (
-          <ResponsiveContainer width="100%" height={400}>
-            <AreaChart {...commonProps}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              {selectedMetrics.map((metric, index) => (
-                <Area
-                  key={metric.value}
-                  type="monotone"
-                  dataKey={metric.value}
-                  stackId="1"
-                  stroke={COLORS[index % COLORS.length]}
-                  fill={COLORS[index % COLORS.length]}
-                />
-              ))}
-            </AreaChart>
-          </ResponsiveContainer>
-        );
-
-      case "pie":
-        return (
-          <ResponsiveContainer width="100%" height={400}>
-            <RechartsPieChart>
-              <Pie
-                data={chartData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, percent }: any) =>
-                  `${name} ${(percent * 100).toFixed(0)}%`
-                }
-                outerRadius={80}
-                fill="#8884d8"
-                dataKey={selectedMetrics[0].value}
-                nameKey="name"
-              >
-                {chartData.map((entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={COLORS[index % COLORS.length]}
-                  />
-                ))}
-              </Pie>
-              <Tooltip />
-            </RechartsPieChart>
-          </ResponsiveContainer>
-        );
-
-      default: // bar
-        return (
-          <ResponsiveContainer width="100%" height={400}>
-            <BarChart {...commonProps}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              {selectedMetrics.map((metric, index) => (
+    return (
+      <ResponsiveContainer width="100%" height={400}>
+        <ComposedChart
+          data={chartData}
+          margin={{ top: 20, right: 5, left: 0, bottom: 20 }}
+        >
+          <CartesianGrid vertical stroke="transparent" />
+          <XAxis dataKey="name" hide={true} />
+          <YAxis
+            stroke="var(--secondary)"
+            className="fill-muted-foreground text-xs"
+            axisLine={false}
+            tickLine={false}
+            width={40}
+          />
+          <Tooltip content={<CustomTooltip />} />
+          {selectedMetrics.map((metric, index) => {
+            const color = COLORS[index % COLORS.length];
+            return (
+              <React.Fragment key={metric.value}>
+                {/* Low opacity area background - hide from legend */}
                 <Bar
-                  key={metric.value}
                   dataKey={metric.value}
-                  fill={COLORS[index % COLORS.length]}
+                  fill={color}
+                  //fillOpacity={0.20}
+                  //stroke={color}
+                  strokeWidth={0}
+                  radius={[8, 8, 0, 0]}
+                  strokeOpacity={0}
+                  barSize={"100%"}
+                  background={{ className: "fill-muted/40" }}
                 />
-              ))}
-            </BarChart>
-          </ResponsiveContainer>
-        );
-    }
+                <Area
+                  type="monotone"
+                  dataKey={metric.value}
+                  name={metric.label || metric.value}
+                  fill={color}
+                  fillOpacity={0.25}
+                  stroke="none"
+                  legendType="none"
+                />
+                {/* Full opacity stepped line - show in legend */}
+                <Line
+                  type={"monotone"}
+                  dataKey={metric.value}
+                  name={metric.label || metric.value}
+                  stroke={color}
+                  strokeOpacity={0}
+                  strokeWidth={2.5}
+                  dot={false}
+                  activeDot={{ r: 5 }}
+                  className="z-99990"
+                />
+              </React.Fragment>
+            );
+          })}
+        </ComposedChart>
+      </ResponsiveContainer>
+    );
   };
 
   const renderDataTable = () => {
@@ -532,7 +535,17 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
 
     if (!filteredData.length) return null;
 
-    const columns = ["coalesce", ...selectedMetrics.map((m) => m.value)];
+    const hasRequiredMetrics =
+      selectedMetrics.some((m) => m.value === "clicks") &&
+      selectedMetrics.some((m) => m.value === "unique_visitors");
+    const calculatedColumns = hasRequiredMetrics
+      ? ["cpuv", "repeat_click_rate"]
+      : [];
+    const columns = [
+      "coalesce",
+      ...selectedMetrics.map((m) => m.value),
+      ...calculatedColumns,
+    ];
 
     return (
       <div className="overflow-x-auto">
@@ -546,9 +559,13 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                 >
                   {col === "coalesce"
                     ? "Dimension Value"
-                    : col
-                        .replace(/_/g, " ")
-                        .replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                    : col === "cpuv"
+                      ? "Clicks per Unique Visitor"
+                      : col === "repeat_click_rate"
+                        ? "Repeat Click Rate"
+                        : col
+                            .replace(/_/g, " ")
+                            .replace(/\b\w/g, (l: string) => l.toUpperCase())}
                 </th>
               ))}
             </tr>
@@ -558,9 +575,29 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
               <tr key={index} className="hover:bg-muted/30">
                 {columns.map((col) => (
                   <td key={col} className="border border-border px-4 py-2">
-                    {typeof row[col] === "number"
-                      ? formatNumber(row[col])
-                      : row[col]}
+                    {col === "cpuv" ? (
+                      row.unique_visitors && row.unique_visitors !== 0 ? (
+                        formatNumber(row.clicks / row.unique_visitors)
+                      ) : (
+                        <span className="text-muted-foreground/30">—</span>
+                      )
+                    ) : col === "repeat_click_rate" ? (
+                      row.unique_visitors &&
+                      row.unique_visitors !== 0 &&
+                      row.clicks &&
+                      row.clicks !== 0 ? (
+                        formatPercentage(
+                          (row.clicks - (row.unique_visitors || 0)) /
+                            row.clicks,
+                        )
+                      ) : (
+                        <span className="text-muted-foreground/30">—</span>
+                      )
+                    ) : typeof row[col] === "number" ? (
+                      formatNumber(row[col])
+                    ) : (
+                      row[col]
+                    )}
                   </td>
                 ))}
               </tr>
@@ -606,7 +643,7 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
               <CardContent>
                 {loading ? (
                   <div className="flex items-center justify-center h-96">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    <Spinner />
                   </div>
                 ) : (
                   renderChart()
@@ -626,7 +663,7 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
               <CardContent>
                 {loading ? (
                   <div className="flex items-center justify-center h-96">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    <Spinner />
                   </div>
                 ) : (
                   <ScrollArea className="h-96">{renderDataTable()}</ScrollArea>
@@ -662,8 +699,12 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
           <Accordion type="single" collapsible className="w-full">
             {/* Time Period */}
             <AccordionItem value="time-period">
-              <AccordionTrigger className="text-sm font-medium">
+              <AccordionTrigger className="[&>svg]:hidden text-sm font-medium group">
                 <div className="flex gap-2 items-center">
+                  <div className="relative w-4 h-4">
+                    <Plus className="absolute inset-0 h-4 w-4 transition-opacity group-data-[state=closed]:opacity-100 group-data-[state=open]:opacity-0" />
+                    <Minus className="absolute inset-0 h-4 w-4 transition-opacity group-data-[state=closed]:opacity-0 group-data-[state=open]:opacity-100" />
+                  </div>
                   Time Period
                   <Badge variant="secondary">
                     {selectedPeriod.toUpperCase()}
@@ -676,7 +717,12 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                   onValueChange={setSelectedPeriod}
                 >
                   <SelectTrigger className="w-48 text-xs">
-                    <SelectValue />
+                    <div className="flex gap-2 items-center animate-fadeIn bg-background text-secondary-foreground hover:bg-background relative inline-flex cursor-default items-center text-xs font-medium transition-all disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-fixed:pr-2">
+                      <Label className="w-15 text-left text-xs text-muted-foreground/60">
+                        Period
+                      </Label>
+                      <SelectValue />
+                    </div>
                   </SelectTrigger>
                   <SelectContent>
                     {TIME_PERIODS.map((period) => (
@@ -695,8 +741,12 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
 
             {/* Metrics Selection */}
             <AccordionItem value="metrics">
-              <AccordionTrigger className="text-sm font-medium">
+              <AccordionTrigger className="[&>svg]:hidden text-sm font-medium group">
                 <div className="flex gap-2 items-center">
+                  <div className="relative w-4 h-4">
+                    <Plus className="absolute inset-0 h-4 w-4 transition-opacity group-data-[state=closed]:opacity-100 group-data-[state=open]:opacity-0" />
+                    <Minus className="absolute inset-0 h-4 w-4 transition-opacity group-data-[state=closed]:opacity-0 group-data-[state=open]:opacity-100" />
+                  </div>
                   Metrics
                   <Badge variant="secondary">{selectedMetrics.length}</Badge>
                 </div>
@@ -719,8 +769,12 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
 
             {/* Dimensions Selection */}
             <AccordionItem value="dimensions">
-              <AccordionTrigger className="text-sm font-medium">
+              <AccordionTrigger className="[&>svg]:hidden text-sm font-medium group">
                 <div className="flex gap-2 items-center">
+                  <div className="relative w-4 h-4">
+                    <Plus className="absolute inset-0 h-4 w-4 transition-opacity group-data-[state=closed]:opacity-100 group-data-[state=open]:opacity-0" />
+                    <Minus className="absolute inset-0 h-4 w-4 transition-opacity group-data-[state=closed]:opacity-0 group-data-[state=open]:opacity-100" />
+                  </div>
                   Dimensions
                   <Badge variant="secondary">{selectedDimensions.length}</Badge>
                 </div>
@@ -750,8 +804,14 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
             ) && (
               <Accordion type="single" collapsible className="w-full">
                 <AccordionItem value="context-filters">
-                  <AccordionTrigger className="text-sm font-medium">
-                    Context Filters
+                  <AccordionTrigger className="[&>svg]:hidden text-sm font-medium group">
+                    <div className="flex gap-2 items-center">
+                      <div className="relative w-4 h-4">
+                        <Plus className="absolute inset-0 h-4 w-4 transition-opacity group-data-[state=closed]:opacity-100 group-data-[state=open]:opacity-0" />
+                        <Minus className="absolute inset-0 h-4 w-4 transition-opacity group-data-[state=closed]:opacity-0 group-data-[state=open]:opacity-100" />
+                      </div>
+                      Context Filters
+                    </div>
                   </AccordionTrigger>
                   <AccordionContent className="space-y-4 pt-2">
                     <div className="grid grid-cols-1 gap-4">
@@ -943,9 +1003,15 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
             {/* Advanced Filters */}
           </Accordion>
           <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="advanced-filters">
-              <AccordionTrigger className="text-sm font-medium">
-                Advanced Filters
+            <AccordionItem value="drilldown-filters">
+              <AccordionTrigger className="[&>svg]:hidden text-sm font-medium group">
+                <div className="flex gap-2 items-center">
+                  <div className="relative w-4 h-4">
+                    <Plus className="absolute inset-0 h-4 w-4 transition-opacity group-data-[state=closed]:opacity-100 group-data-[state=open]:opacity-0" />
+                    <Minus className="absolute inset-0 h-4 w-4 transition-opacity group-data-[state=closed]:opacity-0 group-data-[state=open]:opacity-100" />
+                  </div>
+                  Drilldown Filters
+                </div>
               </AccordionTrigger>
               <AccordionContent className="space-y-4 pt-2">
                 <div className="grid grid-cols-1 gap-4">
@@ -1283,25 +1349,6 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
               </AccordionContent>
             </AccordionItem>
           </Accordion>
-
-          {/* Chart Type Selection */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Chart Type</Label>
-            <div className="flex gap-2">
-              {CHART_TYPES.map((type) => (
-                <Button
-                  key={type.value}
-                  variant={chartType === type.value ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setChartType(type.value)}
-                  className="flex items-center gap-2"
-                >
-                  {type.icon}
-                  {type.label}
-                </Button>
-              ))}
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>

@@ -254,9 +254,9 @@ export const formatNumber = (num: number): string => {
 };
 
 // Utility function to format percentage
-export const formatPercentage = (num: number): string => {
-  return `${num.toFixed(1)}%`;
-};
+export function formatPercentage(value: number) {
+  return `${(value * 100).toFixed(1)}%`;
+}
 
 // Utility function to get change color
 export const getChangeColor = (change: number): string => {
