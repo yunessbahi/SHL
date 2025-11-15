@@ -1,6 +1,7 @@
 import React from "react";
 import { WorldMap } from "react-svg-worldmap";
 import { AnalyticsFilters } from "@/lib/analytics-api";
+import { Spinner } from "@/components/ui/spinner";
 
 interface MapCompactProps {
   data?: Array<{ country: string; value: string | number }>;
@@ -417,7 +418,7 @@ function MapCompact({
   if (loading) {
     return (
       <div className="w-full h-64 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        <Spinner className="size-8" />
       </div>
     );
   }

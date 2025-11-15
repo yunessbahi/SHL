@@ -14,6 +14,7 @@ import {
   type DeviceBreakdownPoint,
   formatNumber,
 } from "@/lib/analytics-api";
+import { Spinner } from "@/components/ui/spinner";
 
 interface DeviceBreakdownChartProps {
   data?: DeviceBreakdownPoint[];
@@ -191,7 +192,7 @@ export default function DeviceBreakdownChart({
         {isLoading ? (
           <div className="h-[200px] flex items-center justify-center">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+              <Spinner className="size-8 mx-auto mb-2" />
               <p className="text-sm text-muted-foreground">
                 Loading device breakdown...
               </p>

@@ -101,7 +101,7 @@ const GroupingCountInput = ({
   };
 
   return (
-    <div className="w-full space-y-2">
+    <div className="w-full">
       <style
         dangerouslySetInnerHTML={{
           __html: `
@@ -116,7 +116,7 @@ const GroupingCountInput = ({
         `,
         }}
       />
-      <div className="relative inline-flex h-9 gap-2 items-center overflow-hidden rounded-md border bg-transparent text-base shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50">
+      <div className="relative m-0! inline-flex h-9 gap-2 items-center overflow-hidden rounded-md border bg-transparent text-base shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50">
         <Label className="text-xs text-muted-foreground/50 pl-2">Groups</Label>
         <input
           type="number"
@@ -628,33 +628,28 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
             const color = COLORS[index % COLORS.length];
             return (
               <React.Fragment key={metric.value}>
-                {/* Low opacity area background - hide from legend */}
+                {/* Stacked bar */}
                 <Bar
                   dataKey={metric.value}
                   fill={color}
-                  //fillOpacity={0.20}
-                  //stroke={color}
                   strokeWidth={0}
-                  radius={[8, 8, 0, 0]}
+                  radius={
+                    index === selectedMetrics.length - 1
+                      ? [8, 8, 0, 0]
+                      : [0, 0, 0, 0]
+                  }
                   strokeOpacity={0}
-                  barSize={"100%"}
-                  background={{ className: "fill-muted/40" }}
+                  barSize={10}
+                  background={
+                    index === 0 ? { className: "fill-muted/40" } : undefined
+                  }
                   onClick={(data) =>
                     setSelectedGrouping(
                       data.name === selectedGrouping ? null : data.name,
                     )
                   }
                   style={{ cursor: "pointer" }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey={metric.value}
-                  name={metric.label || metric.value}
-                  fill={color}
-                  fillOpacity={0.25}
-                  stroke="none"
-                  legendType="none"
-                  style={{ pointerEvents: "none" }}
+                  stackId="stack"
                 />
                 {/* Full opacity stepped line - show in legend */}
                 <Line
@@ -669,6 +664,24 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                   className="z-99990"
                 />
               </React.Fragment>
+            );
+          })}
+          {/* Areas rendered separately to overlay the bars */}
+          {selectedMetrics.map((metric, index) => {
+            const color = COLORS[index % COLORS.length];
+            return (
+              <Area
+                key={`area-${metric.value}`}
+                type="monotone"
+                dataKey={metric.value}
+                name={metric.label || metric.value}
+                fill={color}
+                fillOpacity={0.25}
+                stroke="none"
+                legendType="none"
+                style={{ pointerEvents: "none" }}
+                stackId="areaStack"
+              />
             );
           })}
           {selectedGrouping && (
@@ -1067,7 +1080,7 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                       combinations
                     </p>
                   </div>
-                  <div className="">
+                  <div className="m-0!">
                     <GroupingCountInput
                       value={groupingCount}
                       onChange={handleGroupingChange}

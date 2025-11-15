@@ -293,7 +293,7 @@ export default function SalesCountryChart({
         <div className="px-6 flex flex-1">
           {isLoading ? (
             <div className="h-[220px] flex items-center justify-center text-sm text-slate-500">
-              Loading top countries...
+              Loading...
             </div>
           ) : error ? (
             <div className="h-[220px] flex items-center justify-center flex-col gap-2 text-center text-sm text-slate-500">

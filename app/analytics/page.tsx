@@ -37,6 +37,12 @@ import {
   getChangeColor,
   getChangeIcon,
 } from "@/lib/analytics-api";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/global-tooltip";
 import ProjectDashboardCard from "@/components/analytics/ClickOverTimePerDevice";
 import { Spinner } from "@/components/ui/spinner";
 import SalesCountryChart from "@/components/analytics/TopCountriesChartV2";
@@ -107,23 +113,39 @@ export default function AnalyticsOverview() {
     ];
   }, [timeSeriesData]);
 
+  // Group traffic sources by type
+  const groupedTrafficSources = useMemo(() => {
+    const grouped = trafficSourcesData.reduce(
+      (acc, source) => {
+        const type = source.type;
+        if (!acc[type]) {
+          acc[type] = {
+            type,
+            totalPercentage: 0,
+            sources: [],
+          };
+        }
+        acc[type].totalPercentage += source.percentage;
+        acc[type].sources.push(source);
+        return acc;
+      },
+      {} as Record<
+        string,
+        { type: string; totalPercentage: number; sources: TrafficSourcePoint[] }
+      >,
+    );
+
+    return Object.values(grouped).sort(
+      (a, b) => b.totalPercentage - a.totalPercentage,
+    );
+  }, [trafficSourcesData]);
+
   // Use smart period and interval management
   const { period, interval, updatePeriod, updateInterval } =
     useSmartAnalyticsFilters();
 
-  const fetchOverview = async (interval: string) => {
+  const fetchOverview = async (period: string) => {
     try {
-      // Map intervals to periods for the API
-      const period =
-        interval === "hourly"
-          ? "1d"
-          : interval === "daily"
-            ? "7d"
-            : interval === "weekly"
-              ? "30d"
-              : interval === "monthly"
-                ? "90d"
-                : "365d";
       const data = await analyticsAPI.getOverview(period);
       setOverviewData(data);
     } catch (err) {
@@ -192,12 +214,12 @@ export default function AnalyticsOverview() {
     }
   };
 
-  const refreshData = async (interval: string) => {
+  const refreshData = async () => {
     setLoading(true);
     setError(null);
     try {
       await Promise.all([
-        fetchOverview(interval),
+        fetchOverview(period),
         fetchTimeSeries(interval),
         fetchTrafficSources(),
         fetchMapData(),
@@ -208,7 +230,7 @@ export default function AnalyticsOverview() {
   };
 
   useEffect(() => {
-    refreshData(interval);
+    refreshData();
   }, [period, interval]); // Refresh when period or interval changes
 
   const handlePeriodChange = (newPeriod: string) => {
@@ -217,7 +239,7 @@ export default function AnalyticsOverview() {
 
   const handleIntervalChange = (newInterval: string) => {
     updateInterval(newInterval);
-    refreshData(newInterval);
+    refreshData();
   };
 
   if (loading && !overviewData) {
@@ -227,7 +249,7 @@ export default function AnalyticsOverview() {
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
             Analytics Overview
           </h1>
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+          <Spinner className="size-8" />
         </div>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
@@ -254,7 +276,7 @@ export default function AnalyticsOverview() {
         <Card className="">
           <div className="text-center text-red-600">
             <p>Error loading analytics data: {error}</p>
-            <Button onClick={() => refreshData(interval)} className="mt-4">
+            <Button onClick={() => refreshData()} className="mt-4">
               <RefreshCw className="h-4 w-4 mr-2" />
               Retry
             </Button>
@@ -351,7 +373,7 @@ export default function AnalyticsOverview() {
             selectedInterval={interval}
             onPeriodChange={handlePeriodChange}
             onIntervalChange={handleIntervalChange}
-            onRefresh={() => refreshData(interval)}
+            onRefresh={() => refreshData()}
             loading={loading}
             className="w-full"
           />
@@ -379,7 +401,7 @@ export default function AnalyticsOverview() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => refreshData(interval)}
+                  onClick={() => refreshData()}
                 >
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Retry
@@ -426,28 +448,100 @@ export default function AnalyticsOverview() {
 
             {/* Traffic Insights */}
             <Card className="p-6">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-                Traffic Insights
-              </h3>
-              <div className="space-y-4">
+              <div className="flex justify-between items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-6 mb-4">
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white pb-1">
+                    Traffic Insights
+                  </h3>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">
+                    {period}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fetchTrafficSources()}
+                    disabled={trafficSourcesLoading}
+                  >
+                    <RefreshCw
+                      className={`h-4 w-4 ${trafficSourcesLoading ? "animate-spin" : ""}`}
+                    />
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-3">
                 {trafficSourcesLoading ? (
-                  <div className="flex items-center justify-center py-4">
-                    <Spinner className="size-6" />
+                  <div className="flex items-center justify-center">
+                    <div className="text-center">
+                      <Spinner className="size-6 mx-auto mb-2" />
+                      <p className="text-xs text-muted-foreground">
+                        Loading...
+                      </p>
+                    </div>
+                  </div>
+                ) : groupedTrafficSources.length === 0 ? (
+                  <div className="text-center text-gray-500">
+                    No traffic insights available
                   </div>
                 ) : (
-                  trafficSourcesData.slice(0, 4).map((source, index) => (
-                    <div
-                      key={index}
-                      className="flex justify-between items-center"
-                    >
-                      <span className="text-sm text-gray-600 capitalize">
-                        {source.type}
-                      </span>
-                      <span className="text-sm font-medium">
-                        {source.percentage}%
-                      </span>
-                    </div>
-                  ))
+                  <TooltipProvider>
+                    {groupedTrafficSources.slice(0, 4).map((group, index) => {
+                      const maxPercentage = Math.max(
+                        ...groupedTrafficSources.map((g) => g.totalPercentage),
+                        1,
+                      );
+                      return (
+                        <Tooltip key={index}>
+                          <TooltipTrigger>
+                            <div className="flex items-center gap-3">
+                              {/* Rank number */}
+                              <div className="w-6 text-center text-sm font-medium text-muted-foreground">
+                                {index + 1}
+                              </div>
+
+                              {/* Type name */}
+                              <div className="w-24 text-sm font-normal capitalize">
+                                {group.type}
+                              </div>
+
+                              {/* Bar */}
+                              <div className="flex-1 relative">
+                                <div className="h-6 bg-muted rounded-md overflow-hidden">
+                                  <div
+                                    className="h-full bg-primary rounded-md transition-all duration-500 ease-out"
+                                    style={{
+                                      width: `${(group.totalPercentage / maxPercentage) * 100}%`,
+                                    }}
+                                  />
+                                </div>
+
+                                {/* Percentage label */}
+                                <div
+                                  className={`absolute inset-0 flex items-center justify-end px-2 text-xs font-mono
+                          ${(group.totalPercentage / maxPercentage) * 100 <= 80 ? "text-foreground" : "text-background"}
+                          `}
+                                >
+                                  {group.totalPercentage.toFixed(1)}%
+                                </div>
+                              </div>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <div className="flex gap-2">
+                              {group.type}:
+                              <span className="font-mono">
+                                {group.totalPercentage.toFixed(2)}%
+                              </span>
+                              <span className="text-muted-foreground">
+                                ({group.sources.length} sources)
+                              </span>
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      );
+                    })}
+                  </TooltipProvider>
                 )}
               </div>
             </Card>
@@ -456,11 +550,22 @@ export default function AnalyticsOverview() {
 
         <div className="flex flex-col gap-6">
           <Card className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                Global Traffic Distribution
-              </h3>
-              <span className="text-sm text-muted-foreground">{period}</span>
+            <div className="flex justify-between items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-6 mb-4">
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white pb-1">
+                  Global Traffic Distribution
+                </h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">{period}</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fetchMapData()}
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
             <div className="h-auto">
               <MapCompact size={"lg"} period={period} data={mapData} />

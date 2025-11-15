@@ -21,6 +21,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/global-tooltip";
+import { Spinner } from "@/components/ui/spinner";
 
 interface TopCountriesChartProps {
   data?: GeoBreakdownPoint[];
@@ -131,9 +132,7 @@ export default function TopCountriesChart({
             )}
           </div>
           <div className="flex items-center gap-2">
-            {/* <span className="text-sm text-muted-foreground">
-              {granularity.charAt(0).toUpperCase() + granularity.slice(1)}
-            </span> */}
+            <span className="text-sm text-muted-foreground">{period}</span>
             <Button
               variant="outline"
               size="sm"
@@ -151,8 +150,8 @@ export default function TopCountriesChart({
         {isLoading ? (
           <div className="flex items-center justify-center">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-2"></div>
-              <p className="text-sm text-gray-500">Loading top countries...</p>
+              <Spinner className="size-6 mx-auto mb-2" />
+              <p className="text-xs text-muted-foreground">Loading...</p>
             </div>
           </div>
         ) : hasError ? (
