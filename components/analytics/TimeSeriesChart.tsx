@@ -31,6 +31,7 @@ interface TimeSeriesChartProps {
   timeInterval?: "hourly" | "daily" | "weekly" | "monthly" | "yearly";
   onIntervalChange?: (interval: string) => void;
   selectedInterval?: string;
+  selectedPeriod?: string;
   intervals?: Array<{ value: string; label: string; description: string }>;
   height?: number;
   className?: string;
@@ -51,6 +52,7 @@ export default function TimeSeriesChart({
   timeInterval = "daily",
   onIntervalChange,
   selectedInterval = timeInterval,
+  selectedPeriod,
   intervals = DEFAULT_INTERVALS,
   height = 600,
   className = "",
@@ -90,7 +92,11 @@ export default function TimeSeriesChart({
         period: point.bucket_start, // Use the actual start date for x-axis
         mobile: point.mobile_clicks || 0,
         desktop: point.desktop_clicks || 0,
-        total: (point.mobile_clicks || 0) + (point.desktop_clicks || 0),
+        other: point.other_clicks || 0,
+        total:
+          (point.mobile_clicks || 0) +
+          (point.desktop_clicks || 0) +
+          (point.other_clicks || 0),
       };
     });
   }, [data]);
@@ -130,18 +136,22 @@ export default function TimeSeriesChart({
   const chartConfig = {
     mobile: {
       label: "Mobile",
-      color: "hsl(var(--chart-1))",
+      color: "hsl(var(--chart-5))",
     },
     desktop: {
       label: "Desktop",
       color: "hsl(var(--chart-2))",
+    },
+    other: {
+      label: "Other",
+      color: "hsl(var(--chart-3))",
     },
   } satisfies ChartConfig;
 
   // Get period description for header
   const getPeriodDescription = () => {
     const interval = intervals.find((i) => i.value === selectedInterval);
-    return interval?.description || "Recent data";
+    return interval?.value || "Recent data";
   };
 
   // Get footer text
@@ -275,23 +285,11 @@ export default function TimeSeriesChart({
   return (
     <Card className={className}>
       <CardHeader className={"flex flex-row justify-between gap-2 px-6"}>
-        {/*<div className="flex items-center justify-between">
-          <div>
-            <CardTitle>{title}</CardTitle>
-            <CardDescription>{getPeriodDescription()}</CardDescription>
-          </div>
-          {onIntervalChange && (
-            <Button variant="outline" size="sm" onClick={() =>  This will be handled by parent }>
-              <Calendar className="h-4 w-4 mr-2" />
-              {intervals.find(i => i.value === selectedInterval)?.description || selectedInterval}
-            </Button>
-          )}
-        </div>*/}
-
         <div className="flex flex-col gap-1">
           <span className="text-lg font-semibold">{title}</span>
           <span className="text-muted-foreground text-sm">
-            {getPeriodDescription()}
+            {/* {getPeriodDescription()} */}
+            {selectedPeriod} on {getPeriodDescription()} basis
           </span>
         </div>
         <button
@@ -352,10 +350,11 @@ export default function TimeSeriesChart({
                     formattedDate = formatTooltipDate(date, selectedInterval);
                   }
 
-                  // Calculate total from mobile + desktop
+                  // Calculate total from mobile + desktop + other
                   const mobileValue = payload[0]?.payload?.mobile || 0;
                   const desktopValue = payload[0]?.payload?.desktop || 0;
-                  const totalValue = mobileValue + desktopValue;
+                  const otherValue = payload[0]?.payload?.other || 0;
+                  const totalValue = mobileValue + desktopValue + otherValue;
 
                   return (
                     <div className="grid min-w-[8rem] items-start gap-1.5 rounded-lg border bg-popover p-3 text-popover-foreground shadow-md">
@@ -375,7 +374,9 @@ export default function TimeSeriesChart({
                             <span className="text-sm">
                               {entry.dataKey === "mobile"
                                 ? "Mobile"
-                                : "Desktop"}
+                                : entry.dataKey === "desktop"
+                                  ? "Desktop"
+                                  : "Other"}
                             </span>
                           </div>
                           <div className="font-mono font-medium">
@@ -403,7 +404,7 @@ export default function TimeSeriesChart({
                 <Line
                   dataKey="mobile"
                   type="linear"
-                  stroke="hsl(var(--chart-1))"
+                  stroke="hsl(var(--chart-5))"
                   strokeWidth={2}
                   dot={false}
                   activeDot={{
@@ -423,6 +424,14 @@ export default function TimeSeriesChart({
                   strokeWidth={2}
                   dot={false}
                   activeDot={{ r: 6, fill: "hsl(var(--chart-2))" }}
+                />
+                <Line
+                  dataKey="other"
+                  type="linear"
+                  stroke="hsl(var(--chart-3))"
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 6, fill: "hsl(var(--chart-3))" }}
                 />
               </>
             )}

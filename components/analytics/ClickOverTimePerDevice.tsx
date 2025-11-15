@@ -110,8 +110,9 @@ const ProjectDashboardCard: React.FC<ProjectDashboardCardProps> = ({
                   <div className="flex flex-col gap-1">
                     <span className="text-sm">{project.name}</span>
                     <span className="text-muted-foreground text-xs">
-                      Task {project.tasksCompleted}/
-                      {project.totalTasks.toLocaleString()}
+                      {project.totalTasks > 0
+                        ? `${((project.tasksCompleted / project.totalTasks) * 100).toFixed(1)}%`
+                        : "0%"}
                     </span>
                   </div>
                 </div>

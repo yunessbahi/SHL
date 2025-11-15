@@ -17,6 +17,7 @@ export interface TimeSeriesPoint {
   unique_links: number;
   mobile_clicks: number;
   desktop_clicks: number;
+  other_clicks: number;
 }
 
 export interface DeviceBreakdownPoint {
@@ -54,6 +55,7 @@ export interface TargetPerformancePoint {
 
 export interface TrafficSourcePoint {
   source: string;
+  type: string;
   click_count: number;
   unique_visitors: number;
   percentage: number;
@@ -182,10 +184,17 @@ class AnalyticsAPIClient {
   async getGlobalTopCountries(
     granularity: string = "country",
     period: string = "30d",
-    topN: number = 10,
+    topN?: number,
   ): Promise<GeoBreakdownPoint[]> {
+    const params = new URLSearchParams({
+      granularity,
+      period,
+    });
+    if (topN !== undefined) {
+      params.append("top_n", topN.toString());
+    }
     return this.makeRequest<GeoBreakdownPoint[]>(
-      `/api/analytics/top-countries?granularity=${granularity}&period=${period}&top_n=${topN}`,
+      `/api/analytics/top-countries?${params.toString()}`,
     );
   }
 

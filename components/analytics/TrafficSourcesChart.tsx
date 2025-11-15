@@ -56,30 +56,35 @@ export default function TrafficSourcesChart({
       const fallbackData: TrafficSourcePoint[] = [
         {
           source: "organic",
+          type: "organic",
           click_count: 3200,
           unique_visitors: 2100,
           percentage: 45.7,
         },
         {
           source: "direct",
+          type: "direct",
           click_count: 1800,
           unique_visitors: 1400,
           percentage: 25.7,
         },
         {
           source: "social",
+          type: "social",
           click_count: 950,
           unique_visitors: 780,
           percentage: 13.6,
         },
         {
           source: "email",
+          type: "email",
           click_count: 670,
           unique_visitors: 580,
           percentage: 9.6,
         },
         {
           source: "referral",
+          type: "referral",
           click_count: 380,
           unique_visitors: 320,
           percentage: 5.4,

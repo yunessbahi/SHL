@@ -4,7 +4,7 @@ import { AnalyticsFilters } from "@/lib/analytics-api";
 
 interface MapCompactProps {
   data?: Array<{ country: string; value: string | number }>;
-  size?: "responsive" | number;
+  size?: "responsive" | "sm" | "md" | "lg" | "xl" | "xxl" | number;
   period?: string;
   filters?: AnalyticsFilters;
 }
