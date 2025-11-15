@@ -81,6 +81,8 @@ export interface ExploreResponse {
   filters_applied: AnalyticsFilters;
   metrics_requested: string[];
   dimensions_requested: string[];
+  available_dimensions?: string[];
+  timeseries_data?: Array<Record<string, any>>;
 }
 
 class AnalyticsAPIClient {

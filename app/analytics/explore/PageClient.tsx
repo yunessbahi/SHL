@@ -51,6 +51,8 @@ import {
   Legend,
   ResponsiveContainer,
   ComposedChart,
+  Scatter,
+  ReferenceDot,
 } from "recharts";
 import {
   analyticsAPI,
@@ -69,6 +71,88 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+
+const GroupingCountInput = ({
+  value,
+  onChange,
+  max,
+  warning,
+}: {
+  value: number;
+  onChange: (value: number) => void;
+  max: number;
+  warning: string | null;
+}) => {
+  const handleIncrement = () => {
+    const newValue = Math.min(value + 1, max);
+    onChange(newValue);
+  };
+
+  const handleDecrement = () => {
+    const newValue = Math.max(value - 1, 1);
+    onChange(newValue);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = parseInt(e.target.value, 10);
+    if (!isNaN(newValue)) {
+      onChange(newValue);
+    }
+  };
+
+  return (
+    <div className="w-full space-y-2">
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+          .no-spinner::-webkit-outer-spin-button,
+          .no-spinner::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+          }
+          .no-spinner {
+            -moz-appearance: textfield;
+          }
+        `,
+        }}
+      />
+      <div className="relative inline-flex h-9 gap-2 items-center overflow-hidden rounded-md border bg-transparent text-base shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50">
+        <Label className="text-xs text-muted-foreground/50 pl-2">Groups</Label>
+        <input
+          type="number"
+          value={value}
+          onChange={handleInputChange}
+          min={1}
+          max={max}
+          className="no-spinner w-full px-2 py-0 text-left tabular-nums outline-none bg-transparent pr-14"
+        />
+        <Button
+          onClick={handleDecrement}
+          disabled={value <= 1}
+          className="absolute right-7 border-input bg-background text-muted-foreground hover:bg-accent hover:text-foreground flex h-4 w-4 p-2 items-center justify-center rounded-sm border text-xs disabled:pointer-events-none disabled:opacity-50"
+        >
+          <Minus className="size-3" />
+          <span className="sr-only">Decrement</span>
+        </Button>
+        <Button
+          onClick={handleIncrement}
+          disabled={value >= max}
+          className="absolute right-1 border-input bg-background text-muted-foreground hover:bg-accent hover:text-foreground flex h-4 w-4 p-2 items-center justify-center rounded-sm border text-xs disabled:pointer-events-none disabled:opacity-50"
+        >
+          <Plus className="size-3" />
+          <span className="sr-only">Increment</span>
+        </Button>
+      </div>
+      {warning && (
+        <p
+          className={`text-xs ${warning.includes("available") ? "text-orange-500" : "text-muted-foreground"}`}
+        >
+          {warning}
+        </p>
+      )}
+    </div>
+  );
+};
 
 interface ExplorePageClientProps {
   user: SafeUser;
@@ -133,6 +217,10 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
   const [filters, setFilters] = useState<AnalyticsFilters>({});
   const [availableDimensions, setAvailableDimensions] =
     useState<Option[]>(DIMENSIONS);
+  const [timeseriesData, setTimeseriesData] = useState<any[]>([]);
+  const [groupingCount, setGroupingCount] = useState(5);
+  const [groupingWarning, setGroupingWarning] = useState<string | null>(null);
+  const [selectedGrouping, setSelectedGrouping] = useState<string | null>(null);
 
   // Note: campaigns and links are now sourced from filterOptions for single source of truth
 
@@ -220,6 +308,65 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
     return newFilterOptions;
   }, [exploreData, selectedDimensions, filters]);
 
+  const maxGroupings = useMemo(() => {
+    if (!timeseriesData.length) return 5;
+
+    const filteredTimeseriesData = timeseriesData.filter((item) => {
+      if (
+        !item.coalesce ||
+        item.coalesce.includes("Unknown") ||
+        item.coalesce.includes("No Campaign")
+      )
+        return false;
+
+      // Check campaign filter
+      if (filters.campaign !== undefined && item.campaign !== filters.campaign)
+        return false;
+
+      // Check link filter
+      if (filters.link !== undefined && item.link !== filters.link)
+        return false;
+
+      // Check other filters
+      for (const key in filters) {
+        if (
+          key !== "campaign" &&
+          key !== "link" &&
+          filters[key] !== undefined &&
+          item[key] !== filters[key]
+        ) {
+          return false;
+        }
+      }
+      return true;
+    });
+
+    if (!filteredTimeseriesData.length) return 5;
+
+    const groupedData = filteredTimeseriesData.reduce(
+      (acc: Record<string, any[]>, item) => {
+        const key = item.coalesce || "Unknown";
+        if (!acc[key]) acc[key] = [];
+        acc[key].push({
+          ...item,
+          ts_bucket: new Date(item.ts_bucket).getTime(),
+        });
+        return acc;
+      },
+      {},
+    );
+
+    const topGroupings = Object.entries(groupedData)
+      .map(([key, data]) => ({
+        key,
+        data: data.sort((a, b) => a.ts_bucket - b.ts_bucket),
+        totalClicks: data.reduce((sum, item) => sum + (item.clicks || 0), 0),
+      }))
+      .sort((a, b) => b.totalClicks - a.totalClicks);
+
+    return topGroupings.length;
+  }, [timeseriesData, filters]);
+
   const fetchExploreData = async () => {
     setLoading(true);
     try {
@@ -237,11 +384,12 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
 
       // Always use the API with all selected dimensions - it should handle cross-filtering
       const data = await analyticsAPI.exploreAnalytics(
-        periodFilters,
+        { ...periodFilters, include_timeseries: true, interval: "day" },
         metricsStrings,
         dimensionsStrings,
       );
       setExploreData(data);
+      setTimeseriesData(data.timeseries_data || []);
     } catch (error) {
       console.error("Failed to fetch explore data:", error);
       toast.error("Failed to load analytics data");
@@ -275,6 +423,27 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
   useEffect(() => {
     fetchExploreData();
   }, [selectedMetrics, selectedDimensions, selectedPeriod, filters]);
+
+  const handleGroupingChange = (value: number) => {
+    if (value > maxGroupings) {
+      setGroupingCount(maxGroupings);
+      setGroupingWarning(`${maxGroupings} groupings available`);
+    } else {
+      setGroupingCount(value);
+      setGroupingWarning(`${value} out of ${maxGroupings}`);
+    }
+  };
+
+  useEffect(() => {
+    if (maxGroupings > 0) {
+      if (groupingCount > maxGroupings) {
+        setGroupingCount(maxGroupings);
+      }
+      setGroupingWarning(
+        `${Math.min(groupingCount, maxGroupings)} out of ${maxGroupings}`,
+      );
+    }
+  }, [maxGroupings, groupingCount]);
 
   const chartData = useMemo(() => {
     if (!exploreData?.data) return [];
@@ -440,7 +609,7 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
     };
 
     return (
-      <ResponsiveContainer width="100%" height={400}>
+      <ResponsiveContainer width="100%" height={300}>
         <ComposedChart
           data={chartData}
           margin={{ top: 20, right: 5, left: 0, bottom: 20 }}
@@ -470,6 +639,12 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                   strokeOpacity={0}
                   barSize={"100%"}
                   background={{ className: "fill-muted/40" }}
+                  onClick={(data) =>
+                    setSelectedGrouping(
+                      data.name === selectedGrouping ? null : data.name,
+                    )
+                  }
+                  style={{ cursor: "pointer" }}
                 />
                 <Area
                   type="monotone"
@@ -479,6 +654,7 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                   fillOpacity={0.25}
                   stroke="none"
                   legendType="none"
+                  style={{ pointerEvents: "none" }}
                 />
                 {/* Full opacity stepped line - show in legend */}
                 <Line
@@ -495,7 +671,228 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
               </React.Fragment>
             );
           })}
+          {selectedGrouping && (
+            <ReferenceDot
+              x={chartData.findIndex((d) => d.name === selectedGrouping)}
+              y={0}
+              r={6}
+              fill="#ef4444"
+            />
+          )}
         </ComposedChart>
+      </ResponsiveContainer>
+    );
+  };
+
+  const renderTimeseriesChart = () => {
+    if (!timeseriesData.length) return null;
+
+    // Apply client-side filtering to timeseries data (same as main chart)
+    const filteredTimeseriesData = timeseriesData.filter((item) => {
+      if (
+        !item.coalesce ||
+        item.coalesce.includes("Unknown") ||
+        item.coalesce.includes("No Campaign")
+      )
+        return false;
+
+      // Check campaign filter
+      if (filters.campaign !== undefined && item.campaign !== filters.campaign)
+        return false;
+
+      // Check link filter
+      if (filters.link !== undefined && item.link !== filters.link)
+        return false;
+
+      // Check other filters
+      for (const key in filters) {
+        if (
+          key !== "campaign" &&
+          key !== "link" &&
+          filters[key] !== undefined &&
+          item[key] !== filters[key]
+        ) {
+          return false;
+        }
+      }
+      return true;
+    });
+
+    if (!filteredTimeseriesData.length) return null;
+
+    // Group timeseries data by dimension combination (coalesce)
+    const groupedData = filteredTimeseriesData.reduce(
+      (acc: Record<string, any[]>, item) => {
+        const key = item.coalesce || "Unknown";
+        if (!acc[key]) acc[key] = [];
+        acc[key].push({
+          ...item,
+          ts_bucket: new Date(item.ts_bucket).getTime(), // Convert to timestamp for sorting
+        });
+        return acc;
+      },
+      {},
+    );
+
+    // Get top groupings by total clicks
+    const topGroupings = Object.entries(groupedData)
+      .map(([key, data]) => ({
+        key,
+        data: data.sort((a, b) => a.ts_bucket - b.ts_bucket), // Sort by time
+        totalClicks: data.reduce((sum, item) => sum + (item.clicks || 0), 0),
+      }))
+      .sort((a, b) => b.totalClicks - a.totalClicks)
+      .slice(0, groupingCount);
+
+    // Prepare data for Recharts (pivot to have time as x-axis)
+    const timeBuckets = new Set<number>();
+    topGroupings.forEach((grouping) => {
+      grouping.data.forEach((item) => timeBuckets.add(item.ts_bucket));
+    });
+
+    const sortedTimeBuckets = Array.from(timeBuckets).sort((a, b) => a - b);
+    const minTime = Math.min(...sortedTimeBuckets);
+    const maxTime = Math.max(...sortedTimeBuckets);
+
+    // Generate all days between min and max to ensure continuous data
+    const allTimeBuckets: number[] = [];
+    const dayMs = 24 * 60 * 60 * 1000; // milliseconds in a day
+    for (let time = minTime; time <= maxTime; time += dayMs) {
+      allTimeBuckets.push(time);
+    }
+
+    const chartData = allTimeBuckets.map((timestamp) => {
+      const dataPoint: any = {
+        time: timestamp,
+      };
+
+      topGroupings.forEach((grouping) => {
+        const item = grouping.data.find((d) => d.ts_bucket === timestamp);
+        dataPoint[`${grouping.key}_clicks`] = item?.clicks || 0;
+        dataPoint[`${grouping.key}_visitors`] = item?.unique_visitors || 0;
+      });
+
+      return dataPoint;
+    });
+
+    const formatTime = (timestamp: number) => {
+      const date = new Date(timestamp);
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
+    };
+
+    const CustomTooltip = ({ active, payload, label }: any) => {
+      if (active && payload && payload.length) {
+        return (
+          <div
+            style={{
+              backgroundColor: "rgba(30, 30, 30, 0.95)",
+              border: "1px solid rgba(255, 255, 255, 0.1)",
+              borderRadius: "8px",
+              padding: "12px 16px",
+              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
+            }}
+          >
+            <p
+              style={{
+                color: "#fff",
+                margin: "0 0 8px 0",
+                fontSize: "14px",
+                fontWeight: "500",
+              }}
+            >
+              {formatTime(label)}
+            </p>
+            {payload.map((entry: any, index: number) => {
+              const isSelected =
+                selectedGrouping && entry.name.startsWith(selectedGrouping);
+              return (
+                <div
+                  key={index}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    marginTop: "4px",
+                    opacity: selectedGrouping ? (isSelected ? 1 : 0.4) : 1,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: "12px",
+                      height: "12px",
+                      backgroundColor: entry.color,
+                      borderRadius: "2px",
+                    }}
+                  />
+                  <span
+                    style={{
+                      color: "#fff",
+                      fontSize: "13px",
+                      fontWeight: isSelected ? "bold" : "normal",
+                    }}
+                  >
+                    {entry.name}: <strong>{entry.value}</strong>
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        );
+      }
+      return null;
+    };
+
+    console.log("chartData: ", chartData);
+
+    return (
+      <ResponsiveContainer width="100%" height={300}>
+        <LineChart
+          data={chartData}
+          margin={{ top: 20, right: 6, left: 20, bottom: 0 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+          <XAxis
+            dataKey="time"
+            type="number"
+            domain={[minTime, maxTime]}
+            scale="time"
+            //tickFormatter={function cpe(){}}
+            tickFormatter={(tick) => formatTime(tick)}
+            stroke="var(--muted-foreground)"
+            fontSize={12}
+            className="fill-muted-foreground"
+          />
+          <YAxis
+            stroke="var(--muted-foreground)"
+            fontSize={12}
+            width={6}
+            className="fill-muted-foreground"
+          />
+          <Tooltip content={<CustomTooltip />} />
+          {/* <Legend /> */}
+          {topGroupings.map((grouping, index) => (
+            <Line
+              key={`${grouping.key}_clicks`}
+              type={"linear"}
+              dataKey={`${grouping.key}_clicks`}
+              name={`${grouping.key} - Clicks`}
+              stroke={COLORS[index % COLORS.length]}
+              strokeWidth={grouping.key === selectedGrouping ? 4 : 2}
+              strokeOpacity={
+                selectedGrouping
+                  ? grouping.key === selectedGrouping
+                    ? 1
+                    : 0.3
+                  : 1
+              }
+              //dot={{ r: 4 }}
+              activeDot={{ r: grouping.key === selectedGrouping ? 8 : 6 }}
+            />
+          ))}
+        </LineChart>
       </ResponsiveContainer>
     );
   };
@@ -622,34 +1019,74 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
           </TabsList>
 
           <TabsContent value="chart" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5" />
-                  Analytics Chart
+            <div
+              //className="grid grid-cols-1 lg:grid-cols-2 gap-4"
+              className="flex flex-col gap-4 w-full"
+            >
+              <Card className="h-">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5" />
+                    Analytics Chart
+                    {selectedDimensions.length > 1 && (
+                      <Badge variant="secondary" className="text-xs">
+                        Multiple Dimensions Selected
+                      </Badge>
+                    )}
+                  </CardTitle>
                   {selectedDimensions.length > 1 && (
-                    <Badge variant="secondary" className="text-xs">
-                      Multiple Dimensions Selected
-                    </Badge>
+                    <p className="text-sm text-muted-foreground">
+                      Showing combined dimension values from:{" "}
+                      {selectedDimensions.join(", ")}
+                    </p>
                   )}
-                </CardTitle>
-                {selectedDimensions.length > 1 && (
-                  <p className="text-sm text-muted-foreground">
-                    Showing combined dimension values from:{" "}
-                    {selectedDimensions.join(", ")}
-                  </p>
-                )}
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <div className="flex items-center justify-center h-96">
-                    <Spinner />
+                </CardHeader>
+                <CardContent>
+                  {loading ? (
+                    <div className="flex items-center justify-center h-96">
+                      <Spinner />
+                    </div>
+                  ) : (
+                    renderChart()
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row justify-between itmens-center">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5" />
+                      Timeseries Trends
+                      <Badge variant="secondary" className="text-xs">
+                        Top {groupingCount} Groupings
+                      </Badge>
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Time-based trends for the top performing dimension
+                      combinations
+                    </p>
                   </div>
-                ) : (
-                  renderChart()
-                )}
-              </CardContent>
-            </Card>
+                  <div className="">
+                    <GroupingCountInput
+                      value={groupingCount}
+                      onChange={handleGroupingChange}
+                      max={maxGroupings}
+                      warning={groupingWarning}
+                    />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {loading ? (
+                    <div className="flex items-center justify-center h-96">
+                      <Spinner />
+                    </div>
+                  ) : (
+                    renderTimeseriesChart()
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           <TabsContent value="table" className="space-y-4">
