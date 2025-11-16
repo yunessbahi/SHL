@@ -506,7 +506,17 @@ const MultipleSelector = ({
                       variant="primary"
                       className="-ml-2 -mr-4 text-sm scale-50"
                     >
-                      UTM
+                      <span className="font-black">UTM</span>CONTEXT
+                    </Badge>
+                  </>
+                ) : option.label.includes("(CONTEXT)") ? (
+                  <>
+                    {option.label.replace(" (CONTEXT)", "")}{" "}
+                    <Badge
+                      variant="secondary"
+                      className="-ml-2 -mr-4 text-sm scale-50"
+                    >
+                      CONTEXT
                     </Badge>
                   </>
                 ) : (
@@ -678,7 +688,18 @@ const MultipleSelector = ({
                                     variant="secondary"
                                     className="text-xs scale-75"
                                   >
-                                    UTM
+                                    <span className="font-bold">UTM</span>
+                                    CONTEXT
+                                  </Badge>
+                                </>
+                              ) : option.label.includes("(CONTEXT)") ? (
+                                <>
+                                  {option.label.replace(" (CONTEXT)", "")}{" "}
+                                  <Badge
+                                    variant="outline"
+                                    className="text-xs scale-75"
+                                  >
+                                    CONTEXT
                                   </Badge>
                                 </>
                               ) : (

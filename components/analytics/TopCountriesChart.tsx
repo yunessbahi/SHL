@@ -32,6 +32,7 @@ interface TopCountriesChartProps {
   description?: string;
   className?: string;
   showLoading?: boolean;
+  refreshTrigger?: number;
 }
 
 export default function TopCountriesChart({
@@ -43,6 +44,7 @@ export default function TopCountriesChart({
   description,
   className = "",
   showLoading = true,
+  refreshTrigger,
 }: TopCountriesChartProps) {
   const [data, setData] = useState<GeoBreakdownPoint[]>([]);
   const [loading, setLoading] = useState(false);
@@ -108,7 +110,7 @@ export default function TopCountriesChart({
 
   useEffect(() => {
     fetchData();
-  }, [period, granularity, topN, propData]);
+  }, [period, granularity, topN, propData, refreshTrigger]);
 
   // Calculate max clicks for bar width
   const maxClicks = Math.max(...data.map((item) => item.click_count), 1);

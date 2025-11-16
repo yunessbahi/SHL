@@ -1,6 +1,6 @@
 import React from "react";
 import { WorldMap } from "react-svg-worldmap";
-import { AnalyticsFilters } from "@/lib/analytics-api";
+import { AnalyticsFilters, analyticsAPI } from "@/lib/analytics-api";
 import { Spinner } from "@/components/ui/spinner";
 
 interface MapCompactProps {
@@ -8,6 +8,7 @@ interface MapCompactProps {
   size?: "responsive" | "sm" | "md" | "lg" | "xl" | "xxl" | number;
   period?: string;
   filters?: AnalyticsFilters;
+  refreshTrigger?: number;
 }
 
 function MapCompact({
@@ -15,6 +16,7 @@ function MapCompact({
   size = "responsive",
   period = "30d",
   filters,
+  refreshTrigger,
 }: MapCompactProps) {
   const [isDark, setIsDark] = React.useState(false);
   const [mapData, setMapData] = React.useState<
@@ -42,16 +44,37 @@ function MapCompact({
     return () => observer.disconnect();
   }, []);
 
-  // Use data from props only - no fetching from endpoints
+  // Fetch data if not provided via props
+  const fetchData = async () => {
+    if (data) return; // Use provided data if available
+
+    try {
+      setLoading(true);
+      const result = await analyticsAPI.getGlobalTopCountries(
+        "country",
+        period,
+      );
+      const formatted = result.map((item) => ({
+        country: item.location,
+        value: item.click_count,
+      }));
+      setMapData(formatted);
+    } catch (err) {
+      console.error("Map data fetch error:", err);
+      setMapData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   React.useEffect(() => {
     if (data) {
       setMapData(data);
+      setLoading(false);
     } else {
-      // If no data provided, show empty map
-      setMapData([]);
+      fetchData();
     }
-    setLoading(false);
-  }, [data]);
+  }, [data, period, refreshTrigger]);
 
   const defaultData = [
     {

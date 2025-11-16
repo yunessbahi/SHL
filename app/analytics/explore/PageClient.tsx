@@ -62,6 +62,7 @@ import {
   getDateRange,
 } from "@/lib/analytics-api";
 import MapCompact from "@/components/analytics/mapCompact";
+import ExploreDataTable from "@/components/analytics/ExploreDataTable";
 import { SafeUser } from "@/lib/getSafeSession";
 import { toast } from "sonner";
 import MultipleSelector, { type Option } from "@/components/ui/multi-select";
@@ -173,15 +174,15 @@ const METRICS: Option[] = [
 ];
 
 const DIMENSIONS: Option[] = [
-  { value: "device_type", label: "Device (Mobile/Desktop)" },
+  { value: "device_type", label: "Device" },
   { value: "browser_name", label: "Browser" },
   { value: "country", label: "Country" },
   { value: "region", label: "Region" },
   { value: "city", label: "City" },
   { value: "ref_source", label: "Referral Source" },
   { value: "ref_type", label: "Referral Type" },
-  { value: "campaign", label: "Campaign" },
-  { value: "link", label: "Link" },
+  { value: "campaign", label: "Campaign (CONTEXT)" },
+  { value: "link", label: "Link (CONTEXT)" },
 ];
 
 const TIME_PERIODS = [
@@ -209,7 +210,7 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
     { value: "unique_visitors", label: "Unique Visitors" },
   ]);
   const [selectedDimensions, setSelectedDimensions] = useState<Option[]>([
-    { value: "device_type", label: "Device (Mobile/Desktop)" },
+    { value: "device_type", label: "Device" },
     { value: "browser_name", label: "Browser" },
     { value: "campaign", label: "Campaign" },
   ]);
@@ -379,7 +380,8 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
       }
 
       // Convert Option arrays to string arrays for API call
-      const metricsStrings = selectedMetrics.map((m) => m.value);
+      // Always request both clicks and unique_visitors to ensure backend compatibility
+      const metricsStrings = ["clicks", "unique_visitors"];
       const dimensionsStrings = selectedDimensions.map((d) => d.value);
 
       // Always use the API with all selected dimensions - it should handle cross-filtering
@@ -650,7 +652,20 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                   }
                   style={{ cursor: "pointer" }}
                   stackId="stack"
-                />
+                >
+                  {chartData.map((entry, entryIndex) => (
+                    <Cell
+                      key={`cell-${metric.value}-${entryIndex}`}
+                      fillOpacity={
+                        selectedGrouping
+                          ? entry.name === selectedGrouping
+                            ? 1
+                            : 0.3
+                          : 1
+                      }
+                    />
+                  ))}
+                </Bar>
                 {/* Full opacity stepped line - show in legend */}
                 <Line
                   type={"monotone"}
@@ -901,7 +916,7 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                     : 0.3
                   : 1
               }
-              //dot={{ r: 4 }}
+              dot={{ r: 4, className: "fill-card" }}
               activeDot={{ r: grouping.key === selectedGrouping ? 8 : 6 }}
             />
           ))}
@@ -911,111 +926,9 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
   };
 
   const renderDataTable = () => {
-    if (!exploreData?.data?.length) return null;
+    if (!chartData.length) return null;
 
-    // Filter out rows with empty coalesce values and apply client-side filters
-    const filteredData = exploreData.data.filter((row) => {
-      if (
-        !row.coalesce ||
-        row.coalesce.includes("Unknown") ||
-        row.coalesce.includes("No Campaign")
-      )
-        return false;
-
-      // Check campaign filter
-      if (filters.campaign !== undefined && row.campaign !== filters.campaign)
-        return false;
-
-      // Check link filter
-      if (filters.link !== undefined && row.link !== filters.link) return false;
-
-      // Check other filters
-      for (const key in filters) {
-        if (
-          key !== "campaign" &&
-          key !== "link" &&
-          filters[key] !== undefined &&
-          row[key] !== filters[key]
-        ) {
-          return false;
-        }
-      }
-      return true;
-    });
-
-    if (!filteredData.length) return null;
-
-    const hasRequiredMetrics =
-      selectedMetrics.some((m) => m.value === "clicks") &&
-      selectedMetrics.some((m) => m.value === "unique_visitors");
-    const calculatedColumns = hasRequiredMetrics
-      ? ["cpuv", "repeat_click_rate"]
-      : [];
-    const columns = [
-      "coalesce",
-      ...selectedMetrics.map((m) => m.value),
-      ...calculatedColumns,
-    ];
-
-    return (
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse border border-border">
-          <thead>
-            <tr className="bg-muted/50">
-              {columns.map((col) => (
-                <th
-                  key={col}
-                  className="border border-border px-4 py-2 text-left font-medium"
-                >
-                  {col === "coalesce"
-                    ? "Dimension Value"
-                    : col === "cpuv"
-                      ? "Clicks per Unique Visitor"
-                      : col === "repeat_click_rate"
-                        ? "Repeat Click Rate"
-                        : col
-                            .replace(/_/g, " ")
-                            .replace(/\b\w/g, (l: string) => l.toUpperCase())}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filteredData.map((row, index) => (
-              <tr key={index} className="hover:bg-muted/30">
-                {columns.map((col) => (
-                  <td key={col} className="border border-border px-4 py-2">
-                    {col === "cpuv" ? (
-                      row.unique_visitors && row.unique_visitors !== 0 ? (
-                        formatNumber(row.clicks / row.unique_visitors)
-                      ) : (
-                        <span className="text-muted-foreground/30">—</span>
-                      )
-                    ) : col === "repeat_click_rate" ? (
-                      row.unique_visitors &&
-                      row.unique_visitors !== 0 &&
-                      row.clicks &&
-                      row.clicks !== 0 ? (
-                        formatPercentage(
-                          (row.clicks - (row.unique_visitors || 0)) /
-                            row.clicks,
-                        )
-                      ) : (
-                        <span className="text-muted-foreground/30">—</span>
-                      )
-                    ) : typeof row[col] === "number" ? (
-                      formatNumber(row[col])
-                    ) : (
-                      row[col]
-                    )}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    );
+    return <ExploreDataTable data={chartData as any[]} loading={loading} />;
   };
 
   return (

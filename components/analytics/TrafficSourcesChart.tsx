@@ -31,6 +31,7 @@ interface TrafficSourcesChartProps {
   description?: string;
   className?: string;
   showLoading?: boolean;
+  refreshTrigger?: number;
 }
 
 export default function TrafficSourcesChart({
@@ -41,6 +42,7 @@ export default function TrafficSourcesChart({
   description,
   className = "",
   showLoading = true,
+  refreshTrigger,
 }: TrafficSourcesChartProps) {
   const [data, setData] = useState<TrafficSourcePoint[]>([]);
   const [loading, setLoading] = useState(false);
@@ -107,7 +109,7 @@ export default function TrafficSourcesChart({
 
   useEffect(() => {
     fetchData();
-  }, [period, topN, propData]);
+  }, [period, topN, propData, refreshTrigger]);
 
   // Calculate max clicks for bar width
   const maxClicks = Math.max(...data.map((item) => item.click_count), 1);

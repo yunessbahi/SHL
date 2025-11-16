@@ -68,9 +68,7 @@ export default function AnalyticsOverview() {
     TrafficSourcePoint[]
   >([]);
   const [trafficSourcesLoading, setTrafficSourcesLoading] = useState(false);
-  const [mapData, setMapData] = useState<
-    Array<{ country: string; value: string | number }>
-  >([]);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Compute device statistics from time series data
   const deviceProjects = useMemo(() => {
@@ -201,20 +199,7 @@ export default function AnalyticsOverview() {
     }
   };
 
-  const fetchMapData = async () => {
-    try {
-      const data = await analyticsAPI.getGlobalTopCountries("country", period);
-      const formatted = data.map((item) => ({
-        country: item.location,
-        value: item.click_count,
-      }));
-      setMapData(formatted);
-    } catch (err) {
-      console.error("Map data fetch error:", err);
-    }
-  };
-
-  const refreshData = async () => {
+  const refreshData = async (isManual: boolean = false) => {
     setLoading(true);
     setError(null);
     try {
@@ -222,8 +207,11 @@ export default function AnalyticsOverview() {
         fetchOverview(period),
         fetchTimeSeries(interval),
         fetchTrafficSources(),
-        fetchMapData(),
       ]);
+      // Trigger refresh for components that fetch their own data only on manual refresh
+      if (isManual) {
+        setRefreshTrigger((prev) => prev + 1);
+      }
     } finally {
       setLoading(false);
     }
@@ -373,7 +361,7 @@ export default function AnalyticsOverview() {
             selectedInterval={interval}
             onPeriodChange={handlePeriodChange}
             onIntervalChange={handleIntervalChange}
-            onRefresh={() => refreshData()}
+            onRefresh={() => refreshData(true)}
             loading={loading}
             className="w-full"
           />
@@ -444,6 +432,7 @@ export default function AnalyticsOverview() {
               title="Traffic Sources"
               description="Distribution of your traffic sources"
               className="h-full"
+              refreshTrigger={refreshTrigger}
             />
 
             {/* Traffic Insights */}
@@ -558,17 +547,14 @@ export default function AnalyticsOverview() {
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">{period}</span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => fetchMapData()}
-                >
-                  <RefreshCw className="h-4 w-4" />
-                </Button>
               </div>
             </div>
             <div className="h-auto">
-              <MapCompact size={"lg"} period={period} data={mapData} />
+              <MapCompact
+                size={"lg"}
+                period={period}
+                refreshTrigger={refreshTrigger}
+              />
             </div>
           </Card>
 
@@ -580,6 +566,7 @@ export default function AnalyticsOverview() {
               title="Top Countries"
               description="Geographic distribution of your clicks"
               className="h-full"
+              refreshTrigger={refreshTrigger}
             />
 
             <TopCountriesChart
@@ -589,6 +576,7 @@ export default function AnalyticsOverview() {
               title="Top Cities"
               description="Geographic distribution of your clicks"
               className="h-full"
+              refreshTrigger={refreshTrigger}
             />
 
             <TopCountriesChart
@@ -598,6 +586,7 @@ export default function AnalyticsOverview() {
               title="Top Regions"
               description="Regional distribution of your clicks"
               className="h-full"
+              refreshTrigger={refreshTrigger}
             />
           </div>
         </div>
