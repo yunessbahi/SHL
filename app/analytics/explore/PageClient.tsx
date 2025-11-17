@@ -32,6 +32,10 @@ import {
   X,
   Plus,
   Minus,
+  Link2,
+  ChartNoAxesColumn,
+  ChartNoAxesCombined,
+  Table2,
 } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import {
@@ -312,6 +316,11 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
   const maxGroupings = useMemo(() => {
     if (!timeseriesData.length) return 5;
 
+    // Determine primary metric
+    const primaryMetric = selectedMetrics.some((m) => m.value === "clicks")
+      ? "clicks"
+      : "unique_visitors";
+
     const filteredTimeseriesData = timeseriesData.filter((item) => {
       if (
         !item.coalesce ||
@@ -361,12 +370,15 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
       .map(([key, data]) => ({
         key,
         data: data.sort((a, b) => a.ts_bucket - b.ts_bucket),
-        totalClicks: data.reduce((sum, item) => sum + (item.clicks || 0), 0),
+        totalMetric: data.reduce(
+          (sum, item) => sum + (item[primaryMetric] || 0),
+          0,
+        ),
       }))
-      .sort((a, b) => b.totalClicks - a.totalClicks);
+      .sort((a, b) => b.totalMetric - a.totalMetric);
 
     return topGroupings.length;
-  }, [timeseriesData, filters]);
+  }, [timeseriesData, filters, selectedMetrics]);
 
   const fetchExploreData = async () => {
     setLoading(true);
@@ -380,8 +392,7 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
       }
 
       // Convert Option arrays to string arrays for API call
-      // Always request both clicks and unique_visitors to ensure backend compatibility
-      const metricsStrings = ["clicks", "unique_visitors"];
+      const metricsStrings = selectedMetrics.map((m) => m.value);
       const dimensionsStrings = selectedDimensions.map((d) => d.value);
 
       // Always use the API with all selected dimensions - it should handle cross-filtering
@@ -499,6 +510,11 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
     )
       return undefined;
 
+    // Determine primary metric: use 'clicks' if present, otherwise 'unique_visitors'
+    const primaryMetric = selectedMetrics.some((m) => m.value === "clicks")
+      ? "clicks"
+      : "unique_visitors";
+
     // Apply client-side filtering
     const filteredData = exploreData.data.filter((item: any) => {
       if (
@@ -532,12 +548,12 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
       return true;
     });
 
-    // Aggregate clicks by country
+    // Aggregate by primary metric (clicks or unique_visitors)
     const countrySums = filteredData.reduce(
       (acc: Record<string, number>, item: any) => {
         const country = item.country;
-        const clicks = item.clicks || 0;
-        acc[country] = (acc[country] || 0) + clicks;
+        const value = item[primaryMetric] || 0;
+        acc[country] = (acc[country] || 0) + value;
         return acc;
       },
       {},
@@ -715,6 +731,13 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
   const renderTimeseriesChart = () => {
     if (!timeseriesData.length) return null;
 
+    // Determine primary metric: use 'clicks' if present, otherwise 'unique_visitors'
+    const primaryMetric = selectedMetrics.some((m) => m.value === "clicks")
+      ? "clicks"
+      : "unique_visitors";
+    const primaryMetricLabel =
+      primaryMetric === "clicks" ? "Clicks" : "Unique Visitors";
+
     // Apply client-side filtering to timeseries data (same as main chart)
     const filteredTimeseriesData = timeseriesData.filter((item) => {
       if (
@@ -762,14 +785,17 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
       {},
     );
 
-    // Get top groupings by total clicks
+    // Get top groupings by total primary metric
     const topGroupings = Object.entries(groupedData)
       .map(([key, data]) => ({
         key,
         data: data.sort((a, b) => a.ts_bucket - b.ts_bucket), // Sort by time
-        totalClicks: data.reduce((sum, item) => sum + (item.clicks || 0), 0),
+        totalMetric: data.reduce(
+          (sum, item) => sum + (item[primaryMetric] || 0),
+          0,
+        ),
       }))
-      .sort((a, b) => b.totalClicks - a.totalClicks)
+      .sort((a, b) => b.totalMetric - a.totalMetric)
       .slice(0, groupingCount);
 
     // Prepare data for Recharts (pivot to have time as x-axis)
@@ -789,6 +815,9 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
       allTimeBuckets.push(time);
     }
 
+    // Track last cumulative values for each grouping
+    const lastValues: Record<string, number> = {};
+
     const chartData = allTimeBuckets.map((timestamp) => {
       const dataPoint: any = {
         time: timestamp,
@@ -796,8 +825,20 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
 
       topGroupings.forEach((grouping) => {
         const item = grouping.data.find((d) => d.ts_bucket === timestamp);
-        dataPoint[`${grouping.key}_clicks`] = item?.clicks || 0;
-        dataPoint[`${grouping.key}_visitors`] = item?.unique_visitors || 0;
+        const key = `${grouping.key}_${primaryMetric}`;
+
+        if (primaryMetric === "unique_visitors") {
+          // For cumulative unique visitors, carry forward the last value
+          if (item) {
+            lastValues[key] = item[primaryMetric];
+            dataPoint[key] = item[primaryMetric];
+          } else {
+            dataPoint[key] = lastValues[key] || 0;
+          }
+        } else {
+          // For clicks, use 0 when no data
+          dataPoint[key] = item?.[primaryMetric] || 0;
+        }
       });
 
       return dataPoint;
@@ -903,10 +944,10 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
           {/* <Legend /> */}
           {topGroupings.map((grouping, index) => (
             <Line
-              key={`${grouping.key}_clicks`}
+              key={`${grouping.key}_${primaryMetric}`}
               type={"linear"}
-              dataKey={`${grouping.key}_clicks`}
-              name={`${grouping.key} - Clicks`}
+              dataKey={`${grouping.key}_${primaryMetric}`}
+              name={`${grouping.key} - ${primaryMetricLabel}`}
               stroke={COLORS[index % COLORS.length]}
               strokeWidth={grouping.key === selectedGrouping ? 4 : 2}
               strokeOpacity={
@@ -952,7 +993,7 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
               <Card className="h-">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="w-5 h-5" />
+                    <ChartNoAxesColumn className="w-5 h-5" />
                     Analytics Chart
                     {selectedDimensions.length > 1 && (
                       <Badge variant="secondary" className="text-xs">
@@ -961,10 +1002,13 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                     )}
                   </CardTitle>
                   {selectedDimensions.length > 1 && (
-                    <p className="text-sm text-muted-foreground">
+                    <span className="text-sm font-normal text-muted-foreground">
                       Showing combined dimension values from:{" "}
-                      {selectedDimensions.join(", ")}
-                    </p>
+                      <p className="flex flex-inline items-center gap-2 text-xs font-mono font-normal">
+                        <Link2 className="h4 w-4" />
+                        {selectedDimensions.map((d) => d.label).join(" ⥂ ")}
+                      </p>
+                    </span>
                   )}
                 </CardHeader>
                 <CardContent>
@@ -982,7 +1026,7 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                 <CardHeader className="flex flex-row justify-between itmens-center">
                   <div>
                     <CardTitle className="flex items-center gap-2">
-                      <TrendingUp className="w-5 h-5" />
+                      <ChartNoAxesCombined className="w-5 h-5" />
                       Timeseries Trends
                       <Badge variant="secondary" className="text-xs">
                         Top {groupingCount} Groupings
@@ -1019,7 +1063,7 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5" />
+                  <Table2 className="w-5 h-5" />
                   Raw Data
                 </CardTitle>
               </CardHeader>
