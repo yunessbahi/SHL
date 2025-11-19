@@ -192,8 +192,8 @@ export default function DeviceBreakdownChart({
         {isLoading ? (
           <div className="h-[200px] flex items-center justify-center">
             <div className="text-center">
-              <Spinner className="size-8 mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground">
+              <Spinner className="size-6 mx-auto mb-2" />
+              <p className="text-xs text-muted-foreground">
                 Loading device breakdown...
               </p>
             </div>
@@ -224,7 +224,7 @@ export default function DeviceBreakdownChart({
             {data.map((item, index) => (
               <div key={item.device_type} className="flex items-center gap-3">
                 {/* Rank number */}
-                <div className="w-6 text-center text-sm font-medium text-muted-foreground">
+                <div className="text-center text-sm font-medium text-muted-foreground">
                   {index + 1}
                 </div>
 

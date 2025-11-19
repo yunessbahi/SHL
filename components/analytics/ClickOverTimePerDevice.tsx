@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Smartphone,
   LaptopMinimal,
@@ -6,6 +7,7 @@ import {
   PencilRuler,
   EllipsisVertical,
   TabletSmartphoneIcon,
+  RefreshCw,
 } from "lucide-react";
 
 interface Project {
@@ -25,6 +27,9 @@ interface ProjectDashboardCardProps {
   projectListSubtitle?: string;
   projects?: Project[];
 
+  // Refresh props
+  onRefresh?: () => Promise<void>;
+
   // Layout props
   showProjectList?: boolean;
   className?: string;
@@ -32,12 +37,24 @@ interface ProjectDashboardCardProps {
 
 const ProjectDashboardCard: React.FC<ProjectDashboardCardProps> = ({
   chartComponent,
-  projectListTitle = "Project List",
-  projectListSubtitle = "4 ongoing project",
+  projectListTitle = "",
+  projectListSubtitle = "",
   projects: customProjects,
+  onRefresh,
   showProjectList = true,
   className = "",
 }) => {
+  const [refreshLoading, setRefreshLoading] = useState(false);
+
+  const handleRefresh = async () => {
+    if (!onRefresh) return;
+    setRefreshLoading(true);
+    try {
+      await onRefresh();
+    } finally {
+      setRefreshLoading(false);
+    }
+  };
   const defaultProjects: Project[] = [
     {
       name: "Mobile",
@@ -66,7 +83,7 @@ const ProjectDashboardCard: React.FC<ProjectDashboardCardProps> = ({
 
   return (
     <div
-      className={`bg-card text-card-foreground rounded-xl border shadow-sm grid gap-0 ${
+      className={`bg-muted/5 text-card-foreground border-l  ansparent shadow-sm grid gap-0 ${
         showProjectList ? "lg:grid-cols-3" : "lg:grid-cols-1"
       } w-full ${className}`}
     >
@@ -87,13 +104,18 @@ const ProjectDashboardCard: React.FC<ProjectDashboardCardProps> = ({
                 {projectListSubtitle}
               </span>
             </div>
-            <button
-              className="inline-flex shrink-0 items-center justify-center size-6 rounded-full hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 text-muted-foreground transition-all"
-              type="button"
-            >
-              <EllipsisVertical className="size-4" />
-              <span className="sr-only">Menu</span>
-            </button>
+            {onRefresh && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                disabled={refreshLoading}
+              >
+                <RefreshCw
+                  className={`h-4 w-4 ${refreshLoading ? "animate-spin" : ""}`}
+                />
+              </Button>
+            )}
           </div>
 
           <div className="px-6">

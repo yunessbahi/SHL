@@ -6,6 +6,8 @@ import {
   CartesianGrid,
   Line,
   LineChart,
+  Bar,
+  BarChart,
   XAxis,
   YAxis,
   Tooltip,
@@ -301,145 +303,320 @@ export default function TimeSeriesChart({
         </button>
       </CardHeader>
       <CardContent className="p-0 ml-0 ">
-        <ResponsiveContainer width="95%" height={300} className={"h-full"}>
+        <ResponsiveContainer width="95%" height={280} className={"h-full"}>
           {/*<ChartContainer config={chartConfig} className="w-full">*/}
-          <LineChart
-            accessibilityLayer
-            data={chartData}
-            margin={{
-              left: 8,
-              right: 4, // Increased to show last data point
-              bottom: 8,
-              top: 8,
-            }}
-          >
-            {/*<CartesianGrid vertical={false} />*/}
-            <XAxis
-              hide
-              dataKey="period"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-              tickFormatter={(value) =>
-                formatXAxisLabel(new Date(value), selectedInterval)
-              }
-            />
-            <YAxis hide tick={{ fontSize: 12 }} />
-            <Tooltip
-              cursor={false}
-              content={({ active, payload, label }) => {
-                if (active && payload && payload.length) {
-                  const payloadData = payload[0]?.payload;
-                  const startDate = payloadData?.startDate;
-                  const endDate = payloadData?.endDate;
+          {showMobileDesktop ? (
+            <BarChart
+              data={chartData}
+              margin={{
+                left: 8,
+                right: 4,
+                bottom: 8,
+                top: 8,
+              }}
+            >
+              <XAxis
+                hide
+                dataKey="period"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                tickFormatter={(value) =>
+                  formatXAxisLabel(new Date(value), selectedInterval)
+                }
+              />
+              <YAxis hide tick={{ fontSize: 12 }} />
+              <Tooltip
+                cursor={false}
+                content={({ active, payload }) => {
+                  if (active && payload && payload.length) {
+                    const payloadData = payload[0]?.payload;
+                    const startDate = payloadData?.startDate;
+                    const endDate = payloadData?.endDate;
 
-                  let formattedDate = "";
+                    let formattedDate = "";
 
-                  // FIX: Use proper date formatting for all intervals including hourly
-                  if (startDate && endDate) {
-                    // For hourly intervals, show time range
-                    if (selectedInterval === "hourly") {
-                      formattedDate = `${startDate.toLocaleDateString()} ${startDate.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false })} - ${endDate.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false })}`;
+                    if (startDate && endDate) {
+                      if (selectedInterval === "hourly") {
+                        formattedDate = `${startDate.toLocaleDateString()} ${startDate.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false })} - ${endDate.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false })}`;
+                      } else {
+                        formattedDate = `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`;
+                      }
                     } else {
-                      // For other intervals, use existing format
-                      formattedDate = `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`;
+                      const date = new Date(payload[0]?.payload?.timestamp);
+                      formattedDate = formatTooltipDate(date, selectedInterval);
                     }
-                  } else {
-                    // Fallback for the old format
-                    const date = new Date(payload[0]?.payload?.timestamp);
-                    formattedDate = formatTooltipDate(date, selectedInterval);
-                  }
 
-                  // Calculate total from mobile + desktop + other
-                  const mobileValue = payload[0]?.payload?.mobile || 0;
-                  const desktopValue = payload[0]?.payload?.desktop || 0;
-                  const otherValue = payload[0]?.payload?.other || 0;
-                  const totalValue = mobileValue + desktopValue + otherValue;
+                    const mobileValue = payload[0]?.payload?.mobile || 0;
+                    const desktopValue = payload[0]?.payload?.desktop || 0;
+                    const otherValue = payload[0]?.payload?.other || 0;
+                    const totalValue = mobileValue + desktopValue + otherValue;
 
-                  return (
-                    <div className="grid min-w-[8rem] items-start gap-1.5 rounded-lg border bg-popover p-3 text-popover-foreground shadow-md">
-                      <div className="font-medium">{formattedDate}</div>
-                      {payload.map((entry: any, index: number) => (
-                        <div
-                          key={index}
-                          className="flex items-center justify-between"
-                        >
-                          <div className="flex items-center gap-2">
-                            <div
-                              className="h-2.5 w-2.5 rounded-[2px]"
-                              style={{
-                                backgroundColor: entry.color,
-                              }}
-                            />
-                            <span className="text-sm">
-                              {entry.dataKey === "mobile"
-                                ? "Mobile"
-                                : entry.dataKey === "desktop"
-                                  ? "Desktop"
-                                  : "Other"}
+                    return (
+                      <div className="grid min-w-[8rem] items-start gap-1.5 rounded-lg border border-muted bg-muted/90  p-3 shadow-md">
+                        <div className="text-xs font-medium">
+                          {formattedDate}
+                        </div>
+                        {payload.map((entry, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center justify-between"
+                          >
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="h-2.5 w-2.5 rounded-[2px]"
+                                style={{
+                                  backgroundColor: entry.color,
+                                }}
+                              />
+                              <span className="text-xs">
+                                {entry.dataKey === "mobile"
+                                  ? "Mobile"
+                                  : entry.dataKey === "desktop"
+                                    ? "Desktop"
+                                    : "Other"}
+                              </span>
+                            </div>
+                            <div className="font-mono text-xs font-medium">
+                              {entry.value}
+                            </div>
+                          </div>
+                        ))}
+                        <div className="mt-1.5 flex basis-full items-center border-t pt-1.5 text-xs font-medium">
+                          Total
+                          <div className="ml-auto flex items-baseline gap-0.5 font-mono font-medium tabular-nums">
+                            {totalValue}
+                            <span className="font-normal text-gray-500">
+                              clicks
                             </span>
                           </div>
-                          <div className="font-mono font-medium">
-                            {entry.value}
-                          </div>
-                        </div>
-                      ))}
-                      <div className="text-foreground mt-1.5 flex basis-full items-center border-t pt-1.5 text-xs font-medium">
-                        Total
-                        <div className="text-foreground ml-auto flex items-baseline gap-0.5 font-mono font-medium tabular-nums">
-                          {totalValue}
-                          <span className="text-muted-foreground font-normal">
-                            clicks
-                          </span>
                         </div>
                       </div>
-                    </div>
+                    );
+                  }
+                  return null;
+                }}
+              />
+              {(() => {
+                const bars = [
+                  { dataKey: "mobile", fill: "hsl(var(--chart-5))", order: 0 },
+                  { dataKey: "desktop", fill: "hsl(var(--chart-2))", order: 1 },
+                  { dataKey: "other", fill: "hsl(var(--chart-3))", order: 2 },
+                ];
+
+                // Custom shape component for rounded top corners
+                const RoundedBar = (props: {
+                  dataKey?: any;
+                  fill?: any;
+                  x?: any;
+                  y?: any;
+                  width?: any;
+                  height?: any;
+                  payload?: any;
+                }) => {
+                  const { fill, x, y, width, height, payload } = props;
+
+                  // Check if this bar is the topmost non-zero bar
+                  const values = bars.map((b) => payload[b.dataKey] || 0);
+                  let topIndex = -1;
+                  for (let i = values.length - 1; i >= 0; i--) {
+                    if (values[i] > 0) {
+                      topIndex = i;
+                      break;
+                    }
+                  }
+
+                  // Find which bar this is
+                  const currentIndex = bars.findIndex(
+                    (b) =>
+                      payload[b.dataKey] ===
+                      (height /
+                        (payload.mobile + payload.desktop + payload.other)) *
+                        payload[b.dataKey],
                   );
-                }
-                return null;
+                  const isTopBar = bars.some((b, idx) => {
+                    if (payload[b.dataKey] > 0) {
+                      // Check if all bars after this one are zero
+                      const isTop = bars
+                        .slice(idx + 1)
+                        .every((bar) => (payload[bar.dataKey] || 0) === 0);
+                      return isTop && b.dataKey === props.dataKey;
+                    }
+                    return false;
+                  });
+
+                  const radius = 6;
+
+                  if (isTopBar) {
+                    // Draw rounded top corners
+                    return (
+                      <path
+                        d={`
+                        M ${x},${y + radius}
+                        Q ${x},${y} ${x + radius},${y}
+                        L ${x + width - radius},${y}
+                        Q ${x + width},${y} ${x + width},${y + radius}
+                        L ${x + width},${y + height}
+                        L ${x},${y + height}
+                        Z
+                      `}
+                        fill={fill}
+                      />
+                    );
+                  }
+
+                  // Regular rectangle for non-top bars
+                  return (
+                    <rect
+                      x={x}
+                      y={y}
+                      width={width}
+                      height={height}
+                      fill={fill}
+                    />
+                  );
+                };
+
+                return bars.map((bar, index) => (
+                  <Bar
+                    key={bar.dataKey}
+                    dataKey={bar.dataKey}
+                    stackId="a"
+                    fill={bar.fill}
+                    strokeWidth={0}
+                    strokeOpacity={0}
+                    barSize={10}
+                    shape={(props: any) => (
+                      <RoundedBar {...props} dataKey={bar.dataKey} />
+                    )}
+                    background={
+                      index === 0 ? { className: "fill-muted/40" } : undefined
+                    }
+                  />
+                ));
+              })()}
+            </BarChart>
+          ) : (
+            <LineChart
+              accessibilityLayer
+              data={chartData}
+              margin={{
+                left: 8,
+                right: 4, // Increased to show last data point
+                bottom: 8,
+                top: 8,
               }}
-            />
-            {showMobileDesktop && (
-              <>
-                <Line
-                  dataKey="mobile"
-                  type="linear"
-                  stroke="hsl(var(--chart-5))"
-                  strokeWidth={2}
-                  dot={false}
-                  activeDot={{
-                    r: 6,
-                    style: {
-                      transition: "all 1s ease-in-out",
-                      fill: "#1e1e20",
-                      stroke: "white",
-                      strokeWidth: 1,
-                    },
-                  }}
-                />
-                <Line
-                  dataKey="desktop"
-                  type="linear"
-                  stroke="hsl(var(--chart-2))"
-                  strokeWidth={2}
-                  dot={false}
-                  activeDot={{ r: 6, fill: "hsl(var(--chart-2))" }}
-                />
-                <Line
-                  dataKey="other"
-                  type="linear"
-                  stroke="hsl(var(--chart-3))"
-                  strokeWidth={2}
-                  dot={false}
-                  activeDot={{ r: 6, fill: "hsl(var(--chart-3))" }}
-                />
-              </>
-            )}
-          </LineChart>
+            >
+              {/*<CartesianGrid vertical={false} />*/}
+              <XAxis
+                hide
+                dataKey="period"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                tickFormatter={(value) =>
+                  formatXAxisLabel(new Date(value), selectedInterval)
+                }
+              />
+              <YAxis hide tick={{ fontSize: 12 }} />
+              <Tooltip
+                cursor={false}
+                content={({ active, payload, label }) => {
+                  if (active && payload && payload.length) {
+                    const payloadData = payload[0]?.payload;
+                    const startDate = payloadData?.startDate;
+                    const endDate = payloadData?.endDate;
+
+                    let formattedDate = "";
+
+                    // FIX: Use proper date formatting for all intervals including hourly
+                    if (startDate && endDate) {
+                      // For hourly intervals, show time range
+                      if (selectedInterval === "hourly") {
+                        formattedDate = `${startDate.toLocaleDateString()} ${startDate.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false })} - ${endDate.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false })}`;
+                      } else {
+                        // For other intervals, use existing format
+                        formattedDate = `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`;
+                      }
+                    } else {
+                      // Fallback for the old format
+                      const date = new Date(payload[0]?.payload?.timestamp);
+                      formattedDate = formatTooltipDate(date, selectedInterval);
+                    }
+
+                    // Calculate total from mobile + desktop + other
+                    const mobileValue = payload[0]?.payload?.mobile || 0;
+                    const desktopValue = payload[0]?.payload?.desktop || 0;
+                    const otherValue = payload[0]?.payload?.other || 0;
+                    const totalValue = mobileValue + desktopValue + otherValue;
+
+                    return (
+                      <div className="grid min-w-[8rem] items-start gap-1.5 rounded-lg border bg-popover p-3 text-popover-foreground shadow-md">
+                        <div className="text-xs font-medium">
+                          {formattedDate}
+                        </div>
+                        {payload.map((entry: any, index: number) => (
+                          <div
+                            key={index}
+                            className="flex items-center justify-between"
+                          >
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="h-2.5 w-2.5 rounded-[2px]"
+                                style={{
+                                  backgroundColor: entry.color,
+                                }}
+                              />
+                              <span className="text-xs">
+                                {entry.dataKey === "mobile"
+                                  ? "Mobile"
+                                  : entry.dataKey === "desktop"
+                                    ? "Desktop"
+                                    : "Other"}
+                              </span>
+                            </div>
+                            <div className="font-mono text-xs font-medium">
+                              {entry.value}
+                            </div>
+                          </div>
+                        ))}
+                        <div className="text-foreground mt-1.5 flex basis-full items-center border-t pt-1.5 text-xs font-medium">
+                          Total
+                          <div className="gap-1 text-foreground ml-auto flex items-baseline gap-0.5 font-mono font-medium tabular-nums">
+                            {totalValue}
+                            <span className="text-muted-foreground font-normal">
+                              clicks
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                }}
+              />
+              <Line
+                dataKey="total"
+                type="monotoneX"
+                stroke="hsl(var(--chart-2))"
+                strokeWidth={2}
+                dot={false}
+                activeDot={{
+                  r: 6,
+                  style: {
+                    transition: "all 1s ease-in-out",
+                    fill: "#1e1e20",
+                    stroke: "white",
+                    strokeWidth: 1,
+                  },
+                }}
+              />
+            </LineChart>
+          )}
           {/* </ChartContainer>*/}
         </ResponsiveContainer>
       </CardContent>
-      <CardFooter className="flex-col items-start gap-2 text-sm">
+      <CardFooter className="pt-4 flex-col items-start gap-2 text-sm">
         <div className="flex gap-2 leading-none font-medium">
           {getTrendText()} <TrendingUp className="h-4 w-4" />
         </div>

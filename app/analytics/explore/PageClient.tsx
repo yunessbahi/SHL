@@ -433,6 +433,31 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
     }
   }, [exploreData]);
 
+  // Clean up filters when dimensions change
+  useEffect(() => {
+    const selectedDimValues = selectedDimensions.map((d) => d.value);
+    const newFilters = { ...filters };
+
+    // Remove filters for dimensions that are no longer selected
+    Object.keys(newFilters).forEach((key) => {
+      // Keep date and timeseries filters
+      if (
+        key === "start_date" ||
+        key === "end_date" ||
+        key === "include_timeseries" ||
+        key === "interval"
+      ) {
+        return;
+      }
+      // Remove if dimension is not selected
+      if (!selectedDimValues.includes(key)) {
+        delete newFilters[key];
+      }
+    });
+
+    setFilters(newFilters);
+  }, [selectedDimensions]);
+
   useEffect(() => {
     fetchExploreData();
   }, [selectedMetrics, selectedDimensions, selectedPeriod, filters]);

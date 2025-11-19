@@ -1,5 +1,19 @@
 import * as React from "react";
 import { Progress } from "@/components/ui/base-progress";
+import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  InfoIcon,
+} from "lucide-react";
 
 interface ProgressTTLProps {
   startDate?: string | null;
@@ -180,11 +194,11 @@ export default function ProgressTTL({
     } else if (timeRemaining.minutes > 0) {
       return `${timeRemaining.minutes}m remaining`;
     } else {
-      return "Expires soon";
+      return "Link Paused";
     }
   };
 
-  // Get progress color based on status
+  // Get progress color based on remaining time (matches tooltip guide)
   const getProgressColor = (): string => {
     if (timeRemaining.isExpired) {
       return "bg-red-500";
@@ -194,7 +208,7 @@ export default function ProgressTTL({
       return "bg-blue-500";
     }
 
-    // Active link - color based on time remaining
+    // Active link - color based on remaining time (matches tooltip guide)
     if (timeRemaining.days > 7) {
       return "bg-green-500/90";
     } else if (timeRemaining.days > 1) {
@@ -222,9 +236,53 @@ export default function ProgressTTL({
         </div>
       )}
 
-      <Progress value={progressValue} className={`h-2 ${getProgressColor()}`} />
+      <div className="relative h-2 w-full overflow-hidden rounded-full bg-secondary">
+        <div
+          className={`h-full transition-all duration-300 ease-in-out ${getProgressColor()}`}
+          style={{ width: `${progressValue}%` }}
+        />
+      </div>
 
-      <div className="text-xs text-muted-foreground">{statusMessage}</div>
+      <div className="flex items-center justify-between isolate relative ">
+        <div className="text-xs text-muted-foreground">{statusMessage}</div>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger>
+              <Badge variant="outline" className="text-xs p-1 cursor-pointer">
+                <InfoIcon className="size-4" />
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent>
+              <div className="text-xs space-y-2">
+                <div className="flex flex-inline gap-2 font-medium mb-2">
+                  <InfoIcon className="size-4" />
+                  Color Code Guide
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                  <span className="flex flex-inline items-center">
+                    {<ChevronRight className="w-3 h-3" />}7 days remaining
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                  <span>1-7 days remaining</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                  <span className="flex flex-inline items-center">
+                    {<ChevronLeft className="w-3 h-3" />}1 day remaining
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                  <span>Link Expired</span>
+                </div>
+              </div>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
     </div>
   );
 }

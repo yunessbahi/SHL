@@ -7,6 +7,12 @@ export interface AnalyticsOverview {
   active_campaigns: number;
   new_links_created: number;
   clicks_change_vs_previous?: number;
+  total_unique_visitors: number;
+  uv_change_vs_previous?: number;
+  link_type_counts: Record<string, number>;
+  campaign_stage_counts: Record<string, { count: number; description: string }>;
+  efficiency?: number;
+  engagement_per_campaign?: number;
   period: string;
 }
 
@@ -59,6 +65,24 @@ export interface TrafficSourcePoint {
   click_count: number;
   unique_visitors: number;
   percentage: number;
+}
+
+export interface TopLinkPoint {
+  id: string;
+  name: string;
+  short_url: string;
+  click_count: number;
+  unique_visitors: number;
+  percentage: number;
+}
+
+export interface TopCampaignPoint {
+  id: string;
+  name: string;
+  click_count: number;
+  unique_visitors: number;
+  percentage: number;
+  link_count: number;
 }
 
 export interface AnalyticsFilters {
@@ -233,6 +257,26 @@ class AnalyticsAPIClient {
     params: { period?: string; topN?: number } = {},
   ): Promise<TrafficSourcePoint[]> {
     return this.getGlobalTrafficSources(params.period, params.topN);
+  }
+
+  // Get global top links
+  async getGlobalTopLinks(
+    period: string = "30d",
+    topN: number = 5,
+  ): Promise<TopLinkPoint[]> {
+    return this.makeRequest<TopLinkPoint[]>(
+      `/api/analytics/top-links?period=${period}&top_n=${topN}`,
+    );
+  }
+
+  // Get global top campaigns
+  async getGlobalTopCampaigns(
+    period: string = "30d",
+    topN: number = 5,
+  ): Promise<TopCampaignPoint[]> {
+    return this.makeRequest<TopCampaignPoint[]>(
+      `/api/analytics/top-campaigns?period=${period}&top_n=${topN}`,
+    );
   }
   // Explore analytics with custom filters
   async exploreAnalytics(

@@ -197,8 +197,8 @@ export default function PreviewPage({ user, id }: PreviewPageProps) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <Spinner className="size-8 mx-auto" />
-          <p className="mt-4 text-muted-foreground">Loading...</p>
+          <Spinner className="size-6 mx-auto" />
+          <p className="text-xs mt-4 text-muted-foreground">Loading...</p>
         </div>
       </div>
     );

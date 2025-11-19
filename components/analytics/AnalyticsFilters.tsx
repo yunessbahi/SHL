@@ -39,6 +39,7 @@ interface AnalyticsFiltersProps {
   onRefresh?: () => void;
   loading?: boolean;
   className?: string;
+  inline?: boolean;
 }
 
 // GA4-Style Period Presets
@@ -117,6 +118,7 @@ export default function AnalyticsFilters({
   onRefresh,
   loading = false,
   className = "",
+  inline = false,
 }: AnalyticsFiltersProps) {
   const [periodOpen, setPeriodOpen] = useState(false);
   const [intervalOpen, setIntervalOpen] = useState(false);
@@ -155,7 +157,9 @@ export default function AnalyticsFilters({
   };
 
   return (
-    <div className={`flex flex-col gap-4 ${className}`}>
+    <div
+      className={`${inline ? "flex items-center gap-3" : `flex flex-col gap-4`} ${className}`}
+    >
       {/* Period Selector */}
       <div className="flex flex-row items-center gap-1">
         <div className={""}>
@@ -165,7 +169,7 @@ export default function AnalyticsFilters({
                 variant="outline"
                 role="combobox"
                 aria-expanded={periodOpen}
-                className="min-w-[220px] justify-between w-full text-xs h-8"
+                className={`${inline ? "min-w-[180px]" : "min-w-[220px]"} justify-between w-full text-xs h-8`}
               >
                 <div className="flex">
                   <label
@@ -220,15 +224,17 @@ export default function AnalyticsFilters({
               </Command>
             </PopoverContent>
           </Popover>
-          {/* Period Info */}
-          <div className="flex flex-row">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Calendar className="h-3 w-3" />
-              <span>
-                {getCurrentPreset()?.description || "Select a period"}
-              </span>
+          {/* Period Info - Hide in inline mode */}
+          {!inline && (
+            <div className="flex flex-row">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Calendar className="h-3 w-3" />
+                <span>
+                  {getCurrentPreset()?.description || "Select a period"}
+                </span>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -240,7 +246,7 @@ export default function AnalyticsFilters({
               variant="outline"
               role="combobox"
               aria-expanded={intervalOpen}
-              className="min-w-[170px] justify-between w-full text-xs h-8"
+              className={`${inline ? "min-w-[140px]" : "min-w-[170px]"} justify-between w-full text-xs h-8`}
             >
               {/* <TimerReset className="m-0"/> */}
               <Label

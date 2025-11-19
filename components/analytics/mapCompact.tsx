@@ -438,36 +438,35 @@ function MapCompact({
     };
   };
 
-  if (loading) {
-    return (
-      <div className="w-full h-64 flex items-center justify-center">
-        <Spinner className="size-8" />
-      </div>
-    );
-  }
-
   return (
-    <div className="w-full">
-      {/* Map section - 3 columns on large screens */}
-      <div className="lg:col-span-3">
-        {/* Responsive SVG wrapper */}
-        <div className="w-full rounded-lg overflow-hidden">
-          <WorldMap
-            richInteraction={true}
-            backgroundColor=""
-            borderColor="transparent"
-            strokeOpacity={0.02}
-            color={isDark ? "#fff" : "#000"}
-            tooltipBgColor="#31323f"
-            title=""
-            valueSuffix="visit"
-            valuePrefix=":"
-            size={size}
-            data={mapData}
-            styleFunction={stylingFunction}
-          />
-        </div>
-      </div>
+    <div
+      className={`flex-1 w-[680px] h-[500px] ${loading ? "flex items-center justify-center" : ""}`}
+    >
+      {loading ? (
+        <Spinner className="size-6" />
+      ) : (
+        <>
+          {/* Map section - 3 columns on large screens */}
+
+          {/* Responsive SVG wrapper */}
+          <div className="w-full h-full overflow-hidden">
+            <WorldMap
+              richInteraction={true}
+              backgroundColor=""
+              borderColor="transparent"
+              strokeOpacity={0.02}
+              color={isDark ? "#fff" : "#000"}
+              tooltipBgColor="#31323f"
+              title=""
+              valueSuffix="visit"
+              valuePrefix=":"
+              size={size}
+              data={mapData}
+              styleFunction={stylingFunction}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 }

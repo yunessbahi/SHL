@@ -32,6 +32,7 @@ interface TrafficSourcesChartProps {
   className?: string;
   showLoading?: boolean;
   refreshTrigger?: number;
+  noCard?: boolean;
 }
 
 export default function TrafficSourcesChart({
@@ -43,6 +44,7 @@ export default function TrafficSourcesChart({
   className = "",
   showLoading = true,
   refreshTrigger,
+  noCard = false,
 }: TrafficSourcesChartProps) {
   const [data, setData] = useState<TrafficSourcePoint[]>([]);
   const [loading, setLoading] = useState(false);
@@ -117,6 +119,112 @@ export default function TrafficSourcesChart({
   const isLoading = showLoading && loading;
   const hasError = error && data.length === 0;
 
+  if (noCard) {
+    return (
+      <div className={className}>
+        {isLoading ? (
+          <div className="h-[200px] flex items-center justify-center">
+            <div className="text-center">
+              <Spinner className="size-6 mx-auto mb-2" />
+              <p className="text-xs text-muted-foreground">Loading...</p>
+            </div>
+          </div>
+        ) : hasError ? (
+          <div className="h-[200px] flex items-center justify-center">
+            <div className="text-center">
+              <span className="text-4xl mb-2 block">📊</span>
+              <p className="text-sm text-muted-foreground mb-2">
+                Error loading data
+              </p>
+              <Button variant="outline" size="sm" onClick={fetchData}>
+                Try Again
+              </Button>
+            </div>
+          </div>
+        ) : data.length === 0 ? (
+          <div className="h-[200px] flex items-center justify-center">
+            <div className="text-center">
+              <span className="text-4xl mb-2 block">📊</span>
+              <p className="text-sm text-muted-foreground">
+                No traffic source data available
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <TooltipProvider>
+              {data.map((item, index) => (
+                <Tooltip key={index}>
+                  <TooltipTrigger>
+                    <div key={item.source} className="flex items-center gap-3">
+                      {/* Rank number */}
+                      <div className="text-center text-sm font-medium text-muted-foreground">
+                        {index + 1}
+                      </div>
+
+                      {/* Bar with name overlaid, number outside */}
+                      <div className="flex-1 relative">
+                        <div className="h-6 bg-muted rounded-md overflow-hidden">
+                          <div
+                            className="absolute left-2 top-0 bottom-0 flex items-center text-xs font-normal capitalize truncate z-10"
+                            style={{
+                              color: "white",
+                              mixBlendMode: "difference",
+                            }}
+                          >
+                            {item.source}
+                          </div>
+                          <div
+                            className="h-full bg-primary rounded-md transition-all duration-500 ease-out"
+                            style={{
+                              width: `${(item.click_count / maxClicks) * 100}%`,
+                            }}
+                          />
+                        </div>
+                        <div
+                          className="absolute inset-0 flex items-center justify-end px-2 text-xs font-mono"
+                          style={{
+                            color: "white",
+                            mixBlendMode: "difference",
+                          }}
+                        >
+                          {formatNumber(item.click_count)}
+                        </div>
+                      </div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <div className="space-y-1">
+                      <div className="font-medium">{item.source}</div>
+                      <div>
+                        Clicks:{" "}
+                        <span className="font-mono">
+                          {formatNumber(item.click_count)}
+                        </span>
+                      </div>
+                      <div>
+                        Visitors:{" "}
+                        <span className="font-mono">
+                          {formatNumber(item.unique_visitors)}
+                        </span>
+                      </div>
+                      <div>
+                        Percentage:{" "}
+                        <span className="font-mono">
+                          {item.percentage.toFixed(2)}%
+                        </span>
+                      </div>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              ))}
+            </TooltipProvider>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <Card className={className}>
       <CardHeader>
@@ -184,7 +292,7 @@ export default function TrafficSourcesChart({
                   <TooltipTrigger>
                     <div key={item.source} className="flex items-center gap-3">
                       {/* Rank number */}
-                      <div className="w-6 text-center text-sm font-medium text-muted-foreground">
+                      <div className="text-center text-sm font-medium text-muted-foreground">
                         {index + 1}
                       </div>
 

@@ -9,10 +9,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Globe, RefreshCw } from "lucide-react";
+import { Globe, RefreshCw, Link as LinkIcon, Target } from "lucide-react";
 import {
   analyticsAPI,
-  type GeoBreakdownPoint,
+  type TopLinkPoint,
+  type TopCampaignPoint,
   formatNumber,
 } from "@/lib/analytics-api";
 import {
@@ -23,10 +24,10 @@ import {
 } from "@/components/ui/global-tooltip";
 import { Spinner } from "@/components/ui/spinner";
 
-interface TopCountriesChartProps {
-  data?: GeoBreakdownPoint[];
+interface TopLinksCampaignsChartProps {
+  data?: TopLinkPoint[] | TopCampaignPoint[];
   period: string;
-  granularity?: "country" | "region" | "city";
+  type?: "links" | "campaigns";
   topN?: number;
   title?: string;
   description?: string;
@@ -36,21 +37,28 @@ interface TopCountriesChartProps {
   noCard?: boolean;
 }
 
-export default function TopCountriesChart({
+export default function TopLinksCampaignsChart({
   data: propData,
   period,
-  granularity = "country",
+  type = "links",
   topN = 5,
-  title = "Top Countries",
+  title,
   description,
   className = "",
   showLoading = true,
   refreshTrigger,
   noCard = false,
-}: TopCountriesChartProps) {
-  const [data, setData] = useState<GeoBreakdownPoint[]>([]);
+}: TopLinksCampaignsChartProps) {
+  const [data, setData] = useState<TopLinkPoint[] | TopCampaignPoint[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Helper function to truncate text to 46 characters with ellipsis
+  const truncateText = (text: string, maxLength: number = 46) => {
+    return text.length > maxLength
+      ? text.substring(0, maxLength) + "..."
+      : text;
+  };
 
   // Fetch data from API if not provided
   const fetchData = async () => {
@@ -59,52 +67,20 @@ export default function TopCountriesChart({
     try {
       setLoading(true);
       setError(null);
-      const result = await analyticsAPI.getGlobalTopCountries(
-        granularity,
-        period,
-        topN,
-      );
+      let result: TopLinkPoint[] | TopCampaignPoint[];
+
+      if (type === "links") {
+        result = await analyticsAPI.getGlobalTopLinks(period, topN);
+      } else {
+        result = await analyticsAPI.getGlobalTopCampaigns(period, topN);
+      }
+
       // Ensure we don't show more than topN items
       setData(result.slice(0, topN));
     } catch (err) {
-      console.error("Failed to fetch top countries data:", err);
+      console.error(`Failed to fetch top ${type} data:`, err);
       setError(err instanceof Error ? err.message : "Failed to load data");
-
-      // Provide fallback data for demonstration (exactly 5 countries to match default)
-      const fallbackData: GeoBreakdownPoint[] = [
-        {
-          location: "United States",
-          click_count: 2450,
-          unique_visitors: 1890,
-          percentage: 35.2,
-        },
-        {
-          location: "United Kingdom",
-          click_count: 1230,
-          unique_visitors: 980,
-          percentage: 17.6,
-        },
-        {
-          location: "Canada",
-          click_count: 890,
-          unique_visitors: 720,
-          percentage: 12.8,
-        },
-        {
-          location: "Germany",
-          click_count: 670,
-          unique_visitors: 540,
-          percentage: 9.6,
-        },
-        {
-          location: "Australia",
-          click_count: 450,
-          unique_visitors: 380,
-          percentage: 6.5,
-        },
-      ];
-      // Only show up to topN items
-      setData(fallbackData.slice(0, topN));
+      setData([]); // Clear data on error
     } finally {
       setLoading(false);
     }
@@ -112,13 +88,39 @@ export default function TopCountriesChart({
 
   useEffect(() => {
     fetchData();
-  }, [period, granularity, topN, propData, refreshTrigger]);
+  }, [period, type, topN, propData, refreshTrigger]);
 
   // Calculate max clicks for bar width
   const maxClicks = Math.max(...data.map((item) => item.click_count), 1);
 
   const isLoading = showLoading && loading;
   const hasError = error && data.length === 0;
+
+  const getTitle = () => {
+    if (title) return title;
+    return type === "links" ? "Top Links" : "Top Campaigns";
+  };
+
+  const getDescription = () => {
+    if (description) return description;
+    return type === "links"
+      ? "Most clicked links in your account"
+      : "Most active campaigns by click count";
+  };
+
+  const getIcon = () => {
+    return type === "links" ? (
+      <LinkIcon className="h-5 w-5 text-muted-foreground" />
+    ) : (
+      <Target className="h-5 w-5 text-muted-foreground" />
+    );
+  };
+
+  const getEmptyMessage = () => {
+    return type === "links"
+      ? "No link data available"
+      : "No campaign data available";
+  };
 
   if (noCard) {
     return (
@@ -133,7 +135,7 @@ export default function TopCountriesChart({
         ) : hasError ? (
           <div className="h-64 flex items-center justify-center">
             <div className="text-center">
-              <Globe className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+              {getIcon()}
               <p className="text-sm text-gray-500 mb-2">Error loading data</p>
               <Button variant="outline" size="sm" onClick={fetchData}>
                 Try Again
@@ -142,9 +144,9 @@ export default function TopCountriesChart({
           </div>
         ) : data.length === 0 ? (
           <div className="h-64 flex items-center justify-center">
-            <div className="text-center">
-              <Globe className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-              <p className="text-sm text-gray-500">No country data available</p>
+            <div className="flex flex-col items-center text-center gap-2">
+              {getIcon()}
+              <p className="text-sm text-gray-500">{getEmptyMessage()}</p>
             </div>
           </div>
         ) : (
@@ -153,10 +155,7 @@ export default function TopCountriesChart({
               {data.map((item, index) => (
                 <Tooltip key={index}>
                   <TooltipTrigger>
-                    <div
-                      key={item.location}
-                      className="flex items-center gap-3"
-                    >
+                    <div key={item.id} className="flex items-center gap-3">
                       {/* Rank number */}
                       <div className="text-center text-sm font-medium text-muted-foreground">
                         {index + 1}
@@ -172,7 +171,7 @@ export default function TopCountriesChart({
                               mixBlendMode: "difference",
                             }}
                           >
-                            {item.location}
+                            {truncateText(item.name)}
                           </div>
                           <div
                             className="h-full bg-primary rounded-md transition-all duration-500 ease-out"
@@ -195,7 +194,7 @@ export default function TopCountriesChart({
                   </TooltipTrigger>
                   <TooltipContent>
                     <div className="space-y-1">
-                      <div className="font-medium">{item.location}</div>
+                      <div className="font-medium">{item.name}</div>
                       <div>
                         Clicks:{" "}
                         <span className="font-mono">
@@ -214,6 +213,20 @@ export default function TopCountriesChart({
                           {item.percentage.toFixed(2)}%
                         </span>
                       </div>
+                      {type === "campaigns" && "link_count" in item && (
+                        <div>
+                          Links:{" "}
+                          <span className="font-mono">{item.link_count}</span>
+                        </div>
+                      )}
+                      {type === "links" && "short_url" in item && (
+                        <div>
+                          URL:{" "}
+                          <span className="font-mono text-xs">
+                            {item.short_url}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </TooltipContent>
                 </Tooltip>
@@ -231,12 +244,12 @@ export default function TopCountriesChart({
         <div className="flex justify-between items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-6">
           <div>
             <CardTitle className="flex items-center gap-2 pb-1">
-              <Globe className="h-5 w-5 text-muted-foreground" />
-              {title}
+              {getIcon()}
+              {getTitle()}
             </CardTitle>
             {description && (
               <CardDescription className="text-sm">
-                {description}
+                {getDescription()}
               </CardDescription>
             )}
           </div>
@@ -266,7 +279,7 @@ export default function TopCountriesChart({
         ) : hasError ? (
           <div className="h-64 flex items-center justify-center">
             <div className="text-center">
-              <Globe className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+              {getIcon()}
               <p className="text-sm text-gray-500 mb-2">Error loading data</p>
               <Button variant="outline" size="sm" onClick={fetchData}>
                 Try Again
@@ -276,8 +289,8 @@ export default function TopCountriesChart({
         ) : data.length === 0 ? (
           <div className="h-64 flex items-center justify-center">
             <div className="text-center">
-              <Globe className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-              <p className="text-sm text-gray-500">No country data available</p>
+              {getIcon()}
+              <p className="text-sm text-gray-500">{getEmptyMessage()}</p>
             </div>
           </div>
         ) : (
@@ -286,18 +299,15 @@ export default function TopCountriesChart({
               {data.map((item, index) => (
                 <Tooltip key={index}>
                   <TooltipTrigger>
-                    <div
-                      key={item.location}
-                      className="flex items-center gap-3"
-                    >
+                    <div key={item.id} className="flex items-center gap-3">
                       {/* Rank number */}
-                      <div className="text-center text-sm font-medium text-muted-foreground">
+                      <div className=" text-center text-sm font-medium text-muted-foreground">
                         {index + 1}
                       </div>
 
-                      {/* Country name */}
+                      {/* Item name */}
                       <div className="w-24 text-sm font-normal truncate">
-                        {item.location}
+                        {truncateText(item.name)}
                       </div>
 
                       {/* Bar */}
@@ -323,15 +333,41 @@ export default function TopCountriesChart({
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>
-                    {
-                      <div className="flex gap-2">
-                        {item.location}:
-                        <span className="font-mono">{item.click_count}</span>
-                        <span className="font-mono text-muted-foreground">
+                    <div className="space-y-1">
+                      <div className="font-medium">{item.name}</div>
+                      <div>
+                        Clicks:{" "}
+                        <span className="font-mono">
+                          {formatNumber(item.click_count)}
+                        </span>
+                      </div>
+                      <div>
+                        Visitors:{" "}
+                        <span className="font-mono">
+                          {formatNumber(item.unique_visitors)}
+                        </span>
+                      </div>
+                      <div>
+                        Percentage:{" "}
+                        <span className="font-mono">
                           {item.percentage.toFixed(2)}%
                         </span>
                       </div>
-                    }
+                      {type === "campaigns" && "link_count" in item && (
+                        <div>
+                          Links:{" "}
+                          <span className="font-mono">{item.link_count}</span>
+                        </div>
+                      )}
+                      {type === "links" && "short_url" in item && (
+                        <div>
+                          URL:{" "}
+                          <span className="font-mono text-xs">
+                            {item.short_url}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </TooltipContent>
                 </Tooltip>
               ))}

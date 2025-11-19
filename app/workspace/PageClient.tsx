@@ -28,13 +28,13 @@ export default function WorkspacePage({ user }: WorkspacePageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">
+          <h1 className="text-3xl font-bold text-muted-foreground mb-4">
             Welcome to Your Workspace
           </h1>
-          <p className="text-lg text-gray-600">
+          <p className="text-lg text-muted-foreground">
             Choose how you'd like to create your link. Single links are perfect
             for simple redirects, while smart links enable advanced features
             like A/B testing and geo-targeting.

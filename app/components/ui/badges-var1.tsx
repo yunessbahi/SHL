@@ -46,6 +46,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 
 type StatusVariant = "danger" | "active" | "warn" | "default";
 
@@ -53,6 +54,7 @@ interface StatusProps {
   variant?: StatusVariant;
   label: string;
   className?: string;
+  showArrow?: boolean;
 }
 
 const statusStyles = {
@@ -81,6 +83,7 @@ export const Status = ({
   variant = "default",
   label,
   className,
+  showArrow = false,
 }: StatusProps) => {
   const styles = statusStyles[variant];
 
@@ -92,6 +95,22 @@ export const Status = ({
     );
   }
 
+  // Determine arrow icon based on variant
+  const getArrowIcon = () => {
+    if (!showArrow) return null;
+
+    if (variant === "active") {
+      return <TrendingUp className="size-3" />;
+    } else if (variant === "danger") {
+      return <TrendingDown className="size-3" />;
+    } else if (variant === "warn") {
+      return <Minus className="size-3" />;
+    }
+    return null;
+  };
+
+  const arrowIcon = getArrowIcon();
+
   return (
     <Badge
       className={cn(
@@ -100,10 +119,14 @@ export const Status = ({
         className,
       )}
     >
-      <span
-        className={cn("size-1.5 rounded-full", styles.dot)}
-        aria-hidden="true"
-      />
+      {showArrow && arrowIcon ? (
+        arrowIcon
+      ) : (
+        <span
+          className={cn("size-1.5 rounded-full", styles.dot)}
+          aria-hidden="true"
+        />
+      )}
       {label}
     </Badge>
   );
