@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, SquareDashedMousePointer } from "lucide-react";
 import {
   analyticsAPI,
   type TrafficSourcePoint,
@@ -142,13 +142,12 @@ export default function TrafficSourcesChart({
             </div>
           </div>
         ) : data.length === 0 ? (
-          <div className="h-[200px] flex items-center justify-center">
-            <div className="text-center">
-              <span className="text-4xl mb-2 block">📊</span>
-              <p className="text-sm text-muted-foreground">
-                No traffic source data available
-              </p>
-            </div>
+          <div className=" h-[200px] flex flex-col items-center justify-center text-center gap-4">
+            <SquareDashedMousePointer className="w-6 h-6 text-muted-foreground/70" />
+
+            <p className="text-sm text-muted-foreground/70">
+              No traffic source data available
+            </p>
           </div>
         ) : (
           <div className="space-y-3">

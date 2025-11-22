@@ -111,7 +111,7 @@ export default function LinkAnalytics() {
   useEffect(() => {
     // Simulate API call
     setTimeout(() => {
-      let filteredLinks = MOCK_LINKS.filter((link) => {
+      const filteredLinks = MOCK_LINKS.filter((link) => {
         const matchesSearch =
           link.short_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
           link.target_url.toLowerCase().includes(searchTerm.toLowerCase()) ||

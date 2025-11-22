@@ -20,44 +20,38 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { TailwindColorPicker } from "./TagModalPreset";
 
-interface Tag {
+interface Group {
   id: number;
-  tag_name: string;
-  color: string;
-  description?: string;
-  created_at?: string;
-  bgClass?: string;
-  textClass?: string;
+  name: string;
+  description: string;
+  created_at: string;
 }
 
-const tagSchema = z.object({
-  tag_name: z.string().min(1, "Tag name is required"),
-  color: z.string().min(1, "Color is required"),
+const groupSchema = z.object({
+  name: z.string().min(1, "Group name is required"),
   description: z.string().optional(),
 });
 
-type TagFormValues = z.infer<typeof tagSchema>;
+type GroupFormValues = z.infer<typeof groupSchema>;
 
-interface TagModalProps {
+interface GroupModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  initialData?: Tag;
-  onSave: (data: TagFormValues) => void;
+  initialData?: Group;
+  onSave: (data: GroupFormValues) => void;
 }
 
-export default function TagModal({
+export default function GroupModal({
   open,
   onOpenChange,
   initialData,
   onSave,
-}: TagModalProps) {
-  const form = useForm<TagFormValues>({
-    resolver: zodResolver(tagSchema),
+}: GroupModalProps) {
+  const form = useForm<GroupFormValues>({
+    resolver: zodResolver(groupSchema),
     defaultValues: {
-      tag_name: "",
-      color: JSON.stringify({ light: "blue-600", dark: "blue-400" }),
+      name: "",
       description: "",
     },
   });
@@ -69,22 +63,18 @@ export default function TagModal({
   useEffect(() => {
     if (initialData) {
       form.reset({
-        tag_name: initialData.tag_name || "",
-        color:
-          initialData.color ||
-          JSON.stringify({ light: "blue-600", dark: "blue-400" }),
+        name: initialData.name || "",
         description: initialData.description || "",
       });
     } else {
       form.reset({
-        tag_name: "",
-        color: JSON.stringify({ light: "blue-600", dark: "blue-400" }),
+        name: "",
         description: "",
       });
     }
   }, [initialData, form]);
 
-  const handleSubmitForm = async (values: TagFormValues) => {
+  const handleSubmitForm = async (values: GroupFormValues) => {
     await onSave(values);
     onOpenChange(false);
   };
@@ -94,7 +84,7 @@ export default function TagModal({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {initialData ? "Edit Tag" : "Create New Tag"}
+            {initialData ? "Edit Group" : "Create New Group"}
           </DialogTitle>
         </DialogHeader>
 
@@ -102,53 +92,12 @@ export default function TagModal({
           <form onSubmit={handleSubmit(handleSubmitForm)} className="space-y-4">
             <FormField
               control={control}
-              name="tag_name"
+              name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Tag Name *</FormLabel>
+                  <FormLabel>Group Name *</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter tag name" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* <FormField
-              control={control}
-              name="color"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Color *</FormLabel>
-                  <FormControl>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="color"
-                        {...field}
-                        className="w-16 h-10 p-1 border rounded"
-                      />
-                      <Input
-                        placeholder="#6b7280"
-                        {...field}
-                        className="flex-1"
-                      />
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            /> */}
-            <FormField
-              control={control}
-              name="color"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Color *</FormLabel>
-                  <FormControl>
-                    <TailwindColorPicker
-                      value={field.value}
-                      onChange={field.onChange}
-                    />
+                    <Input placeholder="Enter group name" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -163,7 +112,7 @@ export default function TagModal({
                   <FormLabel>Description</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Enter tag description (optional)"
+                      placeholder="Enter group description (optional)"
                       rows={3}
                       {...field}
                     />
@@ -178,8 +127,8 @@ export default function TagModal({
                 {isSubmitting
                   ? "Saving..."
                   : initialData
-                    ? "Update Tag"
-                    : "Create Tag"}
+                    ? "Update Group"
+                    : "Create Group"}
               </Button>
               <Button
                 type="button"

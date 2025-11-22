@@ -36,6 +36,7 @@ import {
   Target,
   Zap,
   CheckCircleIcon,
+  Settings,
 } from "lucide-react";
 import { authFetch } from "@/lib/api";
 import { cn, toTitleCase, truncateText } from "@/lib/utils";
@@ -50,6 +51,7 @@ import {
   PillStatus,
 } from "@/components/kibo-ui/pill";
 import { SafeUser } from "@/lib/getSafeSession";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface Campaign {
   id: number;
@@ -169,7 +171,7 @@ export default function UTMTemplatesPage({ user }: UTMTemplatesPageProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="flex items-center justify-center py-16">
         <div className="text-center">
           <Spinner className="size-6 mx-auto" />
           <p className="text-xs mt-4 text-muted-foreground">Loading...</p>
@@ -204,14 +206,14 @@ export default function UTMTemplatesPage({ user }: UTMTemplatesPageProps) {
       />
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {templates.length === 0 ? (
-          <div className="col-span-full text-center py-12">
-            <p className="text-muted-foreground">
-              No UTM templates created yet.
-            </p>
-            <Button onClick={openCreate} className="mt-4">
-              <Plus className="h-4 w-4 mr-2" />
-              Create Your First Template
-            </Button>
+          <div className="col-span-full">
+            <EmptyState
+              icon={Settings}
+              title="No UTM Templates Yet"
+              description="Create reusable UTM parameter sets to maintain consistent tracking across your campaigns. Templates can be global or campaign-specific."
+              actionLabel="Create Your First Template"
+              onAction={openCreate}
+            />
           </div>
         ) : (
           templates.map((template) => {

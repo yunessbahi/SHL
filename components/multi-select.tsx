@@ -7,6 +7,7 @@ import {
   XIcon,
   WandSparkles,
   Plus,
+  X,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -51,7 +52,9 @@ export interface AnimationConfig {
 const multiSelectVariants = cva("m-1 transition-all duration-300 ease-in-out", {
   variants: {
     variant: {
-      default: "border-foreground/10 text-foreground bg-card hover:bg-card/80",
+      default:
+        "border-foreground/10 bg-foreground text-xs font-medium text-background",
+
       secondary:
         "border-foreground/10 bg-secondary text-secondary-foreground hover:bg-secondary/80",
       destructive:
@@ -943,7 +946,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                 getAllOptions().length
               } options selected. ${placeholder}`}
               className={cn(
-                "flex p-1 rounded-md border min-h-10 h-auto items-center justify-between bg-inherit hover:bg-inherit [&_svg]:pointer-events-auto",
+                "flex p-1 rounded-md border min-h-10 h-auto items-center justify-between bg-input hover:bg-input/40 shadow-xs transition-colors  [&_svg]:pointer-events-auto",
                 autoSize ? "w-auto" : "w-full",
                 responsiveSettings.compactMode && "min-h-8 text-sm",
                 screenSize === "mobile" && "min-h-12 text-base",
@@ -1006,6 +1009,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                                 "max-w-[120px] truncate",
                               singleLine && "flex-shrink-0 whitespace-nowrap",
                               "[&>svg]:pointer-events-auto",
+                              "flex items-center",
                             )}
                             style={{
                               ...badgeStyle,
@@ -1055,7 +1059,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                               aria-label={`Remove ${option.label} from selection`}
                               className="ml-2 h-4 w-4 cursor-pointer hover:bg-red-500/20 rounded-sm -m-0.5 focus:outline-none focus:ring-1 focus:ring-white/50"
                             >
-                              <XCircle
+                              <X
                                 className={cn(
                                   "h-3 w-3",
                                   responsiveSettings.compactMode &&
@@ -1088,7 +1092,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                         {`+ ${
                           selectedValues.length - responsiveSettings.maxCount
                         } more`}
-                        <XCircle
+                        <X
                           className={cn(
                             "ml-2 h-4 w-4 cursor-pointer",
                             responsiveSettings.compactMode && "ml-1 h-3 w-3",
@@ -1133,7 +1137,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                 </div>
               ) : (
                 <div className="flex items-center justify-between w-full mx-auto">
-                  <span className="text-sm text-muted-foreground mx-3">
+                  <span className="text-sm font-medium text-primary mx-3">
                     {placeholder}
                   </span>
                   <ChevronDown className="h-4 cursor-pointer text-muted-foreground mx-2" />

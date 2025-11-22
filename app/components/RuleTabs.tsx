@@ -6,6 +6,7 @@ import { CalendarWithTimeInput } from "@/components/ui/calendar-with-time-input"
 import { Button } from "@/components/ui/button";
 import { RotateCcw, X } from "lucide-react";
 import { useCountries } from "@/lib/hooks/useCountries";
+import { Combobox } from "@/components/ui/combobox-default";
 
 type RuleTabsProps = {
   rules: any;
@@ -108,8 +109,10 @@ export default function RuleTabs({
       {tab === "audience" && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
+            <label className="block text-sm mb-1">Country allow</label>
             <MultiSelect
-              placeholder="Country allow"
+              placeholder="Any"
+              //variant={"secondary"}
               options={countryOptions}
               defaultValue={rules?.country_allow || []}
               onValueChange={(vals) =>
@@ -195,20 +198,22 @@ export default function RuleTabs({
           </div>
           <div>
             <label className="block text-sm mb-1">Device allow</label>
-            <select
-              className="w-full border p-2 rounded"
+            <Combobox
+              options={[
+                { value: "", label: "Any" },
+                { value: "mobile", label: "Mobile" },
+                { value: "desktop", label: "Desktop" },
+              ]}
               value={(rules?.device_allow && rules.device_allow[0]) || ""}
-              onChange={(e) =>
+              onValueChange={(value) =>
                 setRules({
                   ...rules,
-                  device_allow: e.target.value ? [e.target.value] : [],
+                  device_allow: value ? [value] : [],
                 })
               }
-            >
-              <option value="">Any</option>
-              <option value="mobile">Mobile</option>
-              <option value="desktop">Desktop</option>
-            </select>
+              placeholder="Select device type"
+              allowClear={false}
+            />
           </div>
         </div>
       )}

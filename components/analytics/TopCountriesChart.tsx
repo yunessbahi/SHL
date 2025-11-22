@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Globe, RefreshCw } from "lucide-react";
+import { Globe, RefreshCw, SquareDashedMousePointer } from "lucide-react";
 import {
   analyticsAPI,
   type GeoBreakdownPoint,
@@ -120,6 +120,17 @@ export default function TopCountriesChart({
   const isLoading = showLoading && loading;
   const hasError = error && data.length === 0;
 
+  const getEmptyMessage = () => {
+    switch (granularity) {
+      case "city":
+        return "No city data available";
+      case "region":
+        return "No region data available";
+      default:
+        return "No country data available";
+    }
+  };
+
   if (noCard) {
     return (
       <div className={className}>
@@ -141,11 +152,11 @@ export default function TopCountriesChart({
             </div>
           </div>
         ) : data.length === 0 ? (
-          <div className="h-64 flex items-center justify-center">
-            <div className="text-center">
-              <Globe className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-              <p className="text-sm text-gray-500">No country data available</p>
-            </div>
+          <div className=" h-[200px] flex flex-col items-center justify-center text-center gap-4">
+            <SquareDashedMousePointer className="w-6 h-6 text-muted-foreground/70" />
+            <p className="text-sm text-muted-foreground/70">
+              {getEmptyMessage()}
+            </p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -274,11 +285,11 @@ export default function TopCountriesChart({
             </div>
           </div>
         ) : data.length === 0 ? (
-          <div className="h-64 flex items-center justify-center">
-            <div className="text-center">
-              <Globe className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-              <p className="text-sm text-gray-500">No country data available</p>
-            </div>
+          <div className=" h-[200px] flex flex-col items-center justify-center text-center gap-4">
+            <SquareDashedMousePointer className="w-6 h-6 text-muted-foreground/70" />
+            <p className="text-sm text-muted-foreground/70">
+              {getEmptyMessage()}
+            </p>
           </div>
         ) : (
           <div className="space-y-3">

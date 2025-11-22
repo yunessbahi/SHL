@@ -1,4 +1,8 @@
 "use client";
+
+import { cn } from "@/lib/utils";
+import { Slider } from "@/components/ui/slider";
+
 export default function WeightSlider({
   value,
   onChange,
@@ -9,13 +13,13 @@ export default function WeightSlider({
   return (
     <div>
       <label className="block text-sm mb-1">Weight: {value}</label>
-      <input
-        type="range"
-        min={1}
+      <Slider
+        value={[value]}
+        onValueChange={(values) => onChange(values[0])}
         max={100}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full"
+        min={1}
+        step={1}
+        className={cn("w-full")}
       />
     </div>
   );

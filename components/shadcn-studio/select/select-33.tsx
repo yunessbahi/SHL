@@ -94,6 +94,7 @@ const MultipleSelectWithPlaceholderDemo = () => {
           href="https://shadcnui-expansions.typeart.cc/docs/multiple-selector"
           className="hover:text-primary underline"
           target="_blank"
+          rel="noreferrer"
         >
           shadcn/ui expressions
         </a>

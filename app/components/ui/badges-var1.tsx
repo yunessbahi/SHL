@@ -74,8 +74,9 @@ const statusStyles = {
     dot: "bg-amber-600 dark:bg-amber-400",
   },
   default: {
-    badge: "",
-    dot: "",
+    badge:
+      "bg-neutral-200/30 text-neutral-500/80 focus-visible:ring-neutral-600/20 dark:bg-neutral-400/10 dark:text-neutral-400/70 dark:focus-visible:ring-neutral-400/40 [a&]:hover:bg-neutral-600/5 dark:[a&]:hover:bg-neutral-400/5",
+    dot: "bg-neutral-400 dark:bg-neutral-500",
   },
 };
 
@@ -89,7 +90,17 @@ export const Status = ({
 
   if (variant === "default") {
     return (
-      <Badge variant="secondary" className={className}>
+      <Badge
+        className={cn(
+          "rounded-full border-none focus-visible:outline-none",
+          styles.badge,
+          className,
+        )}
+      >
+        <span
+          className={cn("size-1.5 rounded-full", styles.dot)}
+          aria-hidden="true"
+        />
         {label}
       </Badge>
     );
@@ -162,8 +173,8 @@ export const BadgeWarn = ({ label = "In Progress" }: { label?: string }) => (
 /**
  * BadgeDefault - Preset component for neutral/default states
  * @param {Object} props
- * @param {string} [props.label='Secondary'] - Custom label (defaults to "Secondary")
+ * @param {string} [props.label='Default'] - Custom label (defaults to "Default")
  */
-export const BadgeDefault = ({ label = "Secondary" }: { label?: string }) => (
+export const BadgeDefault = ({ label = "Default" }: { label?: string }) => (
   <Status variant="default" label={label} />
 );

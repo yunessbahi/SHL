@@ -180,58 +180,74 @@ export default function CampaignAnalytics() {
       {analytics && (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           <Card className="p-6">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                Total Campaigns
-              </p>
-              <Target className="h-4 w-4 text-gray-400" />
-            </div>
-            <div className="mt-2">
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {formatNumber(analytics.overview.total_campaigns)}
-              </p>
-            </div>
-          </Card>
-
-          <Card className="p-6">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                Active Campaigns
-              </p>
-              <TrendingUp className="h-4 w-4 text-green-400" />
-            </div>
-            <div className="mt-2">
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {formatNumber(analytics.overview.active_campaigns)}
-              </p>
+            <div className="absolute inset-0 pointer-events-none [background-size:20px_20px] [background-image:linear-gradient(to_right,#e4e4e7_1px,transparent_1px),linear-gradient(to_bottom,#e4e4e7_1px,transparent_1px)] dark:[background-image:linear-gradient(to_right,#262626_1px,transparent_1px),linear-gradient(to_bottom,#262626_1px,transparent_1px)]"></div>
+            <div className="absolute inset-0 pointer-events-none bg-card [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]"></div>
+            <div className="relative z-20">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  Total Campaigns
+                </p>
+                <Target className="h-4 w-4 text-gray-400" />
+              </div>
+              <div className="mt-2">
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {formatNumber(analytics.overview.total_campaigns)}
+                </p>
+              </div>
             </div>
           </Card>
 
           <Card className="p-6">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                Total Clicks
-              </p>
-              <TrendingUp className="h-4 w-4 text-blue-400" />
-            </div>
-            <div className="mt-2">
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {formatNumber(analytics.overview.total_clicks)}
-              </p>
+            <div className="absolute inset-0 pointer-events-none [background-size:20px_20px] [background-image:linear-gradient(to_right,#e4e4e7_1px,transparent_1px),linear-gradient(to_bottom,#e4e4e7_1px,transparent_1px)] dark:[background-image:linear-gradient(to_right,#262626_1px,transparent_1px),linear-gradient(to_bottom,#262626_1px,transparent_1px)]"></div>
+            <div className="absolute inset-0 pointer-events-none bg-card [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]"></div>
+            <div className="relative z-20">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  Active Campaigns
+                </p>
+                <TrendingUp className="h-4 w-4 text-green-400" />
+              </div>
+              <div className="mt-2">
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {formatNumber(analytics.overview.active_campaigns)}
+                </p>
+              </div>
             </div>
           </Card>
 
           <Card className="p-6">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                Avg Clicks/Campaign
-              </p>
-              <TrendingUp className="h-4 w-4 text-purple-400" />
+            <div className="absolute inset-0 pointer-events-none [background-size:20px_20px] [background-image:linear-gradient(to_right,#e4e4e7_1px,transparent_1px),linear-gradient(to_bottom,#e4e4e7_1px,transparent_1px)] dark:[background-image:linear-gradient(to_right,#262626_1px,transparent_1px),linear-gradient(to_bottom,#262626_1px,transparent_1px)]"></div>
+            <div className="absolute inset-0 pointer-events-none bg-card [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]"></div>
+            <div className="relative z-20">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  Total Clicks
+                </p>
+                <TrendingUp className="h-4 w-4 text-blue-400" />
+              </div>
+              <div className="mt-2">
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {formatNumber(analytics.overview.total_clicks)}
+                </p>
+              </div>
             </div>
-            <div className="mt-2">
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {formatNumber(analytics.overview.avg_click_per_campaign)}
-              </p>
+          </Card>
+
+          <Card className="p-6">
+            <div className="absolute inset-0 pointer-events-none [background-size:20px_20px] [background-image:linear-gradient(to_right,#e4e4e7_1px,transparent_1px),linear-gradient(to_bottom,#e4e4e7_1px,transparent_1px)] dark:[background-image:linear-gradient(to_right,#262626_1px,transparent_1px),linear-gradient(to_bottom,#262626_1px,transparent_1px)]"></div>
+            <div className="absolute inset-0 pointer-events-none bg-card [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]"></div>
+            <div className="relative z-20">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  Avg Clicks/Campaign
+                </p>
+                <TrendingUp className="h-4 w-4 text-purple-400" />
+              </div>
+              <div className="mt-2">
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {formatNumber(analytics.overview.avg_click_per_campaign)}
+                </p>
+              </div>
             </div>
           </Card>
         </div>

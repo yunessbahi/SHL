@@ -321,6 +321,7 @@ export default function LinksDataTable({
   const [linksData, setLinksData] = useState<IData[]>([]);
   const [loading, setLoading] = useState(true);
   const [isTableLoading, setIsTableLoading] = useState(true);
+  console.log("linksdata: ", linksData);
 
   // Expanded row data cache
   const [expandedDataCache, setExpandedDataCache] = useState<Map<string, any>>(
@@ -385,6 +386,7 @@ export default function LinksDataTable({
                                                                      groupName = getGroupName(groups, groupId);
                                                                  }*/
           }
+          console.log("link: ", link);
           return {
             id: link.id.toString(),
             name: link.name || link.short_code,
@@ -1039,7 +1041,7 @@ export default function LinksDataTable({
     } else if (status == "paused") {
       return <Status variant={"warn"} label="Paused" />;
     } else if (status == "archived") {
-      return <Status variant="default" label="Archived" />;
+      return <Status variant={"default"} label="Archived" />;
     }
   };
 

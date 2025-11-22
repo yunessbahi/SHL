@@ -213,7 +213,7 @@ export default function BehaviorForm({
           {/* Information note for one-off and infinite campaigns */}
           {hasCampaign &&
             (campaignLifecycle === 2 || campaignLifecycle === 3) && (
-              <div className="text-xs text-muted-foreground bg-gray-50 p-3 rounded-md">
+              <div className="text-xs dark:bg-amber-200/5 dark:text-amber-300 bg-amber-400/5 text-amber-700 p-3 rounded-md">
                 <div className="flex items-center gap-2 mb-2">
                   <Calendar className="h-4 w-4" />
                   <span className="font-medium">One-off/Infinite Campaign</span>
@@ -228,7 +228,7 @@ export default function BehaviorForm({
 
           {/* Information note for no campaign */}
           {!hasCampaign && (
-            <div className="text-xs text-muted-foreground bg-gray-50 p-3 rounded-md">
+            <div className="text-xs dark:bg-amber-200/5 dark:text-amber-300 bg-amber-400/5 text-amber-700 p-3 rounded-md">
               <div className="flex items-center gap-2 mb-2">
                 <Calendar className="h-4 w-4" />
                 <span className="font-medium">No Campaign</span>

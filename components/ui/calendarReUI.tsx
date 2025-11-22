@@ -4,7 +4,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { DayPicker } from "react-day-picker";
+import { DayButton, DayPicker } from "react-day-picker";
 
 function CalendarReUI({
   className,
@@ -33,7 +33,7 @@ function CalendarReUI({
         ),
         weekday: "size-8 p-0 text-xs font-medium text-muted-foreground/80",
         day_button:
-          "cursor-pointer relative flex size-8 items-center justify-center whitespace-nowrap rounded-md p-0 text-foreground transition-200 group-[[data-selected]:not(.range-middle)]:[transition-property:color,background-color,border-radius,box-shadow] group-[[data-selected]:not(.range-middle)]:duration-150 group-data-disabled:pointer-events-none focus-visible:z-10 hover:not-in-data-selected:bg-accent group-data-selected:bg-primary hover:not-in-data-selected:text-foreground group-data-selected:text-primary-foreground group-data-disabled:text-foreground/30 group-data-disabled:line-through group-data-outside:text-foreground/30 group-data-selected:group-data-outside:text-primary-foreground outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px] group-[.range-start:not(.range-end)]:rounded-e-none group-[.range-end:not(.range-start)]:rounded-s-none group-[.range-middle]:rounded-none group-[.range-middle]:group-data-selected:bg-accent group-[.range-middle]:group-data-selected:text-foreground",
+          "cursor-pointer relative flex size-8 items-center justify-center whitespace-nowrap p-0 text-foreground transition-200 data-[selected]:not(.range-middle):[transition-property:color,background-color,border-radius,box-shadow] data-[selected]:not(.range-middle):duration-150 data-disabled:pointer-events-none focus-visible:z-10 hover:not([data-selected]):bg-accent data-[selected]:bg-primary hover:not([data-selected]):text-foreground data-[selected]:text-primary-foreground data-disabled:text-foreground/30 data-disabled:line-through data-outside:text-foreground/30 data-[selected]:data-outside:text-primary-foreground outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px] [.range-middle]:data-[selected]:bg-accent [.range-middle]:data-[selected]:text-foreground",
         day: "group size-8 px-0 py-px text-sm",
         range_start: "range-start",
         range_end: "range-end",
@@ -54,7 +54,43 @@ function CalendarReUI({
             return <ChevronRight className="h-4 w-4 rtl:rotate-180" />;
           }
         },
+        DayButton: CalendarReUIDayButton,
       }}
+      {...props}
+    />
+  );
+}
+
+function CalendarReUIDayButton({
+  className,
+  day,
+  modifiers,
+  ...props
+}: React.ComponentProps<typeof DayButton>) {
+  const borderRadiusClass = React.useMemo(() => {
+    if (modifiers.range_start && modifiers.range_end) {
+      return "rounded-md";
+    } else if (modifiers.range_start) {
+      return "rounded-l-md rounded-r-none";
+    } else if (modifiers.range_end) {
+      return "rounded-r-md rounded-l-none";
+    }
+    return "";
+  }, [modifiers.range_start, modifiers.range_end]);
+
+  return (
+    <button
+      data-selected={modifiers.selected}
+      data-range-start={modifiers.range_start}
+      data-range-end={modifiers.range_end}
+      data-range-middle={modifiers.range_middle}
+      data-outside={modifiers.outside}
+      data-disabled={modifiers.disabled}
+      className={cn(
+        "cursor-pointer relative flex size-8 items-center justify-center whitespace-nowrap p-0 text-foreground transition-200 data-[selected]:not(.range-middle):[transition-property:color,background-color,border-radius,box-shadow] data-[selected]:not(.range-middle):duration-150 data-disabled:pointer-events-none focus-visible:z-10 hover:not([data-selected]):bg-accent data-[selected]:bg-primary hover:not([data-selected]):text-foreground data-[selected]:text-primary-foreground data-disabled:text-foreground/30 data-disabled:line-through data-outside:text-foreground/30 data-[selected]:data-outside:text-primary-foreground outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px] [.range-middle]:data-[selected]:bg-accent [.range-middle]:data-[selected]:text-foreground",
+        borderRadiusClass,
+        className,
+      )}
       {...props}
     />
   );

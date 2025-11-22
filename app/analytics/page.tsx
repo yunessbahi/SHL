@@ -20,6 +20,7 @@ import {
   LaptopMinimal,
   TabletSmartphoneIcon,
   Info,
+  SquareDashedMousePointer,
 } from "lucide-react";
 import {
   AreaChart,
@@ -745,7 +746,7 @@ export default function AnalyticsOverview() {
                           </p>
                         </div>
                         <p className="text-xs text-muted-foreground font-normal">
-                          Active Campaigns
+                          Campaigns
                         </p>
                       </div>
 
@@ -1185,8 +1186,11 @@ export default function AnalyticsOverview() {
                       </div>
                     </div>
                   ) : groupedTrafficSources.length === 0 ? (
-                    <div className="text-center text-gray-500">
-                      No traffic insights available
+                    <div className=" h-[200px] flex flex-col items-center justify-center text-center gap-4">
+                      <SquareDashedMousePointer className="w-6 h-6 text-muted-foreground/70" />
+                      <p className="text-sm text-muted-foreground/70">
+                        No traffic insights available
+                      </p>
                     </div>
                   ) : (
                     <TooltipProvider>

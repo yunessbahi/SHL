@@ -14,6 +14,7 @@ import {
   ChevronRight,
   InfoIcon,
 } from "lucide-react";
+import { Separator } from "@/app/components/ui/separator";
 
 interface ProgressTTLProps {
   startDate?: string | null;
@@ -33,6 +34,15 @@ interface TimeRemaining {
   isExpired: boolean;
   isFuture: boolean;
 }
+
+// Helper function to check if expiry date is approximately 30 days from creation (TTL expiry)
+const isTTLExpiry = (endDate: string, createdAt: string): boolean => {
+  const created = new Date(createdAt).getTime();
+  const expiry = new Date(endDate).getTime();
+  const diffDays = (expiry - created) / (1000 * 60 * 60 * 24);
+  // Consider it TTL expiry if it's between 29-31 days
+  return diffDays >= 29 && diffDays <= 31;
+};
 
 export default function ProgressTTL({
   startDate,
@@ -94,32 +104,36 @@ export default function ProgressTTL({
       }
 
       // Handle active link with time remaining
-      if (expiryDate && start && createdAt) {
-        const startTime = new Date(start).getTime();
-        const expiryTime = new Date(expiryDate).getTime();
-        const nowTime = now.getTime();
+      if (expiryDate) {
+        // Use start date if available, otherwise use createdAt as start
+        const effectiveStart = start || createdAt;
+        if (effectiveStart) {
+          const startTime = new Date(effectiveStart).getTime();
+          const expiryTime = new Date(expiryDate).getTime();
+          const nowTime = now.getTime();
 
-        // Calculate total time window and elapsed time
-        const totalWindow = expiryTime - startTime;
-        const elapsed = Math.max(0, nowTime - startTime);
+          // Calculate total time window and elapsed time
+          const totalWindow = expiryTime - startTime;
+          const elapsed = Math.max(0, nowTime - startTime);
 
-        const remaining = Math.max(0, expiryTime - nowTime);
-        const days = Math.floor(remaining / (1000 * 60 * 60 * 24));
-        const hours = Math.floor(
-          (remaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
-        );
-        const minutes = Math.floor(
-          (remaining % (1000 * 60 * 60)) / (1000 * 60),
-        );
+          const remaining = Math.max(0, expiryTime - nowTime);
+          const days = Math.floor(remaining / (1000 * 60 * 60 * 24));
+          const hours = Math.floor(
+            (remaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
+          );
+          const minutes = Math.floor(
+            (remaining % (1000 * 60 * 60)) / (1000 * 60),
+          );
 
-        return {
-          days,
-          hours,
-          minutes,
-          total: remaining,
-          isExpired: remaining <= 0,
-          isFuture: false,
-        };
+          return {
+            days,
+            hours,
+            minutes,
+            total: remaining,
+            isExpired: remaining <= 0,
+            isFuture: false,
+          };
+        }
       }
 
       return {
@@ -172,6 +186,12 @@ export default function ProgressTTL({
 
   // Get status message based on time remaining
   const getStatusMessage = (): string => {
+    // First check if link has no explicit expiry date (never expires)
+    // If endDate is null, or if endDate is approximately 30 days from createdAt (TTL expiry)
+    if (!endDate || (endDate && createdAt && isTTLExpiry(endDate, createdAt))) {
+      return "Never expires";
+    }
+
     if (timeRemaining.isExpired) {
       return "Link expired";
     }
@@ -194,7 +214,9 @@ export default function ProgressTTL({
     } else if (timeRemaining.minutes > 0) {
       return `${timeRemaining.minutes}m remaining`;
     } else {
-      return "Link Paused";
+      // No time remaining - this should only happen for links with expiry dates
+      // For links with no expiry date, the check above should have caught it
+      return "No Expiry date";
     }
   };
 
@@ -258,6 +280,7 @@ export default function ProgressTTL({
                   <InfoIcon className="size-4" />
                   Color Code Guide
                 </div>
+                <Separator orientation={"horizontal"} className="opacity-10" />
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                   <span className="flex flex-inline items-center">
@@ -277,6 +300,10 @@ export default function ProgressTTL({
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 bg-red-500 rounded-full"></div>
                   <span>Link Expired</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-secondary/60 dark:bg-secondary/30 rounded-full"></div>
+                  <span>Never Expires</span>
                 </div>
               </div>
             </TooltipContent>

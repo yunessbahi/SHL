@@ -28,3 +28,5 @@ yarn-error.log*
 
 #tem
 _README.md
+tests/
+docs/

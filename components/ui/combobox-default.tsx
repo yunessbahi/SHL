@@ -97,14 +97,17 @@ export function Combobox({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn("w-full justify-between", className)}
+          className={cn(
+            "w-full justify-between bg-input hover:bg-input/40 shadow-xs border border-input transition-colors ",
+            className,
+          )}
           disabled={disabled}
         >
           {selectedOption ? (
             <div className="flex items-center gap-2">
               <span>{selectedOption.label}</span>
               {showGlobalBadge && selectedOptionData?.is_global && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 border">
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-foreground text-background border">
                   Global
                 </span>
               )}

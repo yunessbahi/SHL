@@ -297,6 +297,12 @@ export default function SingleLinkForm({
       selectedCampaign.campaign_end_date &&
       !isEdit
     ) {
+      // For one-off campaigns, prefill the start and end date fields
+      if (selectedCampaign.lifecycle_attr === 2) {
+        setStartDate(selectedCampaign.campaign_start_date);
+        setEndDate(selectedCampaign.campaign_end_date);
+      }
+
       setTimeWindowOverride({
         start: selectedCampaign.campaign_start_date,
         // For always-on campaigns, maintain campaign end date in time_window_override

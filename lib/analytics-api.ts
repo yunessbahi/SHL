@@ -85,6 +85,20 @@ export interface TopCampaignPoint {
   link_count: number;
 }
 
+export interface CampaignTimeseriePoint {
+  bucket_start: string;
+  bucket_end: string;
+  clicks: number;
+}
+
+export interface CampaignCardPoint {
+  id: number;
+  name: string;
+  unique_visitors: number;
+  total_clicks: number;
+  timeserie: CampaignTimeseriePoint[];
+}
+
 export interface AnalyticsFilters {
   start_date?: string;
   end_date?: string;
@@ -278,6 +292,15 @@ class AnalyticsAPIClient {
       `/api/analytics/top-campaigns?period=${period}&top_n=${topN}`,
     );
   }
+
+  // Get campaigns cards data
+  async getCampaignsCards(
+    period: string = "30d",
+  ): Promise<CampaignCardPoint[]> {
+    return this.makeRequest<CampaignCardPoint[]>(
+      `/api/analytics/campaigns/cards?period=${period}`,
+    );
+  }
   // Explore analytics with custom filters
   async exploreAnalytics(
     filters: AnalyticsFilters,
@@ -331,7 +354,7 @@ export const getDateRange = (
   period: string,
 ): { start_date: Date; end_date: Date } => {
   const end_date = new Date();
-  let start_date = new Date();
+  const start_date = new Date();
 
   switch (period) {
     case "1d":
