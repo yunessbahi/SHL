@@ -828,6 +828,7 @@ export default function SmartLinkForm({
               groups={groups}
               loadingCampaigns={campaignState.isLoading}
               loadingGroups={loadingGroups}
+              isEdit={isEdit}
               onNameChange={(value) => metadataActions.setField("name", value)}
               onDescriptionChange={(value) =>
                 metadataActions.setField("description", value)

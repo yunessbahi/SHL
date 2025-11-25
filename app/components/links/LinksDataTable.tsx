@@ -10,7 +10,7 @@ import {
 } from "react";
 import { Alert, AlertIcon, AlertTitle } from "@/components/ui/alert";
 //import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge, BadgeDot } from "@/components/ui/badge";
+import { Badge, BadgeButton, BadgeDot } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CalendarReUI } from "@/components/ui/calendarReUI";
 import {
@@ -1086,13 +1086,13 @@ export default function LinksDataTable({
   const handlePauseArchiveAction = async (linkId: string, action: string) => {
     setActionLoading(linkId);
     try {
-      const res = await authFetch(`/api/links/${linkId}/${action}`, {
+      const res = await authFetch(`/api/workspace/links/${linkId}/${action}`, {
         method: "POST",
       });
 
       if (res.ok) {
         const result = await res.json();
-        toast.success(result.message || `Link ${action}ed successfully`);
+        toast.success(result.message);
         loadLinks();
         onRefresh?.();
       } else {
@@ -1102,6 +1102,37 @@ export default function LinksDataTable({
     } catch (error) {
       console.error(`Failed to ${action} link:`, error);
       toast.error(`Failed to ${action} link`);
+    } finally {
+      setActionLoading(null);
+      setConfirmDialog({
+        isOpen: false,
+        action: "",
+        linkId: null,
+        linkName: "",
+      });
+    }
+  };
+
+  // Handle delete link action
+  const handleDeleteLink = async (linkId: string) => {
+    setActionLoading(linkId);
+    try {
+      const res = await authFetch(`/api/workspace/links/${linkId}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        const result = await res.json();
+        toast.success(result.message);
+        loadLinks();
+        onRefresh?.();
+      } else {
+        const error = await res.text();
+        toast.error(`Failed to delete link: ${error}`);
+      }
+    } catch (error) {
+      console.error("Failed to delete link:", error);
+      toast.error("Failed to delete link");
     } finally {
       setActionLoading(null);
       setConfirmDialog({
@@ -1248,7 +1279,7 @@ export default function LinksDataTable({
                                 {row.fallback_url ? (
                                   <a
                                     href={row.fallback_url}
-                                    className="text-blue-600 hover:underline"
+                                    className="text-teal-600 dark:text-teal-300 hover:underline"
                                   >
                                     {row.fallback_url}
                                   </a>
@@ -1364,29 +1395,6 @@ export default function LinksDataTable({
                         </Table>
                       </div>
                     </div>
-
-                    {/*<div className="border border-border rounded-lg overflow-hidden">
-                          <Table className="w-full text-xs md:w-[350px]">
-                              <TableBody>
-                                  <TableRow className="*:border-border hover:bg-transparent [&>:not(:last-child)]:border-r">
-                                      <TableCell className="bg-muted/50 py-2 font-medium">
-                                          Role
-                                      </TableCell>
-                                      <TableCell className="py-2">
-                                          <Badge variant="secondary">Admin</Badge>
-                                      </TableCell>
-                                  </TableRow>
-                                  <TableRow className="*:border-border hover:bg-transparent [&>:not(:last-child)]:border-r">
-                                      <TableCell className="bg-muted/50 py-2 font-medium">
-                                          Status
-                                      </TableCell>
-                                      <TableCell className="py-2">
-                                          <Badge variant="primary">Active</Badge>
-                                      </TableCell>
-                                  </TableRow>
-                              </TableBody>
-                          </Table>
-                      </div>*/}
                   </div>
 
                   {/* Grid Column 2 - TARGETS */}
@@ -1844,7 +1852,7 @@ export default function LinksDataTable({
                       <DropdownMenuItem
                         onClick={() => openConfirmDialog("pause", link)}
                         disabled={isActionLoading}
-                        className="flex items-center text-yellow-600"
+                        className="flex items-center text-amber-600 dark:text-yellow-500 "
                       >
                         <Pause className="h-4 w-4 mr-2" />
                         Pause
@@ -1852,7 +1860,7 @@ export default function LinksDataTable({
                       <DropdownMenuItem
                         onClick={() => openConfirmDialog("archive", link)}
                         disabled={isActionLoading}
-                        className="flex items-center text-gray-600"
+                        className="flex items-center text-muted-foreground"
                       >
                         <Archive className="h-4 w-4 mr-2" />
                         Archive
@@ -1875,7 +1883,7 @@ export default function LinksDataTable({
                     <DropdownMenuItem
                       onClick={() => openConfirmDialog("unarchive", link)}
                       disabled={isActionLoading}
-                      className="flex items-center text-blue-600"
+                      className="flex items-center text-muted-foreground"
                     >
                       <ArchiveIcon className="h-4 w-4 mr-2" />
                       Restore
@@ -1885,12 +1893,24 @@ export default function LinksDataTable({
                   {link.status === "expired" && (
                     <DropdownMenuItem
                       disabled
-                      className="flex items-center text-gray-400"
+                      className="flex items-center text-muted-foreground"
                     >
                       <AlertTriangle className="h-4 w-4 mr-2" />
                       Link expired
                     </DropdownMenuItem>
                   )}
+
+                  <DropdownMenuSeparator />
+
+                  {/* Delete Link - Always Available */}
+                  <DropdownMenuItem
+                    onClick={() => openConfirmDialog("delete", link)}
+                    disabled={isActionLoading}
+                    className="flex items-center bg-red-600 text-white"
+                  >
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Delete Link
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -2004,10 +2024,35 @@ export default function LinksDataTable({
               {confirmDialog.action === "unpause" && "Resume Link"}
               {confirmDialog.action === "archive" && "Archive Link"}
               {confirmDialog.action === "unarchive" && "Unarchive Link"}
+              {confirmDialog.action === "delete" && "Delete Link"}
             </DialogTitle>
             <DialogDescription>
-              Are you sure you want to {confirmDialog.action} "
-              {confirmDialog.linkName}"?
+              {confirmDialog.action === "delete" ? (
+                <>
+                  Are you sure you want to permanently delete
+                  <Badge
+                    variant={"secondary"}
+                    className="font-bold font-mono mx-1"
+                  >
+                    {confirmDialog.linkName}
+                  </Badge>
+                  ?
+                  <br />
+                  <strong>This action cannot be undone.</strong> All targets and
+                  analytics data will be permanently removed.
+                </>
+              ) : (
+                <>
+                  Are you sure you want to {confirmDialog.action}{" "}
+                  <Badge
+                    variant={"secondary"}
+                    className="font-bold font-mono mx-1"
+                  >
+                    {confirmDialog.linkName}
+                  </Badge>
+                  ?
+                </>
+              )}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -2025,28 +2070,35 @@ export default function LinksDataTable({
               Cancel
             </Button>
             <Button
-              onClick={() =>
-                confirmDialog.linkId &&
-                confirmDialog.action &&
-                handlePauseArchiveAction(
-                  confirmDialog.linkId,
-                  confirmDialog.action,
-                )
-              }
+              onClick={() => {
+                if (confirmDialog.linkId && confirmDialog.action) {
+                  if (confirmDialog.action === "delete") {
+                    handleDeleteLink(confirmDialog.linkId);
+                  } else {
+                    handlePauseArchiveAction(
+                      confirmDialog.linkId,
+                      confirmDialog.action,
+                    );
+                  }
+                }
+              }}
               className={
                 confirmDialog.action === "pause"
-                  ? "bg-yellow-600 hover:bg-yellow-700"
+                  ? "bg-amber-600 text-white  hover:bg-amber-700"
                   : confirmDialog.action === "unpause"
-                    ? "bg-green-600 hover:bg-green-700"
+                    ? "bg-green-600 text-white hover:bg-green-700"
                     : confirmDialog.action === "archive"
-                      ? "bg-gray-600 hover:bg-gray-700"
-                      : "bg-blue-600 hover:bg-blue-700"
+                      ? "bg-gray-600 text-white hover:bg-gray-700"
+                      : confirmDialog.action === "delete"
+                        ? "bg-red-600 text-white hover:bg-red-700"
+                        : "bg-gray-600 text-white hover:bg-gray-700"
               }
             >
               {confirmDialog.action === "pause" && "Pause Link"}
               {confirmDialog.action === "unpause" && "Resume Link"}
               {confirmDialog.action === "archive" && "Archive Link"}
               {confirmDialog.action === "unarchive" && "Unarchive Link"}
+              {confirmDialog.action === "delete" && "Delete Link"}
             </Button>
           </DialogFooter>
         </DialogContent>

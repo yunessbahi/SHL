@@ -1,9 +1,16 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { TooltipProvider as GlobalTooltipProvider } from "@/components/ui/global-tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
@@ -36,6 +43,7 @@ import {
   ChartNoAxesColumn,
   ChartNoAxesCombined,
   Table2,
+  Info,
 } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import {
@@ -51,7 +59,7 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
+  Tooltip as RechartsTooltip,
   Legend,
   ResponsiveContainer,
   ComposedChart,
@@ -66,6 +74,7 @@ import {
   getDateRange,
 } from "@/lib/analytics-api";
 import MapCompact from "@/components/analytics/mapCompact";
+import NetworkViz from "@/components/analytics/NetworkViz";
 import ExploreDataTable from "@/components/analytics/ExploreDataTable";
 import { SafeUser } from "@/lib/getSafeSession";
 import { toast } from "sonner";
@@ -226,6 +235,7 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
   const [groupingCount, setGroupingCount] = useState(5);
   const [groupingWarning, setGroupingWarning] = useState<string | null>(null);
   const [selectedGrouping, setSelectedGrouping] = useState<string | null>(null);
+  const isRequestInProgress = useRef(false);
 
   // Note: campaigns and links are now sourced from filterOptions for single source of truth
 
@@ -381,7 +391,9 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
   }, [timeseriesData, filters, selectedMetrics]);
 
   const fetchExploreData = async () => {
+    if (isRequestInProgress.current) return;
     setLoading(true);
+    isRequestInProgress.current = true;
     try {
       // Set date range based on selected period
       const periodFilters = { ...filters };
@@ -408,6 +420,7 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
       toast.error("Failed to load analytics data");
     } finally {
       setLoading(false);
+      isRequestInProgress.current = false;
     }
   };
 
@@ -459,6 +472,7 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
   }, [selectedDimensions]);
 
   useEffect(() => {
+    if (selectedDimensions.length === 0) return;
     fetchExploreData();
   }, [selectedMetrics, selectedDimensions, selectedPeriod, filters]);
 
@@ -666,7 +680,7 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
             tickLine={false}
             width={40}
           />
-          <Tooltip content={<CustomTooltip />} />
+          <RechartsTooltip content={<CustomTooltip />} />
           {selectedMetrics.map((metric, index) => {
             const color = COLORS[index % COLORS.length];
             return (
@@ -965,7 +979,7 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
             width={6}
             className="fill-muted-foreground"
           />
-          <Tooltip content={<CustomTooltip />} />
+          <RechartsTooltip content={<CustomTooltip />} />
           {/* <Legend /> */}
           {topGroupings.map((grouping, index) => (
             <Line
@@ -1008,6 +1022,7 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
             <TabsTrigger value="chart">Chart View</TabsTrigger>
             <TabsTrigger value="table">Data Table</TabsTrigger>
             <TabsTrigger value="map">Geographic View</TabsTrigger>
+            <TabsTrigger value="network">Network View</TabsTrigger>
           </TabsList>
 
           <TabsContent value="chart" className="space-y-4">
@@ -1116,6 +1131,14 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                 <MapCompact size="responsive" data={mapData} />
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="network" className="space-y-4">
+            <NetworkViz
+              data={chartData}
+              dimensions={selectedDimensions.map((d) => d.value)}
+              className="h-[600px]"
+            />
           </TabsContent>
         </Tabs>
       </div>

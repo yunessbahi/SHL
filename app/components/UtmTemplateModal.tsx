@@ -414,7 +414,7 @@ export function UtmTemplateModal({
               control={control}
               name="is_global"
               render={({ field }) => (
-                <FormItem className="flex items-end space-x-2">
+                <FormItem className="flex items-center space-x-2">
                   <FormControl>
                     <Checkbox
                       checked={field.value}
@@ -434,7 +434,7 @@ export function UtmTemplateModal({
               control={control}
               name="pinned"
               render={({ field }) => (
-                <FormItem className="flex items-end space-x-2">
+                <FormItem className="flex items-center space-x-2">
                   <FormControl>
                     <Checkbox
                       checked={field.value}

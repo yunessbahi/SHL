@@ -10,6 +10,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import type { SafeUser } from "@/lib/getSafeSession";
 import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
   title: "Linker",
@@ -102,6 +103,7 @@ export default async function RootLayout({
               <div className="py-4">{children}</div>
             </Header>
           </Sidebar>
+          <Toaster theme="system" />
         </ThemeProvider>
       </body>
     </html>

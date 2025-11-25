@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Plus, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, ChevronDown, ChevronRight, AlertTriangle } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -30,6 +30,7 @@ interface Campaign {
   name: string;
   description: string;
   lifecycle_attr?: number; // Campaign lifecycle type
+  status?: string; // Campaign status: active, paused, inactive
 }
 
 interface Group {
@@ -55,6 +56,9 @@ interface LinkMetadataFormProps {
   groups?: Group[];
   loadingCampaigns?: boolean;
   loadingGroups?: boolean;
+
+  // Edit mode flag
+  isEdit?: boolean;
 
   // Change handlers
   onNameChange: (name: string) => void;
@@ -96,6 +100,7 @@ export default function LinkMetadataForm({
   groups = [],
   loadingCampaigns = false,
   loadingGroups = false,
+  isEdit = false,
   onNameChange,
   onDescriptionChange,
   onFallbackUrlChange,
@@ -113,6 +118,11 @@ export default function LinkMetadataForm({
   // Get selected values (take first item from arrays for single selection)
   const selectedCampaignId = campaignIds.length > 0 ? campaignIds[0] : "";
   const selectedGroupId = groupIds.length > 0 ? groupIds[0] : "";
+
+  // Check if selected campaign is inactive (for edit mode warnings)
+  const selectedCampaign = campaigns.find((c) => c.id === selectedCampaignId);
+  const isSelectedCampaignInactive =
+    selectedCampaign && selectedCampaign.status !== "active";
 
   const handleCampaignChange = (value: string | number | null) => {
     if (!value) {
@@ -141,7 +151,9 @@ export default function LinkMetadataForm({
   };
 
   // Format campaign and group options
-  const campaignOptions = formatCampaignOptions(campaigns, true);
+  // In edit mode, show all campaigns (including inactive) so users can reassign
+  // In create mode, only show active campaigns
+  const campaignOptions = formatCampaignOptions(campaigns, true, !isEdit);
   const groupOptions = formatGroupOptions(groups, true);
 
   return (
@@ -188,6 +200,25 @@ export default function LinkMetadataForm({
         </div>
       </div>
 
+      {/* Campaign Status Warning for Edit Mode */}
+      {isEdit && isSelectedCampaignInactive && (
+        <div className="bg-amber-50 border border-amber-200 rounded-md p-3">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+            <div className="text-sm">
+              <p className="font-medium text-amber-900">
+                Campaign Status Warning
+              </p>
+              <p className="text-amber-700">
+                This link is associated with a {selectedCampaign?.status}{" "}
+                campaign. Consider reassigning it to an active campaign for
+                better organization.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Metadata Selectors */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Campaign Selection */}
@@ -195,7 +226,10 @@ export default function LinkMetadataForm({
           <CardHeader className="pb-3">
             <CardTitle className="text-sm">Campaign</CardTitle>
             <CardDescription className="text-xs">
-              Associate with marketing campaigns
+              Associate with marketing campaigns{" "}
+              {isEdit
+                ? "(all campaigns available for reassignment)"
+                : "(only active campaigns are available for selection)"}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">

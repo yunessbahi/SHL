@@ -336,6 +336,7 @@ export default function GroupsPage({ user }: GroupsPageProps) {
         <CustomDateRangeWithPresetsInput values={values} onChange={onChange} />
       ),
       className: "w-48 bg-secondary",
+      defaultOperator: "between",
     },
   ];
 
@@ -495,7 +496,7 @@ export default function GroupsPage({ user }: GroupsPageProps) {
       </div>
       <div className="flex items-center justify-between">
         {/* Filters Section */}
-        <div className="flex items-start gap-2.5 mb-3.5">
+        <div className="flex items-start gap-2.5">
           <div className="flex-1">
             <Filters
               filters={filters}

@@ -508,6 +508,7 @@ export default function TagsPage({ user }: TagsPageProps) {
         <CustomDateRangeWithPresetsInput values={values} onChange={onChange} />
       ),
       className: "w-48 bg-secondary",
+      defaultOperator: "between",
     },
     {
       key: "color",
@@ -739,7 +740,7 @@ export default function TagsPage({ user }: TagsPageProps) {
       </div>
       <div className="flex items-center justify-between">
         {/* Filters Section */}
-        <div className="flex items-start gap-2.5 mb-3.5">
+        <div className="flex items-start gap-2.5">
           <div className="flex-1">
             <Filters
               filters={filters}

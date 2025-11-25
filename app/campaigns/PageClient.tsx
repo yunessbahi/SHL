@@ -1,5 +1,11 @@
 "use client";
-import React, { useEffect, useState, useRef } from "react";
+import React, {
+  useEffect,
+  useState,
+  useRef,
+  useMemo,
+  useCallback,
+} from "react";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -13,6 +19,7 @@ import {
   X,
   Edit,
   Trash2,
+  Eye,
   Info,
   Clock,
   Infinity,
@@ -22,6 +29,8 @@ import {
   Tag as TagIcon,
   TimerReset,
   Clock3,
+  Calendar,
+  FilePenLine,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -33,14 +42,48 @@ import { authFetch } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Spinner } from "@/components/ui/spinner";
 import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
+
+// Delete Confirmation Message Component
+interface DeleteConfirmationMessageProps {
+  campaignName?: string;
+}
+
+const DeleteConfirmationMessage = ({
+  campaignName,
+}: DeleteConfirmationMessageProps) => {
+  const displayName = campaignName?.trim() || "this campaign";
+
+  return (
+    <div role="alert" aria-live="polite">
+      <p className="mb-2">
+        Are you sure you want to permanently delete{" "}
+        <Badge
+          variant="secondary"
+          className="font-bold font-mono mx-1 truncate max-w-xs inline-block align-middle"
+        >
+          {displayName}
+        </Badge>
+        ?
+      </p>
+      <p className="text-sm text-muted-foreground">
+        <strong>This action cannot be undone.</strong> All associated links and
+        analytics data will be permanently removed.
+      </p>
+    </div>
+  );
+};
 import { UtmTemplateModal } from "@/app/components/UtmTemplateModal";
 import CampaignModal from "@/app/components/CampaignModal";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/app/components/ui/dialog";
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -54,6 +97,38 @@ import { Textarea } from "@/components/ui/textarea";
 import { MultiSelect } from "@/components/multi-select";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Status } from "@/app/components/ui/badges-var1";
+import {
+  createFilter,
+  Filters,
+  type Filter,
+  type FilterFieldConfig,
+} from "@/components/ui/filters";
+import { CalendarReUI } from "@/components/ui/calendarReUI";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  endOfMonth,
+  endOfYear,
+  format,
+  isEqual,
+  startOfDay,
+  startOfMonth,
+  startOfYear,
+  subDays,
+  subMonths,
+  subYears,
+} from "date-fns";
+import { DateRange } from "react-day-picker";
+import { Label } from "@/components/ui/label";
 
 function getUtmParams(obj: any) {
   let utm = obj?.utm_params;
@@ -283,12 +358,476 @@ import {
   Bar,
   XAxis,
   YAxis,
-  Tooltip,
+  Tooltip as ChartTooltip,
   ResponsiveContainer,
 } from "recharts";
+import { ChartTooltipContent } from "@/components/ui/chart";
 
 interface CampaignsPageProps {
   user: SafeUser;
+}
+
+// CampaignFilters component to handle filtering logic
+function CampaignFilters({
+  campaigns,
+  onFilteredCampaignsChange,
+}: {
+  campaigns: Campaign[];
+  onFilteredCampaignsChange: (filtered: Campaign[]) => void;
+}) {
+  const [filters, setFilters] = useState<Filter[]>([]);
+
+  // Filter field configurations
+  const fields = useMemo<FilterFieldConfig[]>(
+    () => [
+      {
+        key: "name",
+        label: "Campaign Name",
+        icon: <Target className="size-3.5" />,
+        type: "text",
+        className: "w-40 bg-secondary",
+        placeholder: "Search campaign names...",
+        defaultOperator: "contains",
+      },
+      {
+        key: "status",
+        label: "Status",
+        icon: <Info className="size-3.5" />,
+        type: "select",
+        options: [
+          { value: "active", label: "Active" },
+          { value: "paused", label: "Paused" },
+          { value: "inactive", label: "Inactive" },
+        ],
+        className: "w-32 bg-secondary",
+      },
+      {
+        key: "lifecycle",
+        label: "Lifecycle",
+        icon: <Clock className="size-3.5" />,
+        type: "select",
+        options: [
+          { value: "always_on", label: "Always-on" },
+          { value: "one_off", label: "One-off" },
+          { value: "infinite", label: "Infinite" },
+          { value: "expired", label: "Expired" },
+        ],
+        className: "w-32 bg-secondary",
+      },
+      {
+        key: "tags",
+        label: "Tags",
+        icon: <TagIcon className="size-3.5" />,
+        type: "multiselect",
+        options: Array.from(
+          new Set(
+            campaigns.flatMap((c) => c.tags?.map((t) => t.tag_name) || []),
+          ),
+        ).map((tagName) => ({ value: tagName, label: tagName })),
+        className: "w-40 bg-secondary",
+      },
+    ],
+    [campaigns],
+  );
+
+  // Separate field for end_date to avoid hook issues
+  const endDateField: FilterFieldConfig = useMemo(
+    () => ({
+      key: "end_date",
+      label: "End Date",
+      icon: <Calendar className="size-3.5" />,
+      type: "custom",
+      operators: [
+        { value: "between", label: "between" },
+        { value: "not_between", label: "not between" },
+        { value: "before", label: "before" },
+        { value: "after", label: "after" },
+      ],
+      customRenderer: ({ values, onChange }) => (
+        <CustomDateRangeWithPresetsInput values={values} onChange={onChange} />
+      ),
+      className: "w-48 bg-secondary",
+      defaultOperator: "between",
+    }),
+    [],
+  );
+
+  const allFields = useMemo(
+    () => [...fields, endDateField],
+    [fields, endDateField],
+  );
+
+  // Apply filters to campaigns data
+  const applyFiltersToCampaigns = useCallback(
+    (newFilters: Filter[]) => {
+      let filtered = [...campaigns];
+
+      // Filter out empty filters before applying
+      const activeFilters = newFilters.filter((filter) => {
+        const { values } = filter;
+
+        // Check if filter has meaningful values
+        if (!values || values.length === 0) return false;
+
+        // For text/string values, check if they're not empty strings
+        if (
+          values.every(
+            (value) => typeof value === "string" && value.trim() === "",
+          )
+        )
+          return false;
+
+        // For number values, check if they're not null/undefined
+        if (values.every((value) => value === null || value === undefined))
+          return false;
+
+        // For arrays, check if they're not empty
+        if (values.every((value) => Array.isArray(value) && value.length === 0))
+          return false;
+
+        return true;
+      });
+
+      activeFilters.forEach((filter) => {
+        const { field, operator, values } = filter;
+
+        filtered = filtered.filter((campaign) => {
+          let fieldValue: any = campaign[field as keyof Campaign];
+
+          // Special handling for different fields
+          if (field === "lifecycle") {
+            // Map lifecycle_attr to string values
+            const lifecycleMap: Record<number, string> = {
+              1: "always_on",
+              2: "one_off",
+              3: "infinite",
+            };
+            const isExpired =
+              campaign.lifecycle_attr === 2 &&
+              campaign.campaign_end_date &&
+              new Date(campaign.campaign_end_date) < new Date();
+            fieldValue = isExpired
+              ? "expired"
+              : lifecycleMap[campaign.lifecycle_attr] || "";
+          } else if (field === "tags") {
+            // Check if campaign has any of the selected tags
+            fieldValue = campaign.tags?.map((t) => t.tag_name) || [];
+          } else if (field === "end_date") {
+            // Only include one-off campaigns for end date filtering
+            if (campaign.lifecycle_attr !== 2) return false;
+            fieldValue = campaign.campaign_end_date;
+          }
+
+          switch (operator) {
+            case "is":
+              if (field === "tags") {
+                return values.some((value) =>
+                  (fieldValue as string[]).includes(String(value)),
+                );
+              }
+              return values.includes(fieldValue);
+            case "is_not":
+              if (field === "tags") {
+                return !values.some((value) =>
+                  (fieldValue as string[]).includes(String(value)),
+                );
+              }
+              return !values.includes(fieldValue);
+            case "is_any_of":
+              if (field === "tags") {
+                return values.some((value) =>
+                  (fieldValue as string[]).includes(String(value)),
+                );
+              }
+              return values.includes(fieldValue);
+            case "is_not_any_of":
+              if (field === "tags") {
+                return !values.some((value) =>
+                  (fieldValue as string[]).includes(String(value)),
+                );
+              }
+              return !values.includes(fieldValue);
+            case "contains":
+              return values.some((value) =>
+                String(fieldValue)
+                  .toLowerCase()
+                  .includes(String(value).toLowerCase()),
+              );
+            case "not_contains":
+              return !values.some((value) =>
+                String(fieldValue)
+                  .toLowerCase()
+                  .includes(String(value).toLowerCase()),
+              );
+            case "equals":
+              return fieldValue === values[0];
+            case "not_equals":
+              return fieldValue !== values[0];
+            case "greater_than":
+              return Number(fieldValue) > Number(values[0]);
+            case "less_than":
+              return Number(fieldValue) < Number(values[0]);
+            case "greater_than_or_equal":
+              return Number(fieldValue) >= Number(values[0]);
+            case "less_than_or_equal":
+              return Number(fieldValue) <= Number(values[0]);
+            case "between":
+              if (field === "end_date") {
+                // Date range filtering for date fields
+                if (values.length >= 2) {
+                  const fromDate = new Date(String(values[0]));
+                  const toDate = new Date(String(values[1]));
+                  const fieldDate = new Date(String(fieldValue));
+                  return fieldDate >= fromDate && fieldDate <= toDate;
+                }
+              } else {
+                // Number range filtering for other fields
+                if (values.length >= 2) {
+                  const min = Number(values[0]);
+                  const max = Number(values[1]);
+                  return Number(fieldValue) >= min && Number(fieldValue) <= max;
+                }
+              }
+              return true;
+            case "not_between":
+              if (field === "end_date") {
+                // Date range filtering for date fields
+                if (values.length >= 2) {
+                  const fromDate = new Date(String(values[0]));
+                  const toDate = new Date(String(values[1]));
+                  const fieldDate = new Date(String(fieldValue));
+                  return fieldDate < fromDate || fieldDate > toDate;
+                }
+              } else {
+                // Number range filtering for other fields
+                if (values.length >= 2) {
+                  const min = Number(values[0]);
+                  const max = Number(values[1]);
+                  return Number(fieldValue) < min || Number(fieldValue) > max;
+                }
+              }
+              return true;
+            case "before":
+              return new Date(String(fieldValue)) < new Date(String(values[0]));
+            case "after":
+              return new Date(String(fieldValue)) > new Date(String(values[0]));
+            default:
+              return true;
+          }
+        });
+      });
+
+      return filtered;
+    },
+    [campaigns],
+  );
+
+  // Update filtered campaigns when campaigns or filters change
+  useEffect(() => {
+    const filtered = applyFiltersToCampaigns(filters);
+    onFilteredCampaignsChange(filtered);
+  }, [campaigns, filters, applyFiltersToCampaigns, onFilteredCampaignsChange]);
+
+  // Handle filter changes
+  const handleFiltersChange = useCallback((newFilters: Filter[]) => {
+    setFilters(newFilters);
+  }, []);
+
+  return (
+    <>
+      <Filters
+        filters={filters}
+        fields={allFields}
+        onChange={handleFiltersChange}
+        variant="outline"
+        size="sm"
+      />
+      {filters.length > 0 && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="text-xs gap-2"
+          onClick={() => {
+            setFilters([]);
+          }}
+        >
+          <X className="w-4 h-4" /> Clear
+        </Button>
+      )}
+    </>
+  );
+}
+
+// Custom Date Range with Presets Input Component
+function CustomDateRangeWithPresetsInput({
+  values,
+  onChange,
+}: {
+  values: unknown[];
+  onChange: (values: unknown[]) => void;
+}) {
+  const today = useMemo(() => new Date(), []);
+
+  const presets = useMemo(
+    () => [
+      { label: "Today", range: { from: today, to: today } },
+      {
+        label: "Yesterday",
+        range: { from: subDays(today, 1), to: subDays(today, 1) },
+      },
+      { label: "Last 7 days", range: { from: subDays(today, 6), to: today } },
+      {
+        label: "Last 30 days",
+        range: { from: subDays(today, 29), to: today },
+      },
+      {
+        label: "Month to date",
+        range: { from: startOfMonth(today), to: today },
+      },
+      {
+        label: "Last month",
+        range: {
+          from: startOfMonth(subMonths(today, 1)),
+          to: endOfMonth(subMonths(today, 1)),
+        },
+      },
+      {
+        label: "Year to date",
+        range: { from: startOfYear(today), to: today },
+      },
+      {
+        label: "Last year",
+        range: {
+          from: startOfYear(subYears(today, 1)),
+          to: endOfYear(subYears(today, 1)),
+        },
+      },
+    ],
+    [today],
+  );
+
+  const [month, setMonth] = useState(today);
+  const [date, setDate] = useState<DateRange | undefined>(
+    values?.[0] && typeof values[0] === "string"
+      ? {
+          from: new Date(values[0] as string),
+          to:
+            values[1] && typeof values[1] === "string"
+              ? new Date(values[1] as string)
+              : undefined,
+        }
+      : undefined,
+  );
+  const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    const matchedPreset = presets.find(
+      (preset) =>
+        isEqual(
+          startOfDay(preset.range.from),
+          startOfDay(date?.from || new Date(0)),
+        ) &&
+        isEqual(
+          startOfDay(preset.range.to),
+          startOfDay(date?.to || new Date(0)),
+        ),
+    );
+    setSelectedPreset(matchedPreset?.label || null);
+  }, [date, presets]);
+
+  const handleApply = () => {
+    if (date?.from) {
+      // Format dates as YYYY-MM-DD in local timezone to avoid timezone conversion issues
+      const formatLocalDate = (d: Date) => {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      };
+
+      const fromStr = formatLocalDate(date.from);
+      const toStr = date.to ? formatLocalDate(date.to) : fromStr;
+      onChange([fromStr, toStr]);
+    }
+    setIsOpen(false);
+  };
+
+  const handleCancel = () => {
+    setIsOpen(false);
+  };
+
+  const handleSelect = (selected: DateRange | undefined) => {
+    setDate({
+      from: selected?.from || undefined,
+      to: selected?.to || undefined,
+    });
+    setSelectedPreset(null);
+  };
+
+  const handlePresetSelect = (preset: (typeof presets)[0]) => {
+    setDate(preset.range);
+    setMonth(preset.range.from || today);
+    setSelectedPreset(preset.label);
+  };
+
+  return (
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger className="cursor-pointer">
+        {date?.from ? (
+          date.to ? (
+            <>
+              {format(date.from, "LLL dd, y")} - {format(date.to, "LLL dd, y")}
+            </>
+          ) : (
+            format(date.from, "LLL dd, y")
+          )
+        ) : (
+          <span>Pick a date range with presets</span>
+        )}
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="center" sideOffset={8}>
+        <div className="flex max-sm:flex-col">
+          <div className="relative border-border max-sm:order-1 max-sm:border-t sm:w-32">
+            <div className="h-full border-border sm:border-e py-2">
+              <div className="flex flex-col px-2 gap-[2px]">
+                {presets.map((preset, index) => (
+                  <Button
+                    key={index}
+                    type="button"
+                    variant="ghost"
+                    className={cn(
+                      "h-8 w-full justify-start",
+                      selectedPreset === preset.label && "bg-accent",
+                    )}
+                    onClick={() => handlePresetSelect(preset)}
+                  >
+                    {preset.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </div>
+          <CalendarReUI
+            autoFocus
+            mode="range"
+            month={month}
+            onMonthChange={setMonth}
+            showOutsideDays={false}
+            selected={date}
+            onSelect={handleSelect}
+            numberOfMonths={2}
+          />
+        </div>
+        <div className="flex items-center justify-end gap-1.5 border-t border-border p-3">
+          <Button variant="outline" onClick={handleCancel}>
+            Cancel
+          </Button>
+          <Button onClick={handleApply}>Apply</Button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
 }
 
 export default function CampaignsPage({ user }: CampaignsPageProps) {
@@ -296,6 +835,7 @@ export default function CampaignsPage({ user }: CampaignsPageProps) {
   const [allTemplates, setAllTemplates] = useState<UTMTemplate[]>([]);
   const [campaignCards, setCampaignCards] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filteredCampaigns, setFilteredCampaigns] = useState<Campaign[]>([]);
   const router = useRouter();
 
   // Helper function to check if a campaign has analytics data
@@ -318,6 +858,19 @@ export default function CampaignsPage({ user }: CampaignsPageProps) {
     mode: "create" | "edit";
     campaign?: Campaign;
   }>({ open: false, mode: "create" });
+
+  // Confirmation Dialog State
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    action: string;
+    campaignId: number | null;
+    campaignName: string;
+  }>({
+    isOpen: false,
+    action: "",
+    campaignId: null,
+    campaignName: "",
+  });
 
   // Fetch all campaigns and templates
   useEffect(() => {
@@ -348,6 +901,11 @@ export default function CampaignsPage({ user }: CampaignsPageProps) {
 
     return () => observer.disconnect();
   }, []);
+
+  // Initialize filtered campaigns
+  useEffect(() => {
+    setFilteredCampaigns(campaigns);
+  }, [campaigns]);
 
   const refreshCampaigns = async () => {
     const cRes = await authFetch("/api/campaigns/");
@@ -388,35 +946,142 @@ export default function CampaignsPage({ user }: CampaignsPageProps) {
   };
 
   const handleDeleteCampaign = async (campaignId: number) => {
-    if (
-      !confirm(
-        "Are you sure you want to delete this campaign? This will also remove all template assignments.",
-      )
-    )
-      return;
-    const response = await authFetch(`/api/campaigns/${campaignId}`, {
-      method: "DELETE",
-    });
-    if (response.ok) {
-      await refreshCampaigns();
+    try {
+      const response = await authFetch(`/api/campaigns/${campaignId}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        const result = await response.json();
+        toast.success(result.message);
+        await refreshCampaigns();
+      } else {
+        const error = await response.text();
+        toast.error(`Failed to delete campaign: ${error}`);
+      }
+    } catch (error) {
+      toast.error("Failed to delete campaign");
+    } finally {
+      setConfirmDialog({
+        isOpen: false,
+        action: "",
+        campaignId: null,
+        campaignName: "",
+      });
     }
   };
 
   const handlePauseCampaign = async (campaignId: number) => {
-    const response = await authFetch(`/api/campaigns/${campaignId}/pause`, {
-      method: "POST",
-    });
-    if (response.ok) {
-      await refreshCampaigns();
+    try {
+      const response = await authFetch(`/api/campaigns/${campaignId}/pause`, {
+        method: "POST",
+      });
+      if (response.ok) {
+        const result = await response.json();
+        toast.success(
+          result.message ||
+            "Campaign paused successfully. Existing links will continue to redirect normally, but new link creation is disabled.",
+        );
+        await refreshCampaigns();
+      } else {
+        const error = await response.text();
+        toast.error(`Failed to pause campaign: ${error}`);
+      }
+    } catch (error) {
+      toast.error("Failed to pause campaign");
+    } finally {
+      setConfirmDialog({
+        isOpen: false,
+        action: "",
+        campaignId: null,
+        campaignName: "",
+      });
+    }
+  };
+
+  const handleUnpauseCampaign = async (campaignId: number) => {
+    try {
+      const response = await authFetch(`/api/campaigns/${campaignId}/unpause`, {
+        method: "POST",
+      });
+      if (response.ok) {
+        const result = await response.json();
+        toast.success(
+          result.message ||
+            "Campaign restored successfully. New link creation is now enabled.",
+        );
+        await refreshCampaigns();
+      } else {
+        const error = await response.text();
+        toast.error(`Failed to unpause campaign: ${error}`);
+      }
+    } catch (error) {
+      toast.error("Failed to unpause campaign");
+    } finally {
+      setConfirmDialog({
+        isOpen: false,
+        action: "",
+        campaignId: null,
+        campaignName: "",
+      });
     }
   };
 
   const handleArchiveCampaign = async (campaignId: number) => {
-    const response = await authFetch(`/api/campaigns/${campaignId}/archive`, {
-      method: "POST",
-    });
-    if (response.ok) {
-      await refreshCampaigns();
+    try {
+      const response = await authFetch(`/api/campaigns/${campaignId}/archive`, {
+        method: "POST",
+      });
+      if (response.ok) {
+        const result = await response.json();
+        toast.success(
+          result.message ||
+            "Campaign archived successfully. Existing links will continue to redirect normally, but new link creation is disabled.",
+        );
+        await refreshCampaigns();
+      } else {
+        const error = await response.text();
+        toast.error(`Failed to archive campaign: ${error}`);
+      }
+    } catch (error) {
+      toast.error("Failed to archive campaign");
+    } finally {
+      setConfirmDialog({
+        isOpen: false,
+        action: "",
+        campaignId: null,
+        campaignName: "",
+      });
+    }
+  };
+
+  const handleRestoreCampaign = async (campaignId: number) => {
+    try {
+      const response = await authFetch(
+        `/api/campaigns/${campaignId}/unarchive`,
+        {
+          method: "POST",
+        },
+      );
+      if (response.ok) {
+        const result = await response.json();
+        toast.success(
+          result.message ||
+            "Campaign restored successfully. New link creation is now enabled.",
+        );
+        await refreshCampaigns();
+      } else {
+        const error = await response.text();
+        toast.error(`Failed to restore campaign: ${error}`);
+      }
+    } catch (error) {
+      toast.error("Failed to restore campaign");
+    } finally {
+      setConfirmDialog({
+        isOpen: false,
+        action: "",
+        campaignId: null,
+        campaignName: "",
+      });
     }
   };
 
@@ -439,6 +1104,15 @@ export default function CampaignsPage({ user }: CampaignsPageProps) {
     if (response.ok) {
       await refreshCampaigns();
     }
+  };
+
+  const openConfirmDialog = (action: string, campaign: Campaign) => {
+    setConfirmDialog({
+      isOpen: true,
+      action,
+      campaignId: campaign.id,
+      campaignName: campaign.name,
+    });
   };
 
   const availableToAssign =
@@ -503,761 +1177,913 @@ export default function CampaignsPage({ user }: CampaignsPageProps) {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        {/*<h1 className="text-2xl font-bold">Campaigns</h1>*/}
-        <div className={""}></div>
-        <Button
-          onClick={() => setCampaignModalState({ open: true, mode: "create" })}
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Add Campaign
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {campaigns.length === 0 ? (
-          <div className="col-span-full">
-            <EmptyState
-              icon={Target}
-              title="No Campaigns Yet"
-              description="Create campaigns to organize your marketing efforts. Campaigns help you track performance, set goals, and manage your links more effectively."
-              actionLabel="Add Campaign"
-              onAction={() =>
-                setCampaignModalState({ open: true, mode: "create" })
-              }
-            />
+    <TooltipProvider>
+      <div className="space-y-4">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            Campaigns
+          </h1>
+          <p className="text-lg text-gray-600 dark:text-gray-300 mt-2">
+            Create and manage campaigns to organize your marketing efforts and
+            track performance.
+          </p>
+        </div>
+        <div className="flex items-center justify-between">
+          {/* Filters Section */}
+          <div className="flex items-start gap-2.5">
+            <div className="flex-1">
+              <CampaignFilters
+                campaigns={campaigns}
+                onFilteredCampaignsChange={setFilteredCampaigns}
+              />
+            </div>
           </div>
-        ) : (
-          campaigns.map((c) => (
-            <Card
-              key={c.id}
-              className={cn(
-                "relative hover:scale-105 hover:shadow-lg transition-all duration-200 rounded-lg flex flex-col min-h-[200px]",
-              )}
-            >
-              <div className="absolute inset-0 pointer-events-none [background-size:20px_20px] [background-image:linear-gradient(to_right,#e5e6e4_1px,transparent_1px),linear-gradient(to_bottom,#e4e4e7_1px,transparent_1px)] dark:[background-image:linear-gradient(to_right,#262626_1px,transparent_1px),linear-gradient(to_bottom,#262626_1px,transparent_1px)]"></div>
-              <div className="absolute inset-0 pointer-events-none bg-card [mask-image:radial-gradient(ellipse_at_center,transparent_0%,transparent_5%,black_70%)]"></div>
-              <div className="relative z-20">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-lg truncate">
-                        {c.name}
-                      </h3>
-                      <div className="flex items-center gap-2 mt-2">
-                        <Status
-                          variant={
-                            getStatusVariant(c.status) as
-                              | "active"
-                              | "warn"
-                              | "default"
-                          }
-                          label={
-                            c.status.charAt(0).toUpperCase() + c.status.slice(1)
-                          }
-                          className="text-xs rounded-md"
-                        />
-                        {(() => {
-                          const lifecycleInfo = getLifecycleDisplay(
-                            c.lifecycle_attr,
-                            c.default_link_ttl_days,
-                            c.status,
-                            c.campaign_end_date,
-                          );
-                          if (!lifecycleInfo) return null;
+          <Button
+            onClick={() =>
+              setCampaignModalState({ open: true, mode: "create" })
+            }
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Campaign
+          </Button>
+        </div>
 
-                          if (typeof lifecycleInfo === "string") {
-                            // Handle "One-off" with custom ClockFading icon
-                            if (lifecycleInfo === "One-off") {
-                              return (
-                                <Badge
-                                  variant="outline"
-                                  className="text-xs rounded-md border-none focus-visible:outline-none bg-neutral-200/30 text-neutral-500/80 focus-visible:ring-neutral-600/20 dark:bg-neutral-400/10 dark:text-neutral-400/70 dark:focus-visible:ring-neutral-400/40 [a&]:hover:bg-neutral-600/5 dark:[a&]:hover:bg-neutral-400/5"
-                                >
-                                  <Clock3 className="h-3 w-3" />
-                                  <span className="">{lifecycleInfo}</span>
-                                </Badge>
-                              );
-                            }
-                            return (
-                              <Status
-                                variant={
-                                  lifecycleInfo === "Expired"
-                                    ? "danger"
-                                    : "default"
-                                }
-                                label={lifecycleInfo}
-                                className="text-xs rounded-md"
-                              />
-                            );
-                          }
-                          console.log("c ", c);
-
-                          // Custom badge with specific icons for lifecycle types
-                          const getLifecycleIcon = () => {
-                            if (lifecycleInfo.text.includes("Always-on")) {
-                              return <TimerReset className="h-3 w-3" />;
-                            } else if (
-                              lifecycleInfo.text.includes("Infinite")
-                            ) {
-                              return <Infinity className="h-3 w-3" />;
-                            } else if (lifecycleInfo.text === "One-off") {
-                              return <Clock3 className="h-3 w-3" />;
-                            }
-                            return null;
-                          };
-
-                          const icon = getLifecycleIcon();
-
-                          return (
-                            <Badge
-                              variant="outline"
-                              className="text-xs rounded-md border-none focus-visible:outline-none bg-neutral-200/30 text-neutral-500/80 focus-visible:ring-neutral-600/20 dark:bg-neutral-400/10 dark:text-neutral-400/70 dark:focus-visible:ring-neutral-400/40 [a&]:hover:bg-neutral-600/5 dark:[a&]:hover:bg-neutral-400/5"
-                            >
-                              {icon}
-                              <span className="">{lifecycleInfo.text}</span>
-                            </Badge>
-                          );
-                        })()}
-                      </div>
-                      {c.tags && c.tags.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredCampaigns.length === 0 ? (
+            <div className="col-span-full">
+              <EmptyState
+                icon={Target}
+                title="No Campaigns Yet"
+                description="Create campaigns to organize your marketing efforts. Campaigns help you track performance, set goals, and manage your links more effectively."
+                actionLabel="Add Campaign"
+                onAction={() =>
+                  setCampaignModalState({ open: true, mode: "create" })
+                }
+              />
+            </div>
+          ) : (
+            filteredCampaigns.map((c) => (
+              <Card
+                key={c.id}
+                className={cn(
+                  "relative hover:scale-105 hover:shadow-lg transition-all duration-200 rounded-lg flex flex-col min-h-[200px]",
+                )}
+              >
+                <div className="absolute inset-0 pointer-events-none [background-size:20px_20px] [background-image:linear-gradient(to_right,#e5e6e4_1px,transparent_1px),linear-gradient(to_bottom,#e4e4e7_1px,transparent_1px)] dark:[background-image:linear-gradient(to_right,#262626_1px,transparent_1px),linear-gradient(to_bottom,#262626_1px,transparent_1px)]"></div>
+                <div className="absolute inset-0 pointer-events-none bg-card [mask-image:radial-gradient(ellipse_at_center,transparent_0%,transparent_5%,black_70%)]"></div>
+                <div className="relative z-20">
+                  <CardHeader className=" bg-muted/40 dark:bg-black/15 mb-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-lg truncate">
+                          {c.name}
+                        </h3>
                         <div className="flex items-center gap-2 mt-2">
-                          <div className="flex items-center gap-1 text-muted-foreground">
-                            <TagIcon className="h-3 w-3" />
-                            <span className="text-xs font-medium">Tags</span>
-                          </div>
-                          <DynamicTagsDisplay tags={c.tags} />
-                        </div>
-                      )}
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          className="rounded-full"
-                          variant={"ghost"}
-                          size="icon"
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() =>
-                            setCampaignModalState({
-                              open: true,
-                              mode: "edit",
-                              campaign: c,
-                            })
-                          }
-                          disabled={c.status === "inactive"}
-                        >
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit Campaign
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleDuplicateCampaign(c)}
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Duplicate Campaign
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handlePauseCampaign(c.id)}
-                        >
-                          <Clock className="h-4 w-4 mr-2" />
-                          Pause Campaign
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleArchiveCampaign(c.id)}
-                        >
-                          <Info className="h-4 w-4 mr-2" />
-                          Archive Campaign
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleDeleteCampaign(c.id)}
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete Campaign
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  {hasAnalyticsData(c.id) ? (
-                    // Campaigns with analytics data
-                    <div className="grid grid-cols-2 gap-4">
-                      {/* Left Column: Metrics */}
-                      <div className="space-y-3">
-                        {/* Total Clicks */}
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-muted-foreground">
-                            Total Clicks
-                          </span>
-                          <span className="text-xs font-mono font-semibold">
-                            {(() => {
-                              const card = campaignCards.find(
-                                (card) => card.id === c.id,
-                              );
-                              return card ? card.total_clicks : 0;
-                            })()}
-                          </span>
-                        </div>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div>
+                                <Status
+                                  variant={
+                                    getStatusVariant(c.status) as
+                                      | "active"
+                                      | "warn"
+                                      | "default"
+                                  }
+                                  label={
+                                    c.status.charAt(0).toUpperCase() +
+                                    c.status.slice(1)
+                                  }
+                                  className="text-xs rounded-md"
+                                />
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>
+                                {c.status === "active"
+                                  ? "Active campaigns allow creating new links and are fully operational."
+                                  : c.status === "paused"
+                                    ? "Paused campaigns prevent creating new links but existing links remain functional."
+                                    : "Archived campaigns are inactive and prevent creating new links."}
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                          {(() => {
+                            const lifecycleInfo = getLifecycleDisplay(
+                              c.lifecycle_attr,
+                              c.default_link_ttl_days,
+                              c.status,
+                              c.campaign_end_date,
+                            );
+                            if (!lifecycleInfo) return null;
 
-                        {/* Unique Visitors */}
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-muted-foreground">
-                            Unique Visitors
-                          </span>
-                          <span className="text-xs font-mono font-semibold">
-                            {(() => {
-                              const card = campaignCards.find(
-                                (card) => card.id === c.id,
-                              );
-                              return card ? card.unique_visitors : 0;
-                            })()}
-                          </span>
-                        </div>
-
-                        {/* Start Date */}
-                        {c.campaign_start_date && (
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-muted-foreground">Start</span>
-                            <span className="text-xs font-mono">
-                              {new Date(
-                                c.campaign_start_date,
-                              ).toLocaleDateString()}
-                            </span>
-                          </div>
-                        )}
-
-                        {/* End Date */}
-                        {c.campaign_end_date && (
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-muted-foreground">End</span>
-                            <span
-                              className={
-                                new Date(c.campaign_end_date) < new Date()
-                                  ? "text-red-600 text-xs font-mono"
-                                  : "text-xs font-mono"
+                            if (typeof lifecycleInfo === "string") {
+                              // Handle "One-off" with custom ClockFading icon and date range
+                              if (lifecycleInfo === "One-off") {
+                                const startDate = c.campaign_start_date
+                                  ? new Date(
+                                      c.campaign_start_date,
+                                    ).toLocaleDateString("en-US", {
+                                      month: "2-digit",
+                                      day: "2-digit",
+                                      year: "2-digit",
+                                    })
+                                  : "";
+                                const endDate = c.campaign_end_date
+                                  ? new Date(
+                                      c.campaign_end_date,
+                                    ).toLocaleDateString("en-US", {
+                                      month: "2-digit",
+                                      day: "2-digit",
+                                      year: "2-digit",
+                                    })
+                                  : "";
+                                return (
+                                  <div className="flex gap-1 -ml-1">
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs rounded-md border-none focus-visible:outline-none bg-neutral-200/30 text-neutral-500/80 focus-visible:ring-neutral-600/20 dark:bg-neutral-200/5 dark:text-neutral-400/70 dark:focus-visible:ring-neutral-400/40 [a&]:hover:bg-neutral-600/5 dark:[a&]:hover:bg-neutral-400/5"
+                                    >
+                                      <Clock3 className="h-3 w-3" />
+                                      <span className="">{lifecycleInfo}</span>
+                                    </Badge>
+                                    {startDate && endDate && (
+                                      <Badge
+                                        variant={"warning"}
+                                        className="text-[11px] rounded-md border-none focus-visible:outline-none bg-neutral-200/30 text-neutral-500/80 focus-visible:ring-neutral-600/20 dark:bg-neutral-200/5 dark:text-neutral-400/70 dark:focus-visible:ring-neutral-400/40 [a&]:hover:bg-neutral-600/5 dark:[a&]:hover:bg-neutral-400/5"
+                                      >
+                                        <Calendar className="h-3 w-3" />
+                                        <span className="">
+                                          {startDate}-{endDate}
+                                        </span>
+                                      </Badge>
+                                    )}
+                                  </div>
+                                );
                               }
-                            >
-                              {new Date(
-                                c.campaign_end_date,
-                              ).toLocaleDateString()}
-                            </span>
+                              return lifecycleInfo === "Expired" ? (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <div>
+                                      <Status
+                                        variant="danger"
+                                        label={lifecycleInfo}
+                                        className="text-xs rounded-md"
+                                      />
+                                    </div>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>
+                                      ⚠️ Campaign has ended{" "}
+                                      {c.status === "active"
+                                        ? "but is still active. Links may still be working."
+                                        : c.status === "paused"
+                                          ? "and is paused. Links may still be working."
+                                          : "and is archived. Links are not functional."}
+                                    </p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              ) : (
+                                <Status
+                                  variant="default"
+                                  label={lifecycleInfo}
+                                  className="text-xs rounded-md"
+                                />
+                              );
+                            }
+
+                            // Custom badge with specific icons for lifecycle types
+                            const getLifecycleIcon = () => {
+                              if (lifecycleInfo.text.includes("Always-on")) {
+                                return <TimerReset className="h-3 w-3" />;
+                              } else if (
+                                lifecycleInfo.text.includes("Infinite")
+                              ) {
+                                return <Infinity className="h-3 w-3" />;
+                              } else if (lifecycleInfo.text === "One-off") {
+                                return <Clock3 className="h-3 w-3" />;
+                              }
+                              return null;
+                            };
+
+                            const icon = getLifecycleIcon();
+
+                            return (
+                              <Badge
+                                variant="outline"
+                                className="-ml-1 text-xs rounded-md border-none focus-visible:outline-none bg-neutral-200/30 text-neutral-500/80 focus-visible:ring-neutral-600/20 dark:bg-neutral-400/10 dark:text-neutral-400/70 dark:focus-visible:ring-neutral-400/40 [a&]:hover:bg-neutral-600/5 dark:[a&]:hover:bg-neutral-400/5"
+                              >
+                                {icon}
+                                <span className="">{lifecycleInfo.text}</span>
+                              </Badge>
+                            );
+                          })()}
+                        </div>
+                        {c.tags && c.tags.length > 0 && (
+                          <div className="flex items-center gap-2 mt-2">
+                            <div className="flex items-center gap-1 text-muted-foreground">
+                              <TagIcon className="h-3 w-3" />
+                              <span className="text-xs font-medium">Tags</span>
+                            </div>
+                            <DynamicTagsDisplay tags={c.tags} />
                           </div>
                         )}
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            className="rounded-full"
+                            variant={"ghost"}
+                            size="icon"
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() =>
+                              setCampaignModalState({
+                                open: true,
+                                mode: "edit",
+                                campaign: c,
+                              })
+                            }
+                            disabled={c.status === "inactive"}
+                          >
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit Campaign
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => openTemplatesModal(c)}
+                          >
+                            <TagIcon className="h-4 w-4 mr-2" />
+                            Manage Templates
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              router.push(`/links?campaign=${c.id}`)
+                            }
+                            disabled={
+                              c.status === "paused" || c.status === "inactive"
+                            }
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Create Link
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleDuplicateCampaign(c)}
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Duplicate Campaign
+                          </DropdownMenuItem>
+                          {c.status === "active" && (
+                            <DropdownMenuItem
+                              onClick={() => openConfirmDialog("pause", c)}
+                            >
+                              <Clock className="h-4 w-4 mr-2" />
+                              Pause Campaign
+                            </DropdownMenuItem>
+                          )}
+                          {c.status === "paused" && (
+                            <DropdownMenuItem
+                              onClick={() => openConfirmDialog("unpause", c)}
+                            >
+                              <Clock className="h-4 w-4 mr-2" />
+                              Unpause Campaign
+                            </DropdownMenuItem>
+                          )}
+                          {c.status !== "inactive" && (
+                            <DropdownMenuItem
+                              onClick={() => openConfirmDialog("archive", c)}
+                            >
+                              <Info className="h-4 w-4 mr-2" />
+                              Archive Campaign
+                            </DropdownMenuItem>
+                          )}
+                          {c.status === "inactive" && (
+                            <DropdownMenuItem
+                              onClick={() => openConfirmDialog("unarchive", c)}
+                            >
+                              <Info className="h-4 w-4 mr-2" />
+                              Restore Campaign
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem
+                            onClick={() => openConfirmDialog("delete", c)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete Campaign
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-0 pb-4">
+                    {hasAnalyticsData(c.id) ? (
+                      // Campaigns with analytics data
+                      <div className="grid grid-cols-2 gap-4">
+                        {/* Left Column: Metrics */}
+                        <div className="space-y-3">
+                          {/* Total Clicks */}
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-muted-foreground">
+                              Total Clicks
+                            </span>
+                            <span className="text-xs font-mono font-semibold">
+                              {(() => {
+                                const card = campaignCards.find(
+                                  (card) => card.id === c.id,
+                                );
+                                return card ? card.total_clicks : 0;
+                              })()}
+                            </span>
+                          </div>
 
-                        {/* Created At */}
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-muted-foreground">
-                            Created At
-                          </span>
+                          {/* Unique Visitors */}
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-muted-foreground">
+                              Unique Visitors
+                            </span>
+                            <span className="text-xs font-mono font-semibold">
+                              {(() => {
+                                const card = campaignCards.find(
+                                  (card) => card.id === c.id,
+                                );
+                                return card ? card.unique_visitors : 0;
+                              })()}
+                            </span>
+                          </div>
+
+                          {/* Created At */}
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-muted-foreground">
+                              Created At
+                            </span>
+                            <span className="text-xs font-mono">
+                              {c.created_at
+                                ? new Date(c.created_at).toLocaleDateString()
+                                : ""}
+                            </span>
+                          </div>
+
+                          {/* UTM Template Count */}
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-muted-foreground">
+                              UTM Templates:
+                            </span>
+                            <span className="text-xs font-mono">
+                              {c.template_count || 0}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Right Column: Mini Bar Chart */}
+                        <div className="flex items-center justify-center">
+                          {(() => {
+                            const card = campaignCards.find(
+                              (card) => card.id === c.id,
+                            );
+                            const timeserie = card?.timeserie || [];
+                            if (timeserie.length === 0) {
+                              return (
+                                <div className="text-center text-muted-foreground text-xs">
+                                  No data available
+                                </div>
+                              );
+                            }
+
+                            // Prepare data for recharts
+                            const chartData = timeserie.map((point: any) => ({
+                              date: new Date(
+                                point.bucket_start,
+                              ).toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                              }),
+                              clicks: point.clicks,
+                              fullDate: new Date(
+                                point.bucket_start,
+                              ).toLocaleDateString(),
+                            }));
+
+                            return (
+                              <ResponsiveContainer width="100%" height={111}>
+                                <BarChart
+                                  data={chartData}
+                                  margin={{
+                                    top: 0,
+                                    right: 5,
+                                    left: 5,
+                                    bottom: 0,
+                                  }}
+                                >
+                                  <XAxis
+                                    dataKey="date"
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tick={{
+                                      fontSize: 10,
+                                      fill: "hsl(var(--muted-foreground))",
+                                    }}
+                                    interval="preserveStartEnd"
+                                  />
+                                  <YAxis hide />
+                                  <ChartTooltip
+                                    cursor={{
+                                      className: "fill-muted-foreground/15",
+                                    }}
+                                    content={({
+                                      active,
+                                      payload,
+                                      label,
+                                    }: any) => {
+                                      if (active && payload && payload.length) {
+                                        const data = payload[0].payload;
+                                        return (
+                                          <div className="bg-background border border-border rounded p-2 shadow-md text-xs">
+                                            <p className="font-mono font-medium mb-1">
+                                              {data.fullDate}
+                                            </p>
+                                            <div className="flex items-center gap-2">
+                                              <div className="w-2 h-2 rounded-full bg-primary"></div>
+                                              <span>Clicks</span>
+                                              <span className="font-mono ml-auto">
+                                                {data.clicks}
+                                              </span>
+                                            </div>
+                                          </div>
+                                        );
+                                      }
+                                      return null;
+                                    }}
+                                  />
+                                  <Bar
+                                    dataKey="clicks"
+                                    fill="hsl(var(--primary))"
+                                    radius={[2, 2, 0, 0]}
+                                    activeBar={{
+                                      className: "fill-green-500 opacity-80",
+                                    }}
+                                    background={{
+                                      className:
+                                        "dark:fill-muted/80 fill-muted",
+                                    }}
+                                  />
+                                </BarChart>
+                              </ResponsiveContainer>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    ) : (
+                      // Other campaigns - existing layout
+                      <div className="space-y-3">
+                        {/* Campaign Lifecycle and Dates */}
+                        <div className="space-y-2">
+                          {c.lifecycle_attr === 1 && (
+                            <>
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-muted-foreground text-xs">
+                                  Start:
+                                </span>
+                                <span className="text-muted-foreground/50">
+                                  --
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-muted-foreground text-xs">
+                                  End:
+                                </span>
+                                <span className="text-muted-foreground/50">
+                                  --
+                                </span>
+                              </div>
+                            </>
+                          )}
+                        </div>
+
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <div>
+                            <span className="font-mono mr-1">
+                              {c.template_count || 0}
+                            </span>
+                            {c.template_count && c.template_count > 1
+                              ? "UTM Templates"
+                              : "UTM Template"}
+                          </div>
                           <span className="text-xs font-mono">
                             {c.created_at
                               ? new Date(c.created_at).toLocaleDateString()
                               : ""}
                           </span>
                         </div>
-
-                        {/* UTM Template Count */}
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-muted-foreground">
-                            UTM Templates:
-                          </span>
-                          <span className="text-xs font-mono">
-                            {c.template_count || 0}
-                          </span>
-                        </div>
-
-                        {/* Warning for ended campaigns with active links */}
-                        {c.campaign_end_date &&
-                          new Date(c.campaign_end_date) < new Date() &&
-                          c.status === "active" && (
-                            <div className="bg-yellow-50 border border-yellow-200 rounded p-2 text-xs text-yellow-800 col-span-2">
-                              ⚠️ Campaign has ended but is still active. Links
-                              may still be working.
-                            </div>
-                          )}
-
-                        {/* Action Buttons */}
-                        <div className="flex gap-2 pt-2 col-span-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => openTemplatesModal(c)}
-                            className="flex-1"
-                          >
-                            Manage Templates
-                          </Button>
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            className="flex-1"
-                            disabled={c.status === "paused"}
-                            title={
-                              c.status === "paused"
-                                ? "Cannot create links for paused campaigns"
-                                : ""
-                            }
-                            onClick={() =>
-                              router.push(`/links?campaign=${c.id}`)
-                            }
-                          >
-                            <Plus className="h-4 w-4 mr-2" />
-                            Create Link
-                          </Button>
-                        </div>
                       </div>
+                    )}
+                  </CardContent>
+                </div>
+              </Card>
+            ))
+          )}
+        </div>
 
-                      {/* Right Column: Mini Bar Chart */}
-                      <div className="flex items-center justify-center">
-                        {(() => {
-                          const card = campaignCards.find(
-                            (card) => card.id === c.id,
-                          );
-                          const timeserie = card?.timeserie || [];
-                          if (timeserie.length === 0) {
-                            return (
-                              <div className="text-center text-muted-foreground text-xs">
-                                No data available
-                              </div>
-                            );
-                          }
-
-                          // Prepare data for recharts
-                          const chartData = timeserie.map((point: any) => ({
-                            date: new Date(
-                              point.bucket_start,
-                            ).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                            }),
-                            clicks: point.clicks,
-                            fullDate: new Date(
-                              point.bucket_start,
-                            ).toLocaleDateString(),
-                          }));
-
-                          return (
-                            <ResponsiveContainer width="100%" height={120}>
-                              <BarChart
-                                data={chartData}
-                                margin={{
-                                  top: 5,
-                                  right: 5,
-                                  left: 5,
-                                  bottom: 5,
-                                }}
-                              >
-                                <XAxis
-                                  dataKey="date"
-                                  axisLine={false}
-                                  tickLine={false}
-                                  tick={{
-                                    fontSize: 10,
-                                    fill: "hsl(var(--muted-foreground))",
-                                  }}
-                                  interval="preserveStartEnd"
-                                />
-                                <YAxis hide />
-                                <Tooltip
-                                  content={({ active, payload, label }) => {
-                                    if (active && payload && payload.length) {
-                                      const data = payload[0].payload;
-                                      return (
-                                        <div className="bg-background border border-border rounded p-2 shadow-md">
-                                          <p className="text-sm font-medium">
-                                            {data.fullDate}
-                                          </p>
-                                          <p className="text-sm text-muted-foreground">
-                                            Clicks:{" "}
-                                            <span className="font-mono font-semibold">
-                                              {data.clicks}
-                                            </span>
-                                          </p>
-                                        </div>
-                                      );
-                                    }
-                                    return null;
-                                  }}
-                                />
-                                <Bar
-                                  dataKey="clicks"
-                                  fill="hsl(var(--primary))"
-                                  radius={[2, 2, 0, 0]}
-                                />
-                              </BarChart>
-                            </ResponsiveContainer>
-                          );
-                        })()}
-                      </div>
-                    </div>
-                  ) : (
-                    // Other campaigns - existing layout
-                    <div className="space-y-3">
-                      {/* Campaign Lifecycle and Dates */}
-                      <div className="space-y-2">
-                        {c.lifecycle_attr === 1 && (
-                          <>
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground text-xs">
-                                Start:
-                              </span>
-                              <span className="text-muted-foreground/50">
-                                --
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground text-xs">
-                                End:
-                              </span>
-                              <span className="text-muted-foreground/50">
-                                --
-                              </span>
-                            </div>
-                          </>
-                        )}
-                      </div>
-
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <div>
-                          <span className="font-mono mr-1">
-                            {c.template_count || 0}
-                          </span>
-                          {c.template_count && c.template_count > 1
-                            ? "UTM Templates"
-                            : "UTM Template"}
-                        </div>
-                        <span className="text-xs font-mono">
-                          {c.created_at
-                            ? new Date(c.created_at).toLocaleDateString()
-                            : ""}
-                        </span>
-                      </div>
-
-                      {/* Action Buttons - Inline Layout */}
-                      <div className="flex gap-2 pt-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openTemplatesModal(c)}
-                          className="flex-1"
-                        >
-                          Manage Templates
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          className="flex-1"
-                          disabled={c.status === "paused"}
-                          title={
-                            c.status === "paused"
-                              ? "Cannot create links for paused campaigns"
-                              : ""
-                          }
-                          onClick={() => router.push(`/links?campaign=${c.id}`)}
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Create Link
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </div>
-            </Card>
-          ))
-        )}
-      </div>
-
-      {/* Templates Modal */}
-      {showTemplatesModal && activeCampaign && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="p-8 rounded shadow-lg w-full max-w-2xl relative max-h-[90vh] overflow-y-auto bg-background">
-            <button
-              className="absolute right-4 top-4"
-              onClick={() => {
-                setShowTemplatesModal(false);
+        {/* Templates Modal */}
+        {activeCampaign && (
+          <Dialog
+            open={showTemplatesModal}
+            onOpenChange={(open) => {
+              setShowTemplatesModal(open);
+              if (!open) {
                 setActiveCampaign(null);
                 setTemplateDetail(null);
-              }}
-            >
-              <X className="h-5 w-5" />
-            </button>
-            <h2 className="text-lg font-bold mb-4">
-              UTM Templates for {activeCampaign.name}
-            </h2>
-            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded">
-              <h3 className="font-semibold text-sm mb-2">
-                Available Templates
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                These UTM templates are available for links created in this
-                campaign. Global templates are available to all campaigns, while
-                campaign-specific templates are only available here.
-              </p>
-            </div>
-            <div className="mb-4 flex gap-2">
-              <Button
-                variant={showAssignModal ? "default" : "secondary"}
-                onClick={() => setShowAssignModal((v) => !v)}
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                {showAssignModal
-                  ? "Hide Template Assignment"
-                  : "Add Existing Templates"}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setShowCreateModal(true)}
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                Create New Template
-              </Button>
-            </div>
+              }
+            }}
+          >
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>
+                  UTM Templates for {activeCampaign.name}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="mb-4 p-4 bg-amber-400/5 border border-amber-500/30 dark:border-amber-200/20 text-amber-900/70 dark:text-amber-100/70  rounded">
+                <h3 className="font-semibold text-sm mb-2">
+                  Available Templates
+                </h3>
+                <p className="text-sm ">
+                  These UTM templates are available for links created in this
+                  campaign. Global templates are available to all campaigns,
+                  while campaign-specific templates are only available here.
+                </p>
+              </div>
+              <div className="mb-4 flex gap-2">
+                <Button
+                  variant={showAssignModal ? "default" : "secondary"}
+                  onClick={() => setShowAssignModal((v) => !v)}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  {showAssignModal
+                    ? "Hide Template Assignment"
+                    : "Add Existing Templates"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowCreateModal(true)}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Create New Template
+                </Button>
+              </div>
 
-            <table className="w-full text-sm mb-4">
-              <thead>
-                <tr className=" text-left">
-                  <th className="p-2">Name</th>
-                  <th className="p-2">Global</th>
-                  <th className="p-2">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(activeCampaign.templates || []).map((t) => (
-                  <tr key={t.id} className="border-t">
-                    <td
-                      className="p-2 font-semibold cursor-pointer hover:text-teal-700"
-                      onClick={() => setTemplateDetail(t)}
-                    >
-                      {t.name}
-                    </td>
-                    <td className="p-2">
-                      {t.is_global ? (
-                        <span className="text-teal-800 px-2 py-1 rounded text-xs">
-                          Global
-                        </span>
-                      ) : null}
-                    </td>
-                    <td className="p-2 flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
+              <table className="w-full text-sm mb-4">
+                <thead>
+                  <tr className=" text-left">
+                    <th className="p-2">Name</th>
+                    <th className="p-2">Global</th>
+                    <th className="p-2">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(activeCampaign.templates || []).map((t) => (
+                    <tr key={t.id} className="border-t">
+                      <td
+                        className="p-2 cursor-pointer hover:text-primary/70"
                         onClick={() => setTemplateDetail(t)}
                       >
-                        <Info className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setEditTemplate(t)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleUnlink(t.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-                {activeCampaign.templates &&
-                  activeCampaign.templates.length === 0 && (
-                    <tr>
-                      <td colSpan={3} className="p-4 text-center">
-                        <span className="text-sm">No templates assigned.</span>
+                        {t.name}
+                      </td>
+                      <td className="p-2">
+                        {t.is_global ? (
+                          <Badge
+                            size={"sm"}
+                            variant={"secondary"}
+                            className="text-xs font-normal"
+                          >
+                            Global
+                          </Badge>
+                        ) : null}
+                      </td>
+                      <td className="p-2">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => setTemplateDetail(t)}
+                            >
+                              <Eye className="mr-2 h-4 w-4" />
+                              View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => setEditTemplate(t)}
+                            >
+                              <FilePenLine className="mr-2 h-4 w-4" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleUnlink(t.id)}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Unlink
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </td>
                     </tr>
-                  )}
-              </tbody>
-            </table>
-
-            {showAssignModal && (
-              <div className="mt-4 border-t pt-4">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-semibold text-base">
-                    Assign Existing Templates
-                  </h3>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setShowAssignModal(false)}
-                  >
-                    <X className="h-4 w-4 mr-1" /> Close
-                  </Button>
-                </div>
-
-                <MultiSelect
-                  options={availableToAssign.map((t) => ({
-                    label: `${t.name}${t.is_global ? " (Global)" : ""}`,
-                    value: String(t.id),
-                  }))}
-                  defaultValue={assignSelected.map(String)}
-                  onValueChange={(vals) => setAssignSelected(vals.map(Number))}
-                  placeholder="Choose one or more templates"
-                  emptyIndicator="No templates available"
-                  maxCount={3}
-                />
-
-                <div className="flex justify-end mt-4">
-                  <Button
-                    onClick={handleAssign}
-                    disabled={assignSelected.length === 0}
-                  >
-                    Assign Templates
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Template Detail Modal */}
-      {templateDetail && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className=" p-8 rounded shadow-lg w-full max-w-lg relative bg-background">
-            <button
-              className="absolute right-4 top-4"
-              onClick={() => setTemplateDetail(null)}
-            >
-              <X className="h-5 w-5" />
-            </button>
-            <h3 className="text-xl font-bold mb-2">{templateDetail.name}</h3>
-            <div className="mb-2 text-muted-foreground">
-              {templateDetail.description}
-            </div>
-            <div className="flex gap-2 flex-wrap mb-2">
-              {templateDetail.is_global && (
-                <span className="bg-teal-900 px-2 py-1 rounded text-xs">
-                  Global
-                </span>
-              )}
-              {templateDetail.campaigns && templateDetail.campaigns.length
-                ? templateDetail.campaigns.map((c) => (
-                    <span key={c.id} className="px-2 py-1 rounded text-xs">
-                      {c.name}
-                    </span>
-                  ))
-                : null}
-            </div>
-            <div className="mt-2 mb-2">
-              <strong>UTM Params:</strong>
-              <div className="grid grid-cols-2 gap-2 mt-1 text-sm">
-                {Object.entries(getUtmParams(templateDetail))
-                  .filter(([key, value]) => value)
-                  .map(([key, value]) => (
-                    <div key={key} className="bg-muted p-2 rounded">
-                      <span className="font-medium">
-                        {key.replace("utm_", "")}:
-                      </span>
-                      <span className="ml-1">{String(value)}</span>
-                    </div>
                   ))}
+                  {activeCampaign.templates &&
+                    activeCampaign.templates.length === 0 && (
+                      <tr>
+                        <td colSpan={3} className="p-4 text-center">
+                          <span className="text-sm">
+                            No templates assigned.
+                          </span>
+                        </td>
+                      </tr>
+                    )}
+                </tbody>
+              </table>
+
+              {showAssignModal && (
+                <div className="mt-4 border-t pt-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-semibold text-base">
+                      Assign Existing Templates
+                    </h3>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setShowAssignModal(false)}
+                    >
+                      <X className="h-4 w-4 mr-1" /> Close
+                    </Button>
+                  </div>
+
+                  <MultiSelect
+                    options={availableToAssign.map((t) => ({
+                      label: `${t.name}${t.is_global ? " (Global)" : ""}`,
+                      value: String(t.id),
+                    }))}
+                    defaultValue={assignSelected.map(String)}
+                    onValueChange={(vals) =>
+                      setAssignSelected(vals.map(Number))
+                    }
+                    placeholder="Choose one or more templates"
+                    emptyIndicator="No templates available"
+                    maxCount={3}
+                  />
+
+                  <div className="flex justify-end mt-4">
+                    <Button
+                      onClick={handleAssign}
+                      disabled={assignSelected.length === 0}
+                    >
+                      Assign Templates
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {/* Template Detail Modal */}
+        {templateDetail && (
+          <Dialog
+            open={!!templateDetail}
+            onOpenChange={(open) => {
+              if (!open) setTemplateDetail(null);
+            }}
+          >
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle className="font-bold">
+                  {templateDetail.name}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="mb-2 text-sm text-muted-foreground">
+                {templateDetail.description}
               </div>
-            </div>
-            <div className="mt-4 text-xs text-zinc-500">
-              Created{" "}
-              {templateDetail.created_at
-                ? new Date(templateDetail.created_at).toLocaleString()
-                : ""}
-            </div>
-          </div>
-        </div>
-      )}
+              <div className="flex gap-2 flex-wrap mb-2">
+                {templateDetail.is_global && (
+                  <Badge
+                    size={"sm"}
+                    variant={"secondary"}
+                    className="text-xs font-normal"
+                  >
+                    Global
+                  </Badge>
+                )}
+                {templateDetail.campaigns && templateDetail.campaigns.length
+                  ? templateDetail.campaigns.map((c) => (
+                      <span key={c.id} className="px-2 py-1 rounded text-xs">
+                        {c.name}
+                      </span>
+                    ))
+                  : null}
+              </div>
+              <div className="mt-2 mb-2">
+                <Label className="text-[13px] font-bold">UTM Params</Label>
+                <div className="grid grid-cols-2 gap-2 mt-1 text-[13px]">
+                  {Object.entries(getUtmParams(templateDetail))
+                    .filter(([key, value]) => value)
+                    .map(([key, value]) => (
+                      <div key={key} className="bg-muted p-2 rounded-lg">
+                        <span className="font-medium text-muted-foreground/80">
+                          {key.replace("utm_", "")}:
+                        </span>
+                        <span className="ml-1 font-normal">
+                          {String(value)}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              </div>
+              <div className="mt-4 text-xs text-zinc-500">
+                Created{" "}
+                {templateDetail.created_at
+                  ? new Date(templateDetail.created_at).toLocaleString()
+                  : ""}
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
 
-      {/* Create Template Modal */}
-      <UtmTemplateModal
-        open={showCreateModal}
-        onOpenChange={setShowCreateModal}
-        initialValues={{
-          campaign_ids: activeCampaign ? [activeCampaign.id] : [],
-          is_global: false,
-        }}
-        onSave={async (values) => {
-          await authFetch("/api/utm-templates/", {
-            method: "POST",
-            body: JSON.stringify(values),
-          });
-          if (activeCampaign) {
-            await openTemplatesModal(activeCampaign);
-          }
-          setShowCreateModal(false);
-        }}
-        campaigns={campaigns}
-      />
-
-      {/* Edit Template Modal */}
-
-      <UtmTemplateModal
-        open={!!editTemplate}
-        onOpenChange={(o) => {
-          if (!o) setEditTemplate(null);
-        }}
-        initialValues={
-          editTemplate
-            ? {
-                name: editTemplate.name,
-                description: editTemplate.description,
-                utm_params: getUtmParams(editTemplate), // Use the getUtmParams helper
-                is_global: editTemplate.is_global,
-                campaign_ids: editTemplate.campaigns?.map((c) => c.id) || [],
-              }
-            : undefined
-        }
-        onSave={async (values) => {
-          await authFetch(`/api/utm-templates/${editTemplate!.id}`, {
-            method: "PATCH",
-            body: JSON.stringify(values),
-          });
-          await openTemplatesModal(activeCampaign!);
-          setEditTemplate(null);
-        }}
-        campaigns={campaigns}
-      />
-
-      {/* Campaign Modal */}
-      <CampaignModal
-        open={campaignModalState.open}
-        onOpenChange={(open) => {
-          if (!open) {
-            setCampaignModalState({ open: false, mode: "create" });
-          }
-        }}
-        initialData={
-          campaignModalState.mode === "edit"
-            ? campaignModalState.campaign
-            : undefined
-        }
-        onSave={async (values) => {
-          if (
-            campaignModalState.mode === "edit" &&
-            campaignModalState.campaign
-          ) {
-            await authFetch(
-              `/api/campaigns/${campaignModalState.campaign.id}`,
-              {
-                method: "PATCH",
-                body: JSON.stringify(values),
-              },
-            );
-          } else {
-            await authFetch("/api/campaigns/", {
+        {/* Create Template Modal */}
+        <UtmTemplateModal
+          open={showCreateModal}
+          onOpenChange={setShowCreateModal}
+          initialValues={{
+            campaign_ids: activeCampaign ? [activeCampaign.id] : [],
+            is_global: false,
+          }}
+          onSave={async (values) => {
+            await authFetch("/api/utm-templates/", {
               method: "POST",
               body: JSON.stringify(values),
             });
+            if (activeCampaign) {
+              await openTemplatesModal(activeCampaign);
+            }
+            setShowCreateModal(false);
+          }}
+          campaigns={campaigns}
+        />
+
+        {/* Edit Template Modal */}
+
+        <UtmTemplateModal
+          open={!!editTemplate}
+          onOpenChange={(o) => {
+            if (!o) setEditTemplate(null);
+          }}
+          initialValues={
+            editTemplate
+              ? {
+                  name: editTemplate.name,
+                  description: editTemplate.description,
+                  utm_params: getUtmParams(editTemplate), // Use the getUtmParams helper
+                  is_global: editTemplate.is_global,
+                  campaign_ids: editTemplate.campaigns?.map((c) => c.id) || [],
+                }
+              : undefined
           }
-          await refreshCampaigns();
-          setCampaignModalState({ open: false, mode: "create" });
-        }}
-      />
-    </div>
+          onSave={async (values) => {
+            await authFetch(`/api/utm-templates/${editTemplate!.id}`, {
+              method: "PATCH",
+              body: JSON.stringify(values),
+            });
+            await openTemplatesModal(activeCampaign!);
+            setEditTemplate(null);
+          }}
+          campaigns={campaigns}
+        />
+
+        {/* Campaign Modal */}
+        <CampaignModal
+          open={campaignModalState.open}
+          onOpenChange={(open) => {
+            if (!open) {
+              setCampaignModalState({ open: false, mode: "create" });
+            }
+          }}
+          initialData={
+            campaignModalState.mode === "edit"
+              ? campaignModalState.campaign
+              : undefined
+          }
+          onSave={async (values) => {
+            if (
+              campaignModalState.mode === "edit" &&
+              campaignModalState.campaign
+            ) {
+              await authFetch(
+                `/api/campaigns/${campaignModalState.campaign.id}`,
+                {
+                  method: "PATCH",
+                  body: JSON.stringify(values),
+                },
+              );
+            } else {
+              await authFetch("/api/campaigns/", {
+                method: "POST",
+                body: JSON.stringify(values),
+              });
+            }
+            await refreshCampaigns();
+            setCampaignModalState({ open: false, mode: "create" });
+          }}
+        />
+
+        {/* Confirmation Dialog */}
+        <Dialog
+          open={confirmDialog.isOpen}
+          onOpenChange={(open) =>
+            setConfirmDialog((prev) => ({ ...prev, isOpen: open }))
+          }
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {confirmDialog.action === "pause" && "Pause Campaign"}
+                {confirmDialog.action === "unpause" && "Resume Campaign"}
+                {confirmDialog.action === "archive" && "Archive Campaign"}
+                {confirmDialog.action === "unarchive" && "Restore Campaign"}
+                {confirmDialog.action === "delete" && "Delete Campaign"}
+              </DialogTitle>
+              <DialogDescription>
+                {confirmDialog.action === "delete" ? (
+                  <DeleteConfirmationMessage
+                    campaignName={confirmDialog.campaignName}
+                  />
+                ) : (
+                  <>
+                    Are you sure you want to {confirmDialog.action}{" "}
+                    <Badge
+                      variant={"secondary"}
+                      className="font-bold font-mono mx-1"
+                    >
+                      {confirmDialog.campaignName}
+                    </Badge>
+                    ?
+                  </>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() =>
+                  setConfirmDialog({
+                    isOpen: false,
+                    action: "",
+                    campaignId: null,
+                    campaignName: "",
+                  })
+                }
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  if (confirmDialog.campaignId && confirmDialog.action) {
+                    if (confirmDialog.action === "pause") {
+                      handlePauseCampaign(confirmDialog.campaignId);
+                    } else if (confirmDialog.action === "unpause") {
+                      handleUnpauseCampaign(confirmDialog.campaignId);
+                    } else if (confirmDialog.action === "archive") {
+                      handleArchiveCampaign(confirmDialog.campaignId);
+                    } else if (confirmDialog.action === "unarchive") {
+                      handleRestoreCampaign(confirmDialog.campaignId);
+                    } else if (confirmDialog.action === "delete") {
+                      handleDeleteCampaign(confirmDialog.campaignId);
+                    }
+                  }
+                }}
+                className={
+                  confirmDialog.action === "pause"
+                    ? "bg-amber-600 text-white hover:bg-amber-700"
+                    : confirmDialog.action === "unpause"
+                      ? "bg-green-600 text-white hover:bg-green-700"
+                      : confirmDialog.action === "archive"
+                        ? "bg-gray-600 text-white hover:bg-gray-700"
+                        : confirmDialog.action === "delete"
+                          ? "bg-red-600 text-white hover:bg-red-700"
+                          : "bg-blue-600 text-white hover:bg-blue-700"
+                }
+              >
+                {confirmDialog.action === "pause" && "Pause Campaign"}
+                {confirmDialog.action === "unpause" && "Resume Campaign"}
+                {confirmDialog.action === "archive" && "Archive Campaign"}
+                {confirmDialog.action === "unarchive" && "Restore Campaign"}
+                {confirmDialog.action === "delete" && "Delete Campaign"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+      <Toaster />
+    </TooltipProvider>
   );
 }
 

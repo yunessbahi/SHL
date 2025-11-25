@@ -98,7 +98,7 @@ export function Combobox({
           role="combobox"
           aria-expanded={open}
           className={cn(
-            "w-full justify-between bg-input hover:bg-input/40 shadow-xs border border-input transition-colors ",
+            "w-full justify-between bg-input/30 hover:bg-input/40 shadow-xs border border-input transition-colors ",
             className,
           )}
           disabled={disabled}
@@ -157,6 +157,7 @@ export function Combobox({
 export function formatCampaignOptions(
   campaigns: any[],
   includeNoSelection = true,
+  filterByStatus = true,
 ) {
   const options: Option[] = [];
 
@@ -176,7 +177,12 @@ export function formatCampaignOptions(
 
   const groupedCampaigns: Record<string, any[]> = {};
 
-  campaigns.forEach((campaign) => {
+  // Filter out paused/inactive campaigns if requested
+  const filteredCampaigns = filterByStatus
+    ? campaigns.filter((campaign) => campaign.status === "active")
+    : campaigns;
+
+  filteredCampaigns.forEach((campaign) => {
     const lifecycleName = lifecycleGroups[campaign.lifecycle_attr] || "Other";
     if (!groupedCampaigns[lifecycleName]) {
       groupedCampaigns[lifecycleName] = [];
