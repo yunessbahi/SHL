@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -36,7 +36,8 @@ import {
   ChevronRight,
   Slash,
   SearchIcon,
-  Workflow,
+  FlaskConical,
+  ChartSpline,
 } from "lucide-react";
 import {
   Breadcrumb,
@@ -73,6 +74,7 @@ export default function Header({
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
+  const searchParams = useSearchParams();
 
   // Command menu keyboard shortcut
   React.useEffect(() => {
@@ -132,12 +134,17 @@ export default function Header({
     const items = [];
 
     // Add Workspace as first item if not on workspace
-    if (pathname !== "/workspace") {
+    if (
+      pathSegments.length > 0 &&
+      pathSegments[0] !== "workspace" &&
+      pathSegments[0] !== "analytics" &&
+      pathSegments[0] !== "settings"
+    ) {
       items.push({
         label: "Workspace",
         title: "Workspace",
         href: "/workspace",
-        icon: Workflow,
+        icon: FlaskConical,
         isFirst: true,
       });
     }
@@ -152,7 +159,7 @@ export default function Header({
       // Add icons for main sections
       switch (segment) {
         case "workspace":
-          icon = Workflow;
+          icon = FlaskConical;
           title = "Workspace";
           break;
         case "dashboard":
@@ -179,6 +186,18 @@ export default function Header({
           icon = Settings;
           title = "Settings";
           break;
+        case "analytics":
+          icon = ChartSpline;
+          title = "Analytics";
+          break;
+        case "explore":
+          icon = Search;
+          title = "Explore";
+          break;
+        case "tags":
+          icon = Users;
+          title = "Tags";
+          break;
       }
 
       // Handle dynamic segments (like [id])
@@ -192,11 +211,24 @@ export default function Header({
         href,
         icon,
         title,
-        isFirst: index === 0 && pathname === "/workspace",
+        isFirst: index === 0,
       });
     });
 
     return items;
+  };
+
+  const getPageTitle = () => {
+    if (pathname.startsWith("/workspace/create")) {
+      const type = searchParams.get("type");
+      if (type === "smart") return "Create Smart Link";
+      if (type === "single") return "Create Single Link";
+      return "Create Link";
+    }
+    if (pathname.startsWith("/workspace/edit/")) {
+      return "Edit Link";
+    }
+    return null;
   };
 
   const searchItems = [
@@ -300,42 +332,46 @@ export default function Header({
       <header className="flex items-center justify-between px-6 py-3 border-b">
         {/* Left side - Breadcrumb */}
         <div className="flex flex-col">
-          <h1 className={"font-black"}>
+          <h1 className={"text-xl font-black"}>
             {items?.title ||
+              getPageTitle() ||
               getBreadcrumbItems()[getBreadcrumbItems().length - 1]?.title ||
-              "Workflow"}
+              "Workspace"}
           </h1>
           <Breadcrumb className={""}>
             <BreadcrumbList className={"text-xs"}>
-              {getBreadcrumbItems().map((item, index) => (
-                <React.Fragment key={`${item.href}-${index}`}>
-                  {index > 0 && <BreadcrumbSeparator />}
-                  <BreadcrumbItem>
-                    {index === getBreadcrumbItems().length - 1 ? (
-                      <BreadcrumbPage className="flex items-center gap-2">
-                        {item.icon && item.isFirst && (
-                          <item.icon className="h-3 w-3" />
-                        )}
-                        {item.title}
-                      </BreadcrumbPage>
-                    ) : (
-                      <BreadcrumbLink
-                        href={item.href}
-                        className="flex items-center gap-2"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          router.push(item.href);
-                        }}
-                      >
-                        {item.icon && item.isFirst && (
-                          <item.icon className="h-3 w-3" />
-                        )}
-                        {item.label}
-                      </BreadcrumbLink>
-                    )}
-                  </BreadcrumbItem>
-                </React.Fragment>
-              ))}
+              {(() => {
+                const breadcrumbItems = getBreadcrumbItems().slice(0, -1);
+                return breadcrumbItems.map((item, index) => (
+                  <React.Fragment key={`${item.href}-${index}`}>
+                    {index > 0 && <BreadcrumbSeparator />}
+                    <BreadcrumbItem>
+                      {index === breadcrumbItems.length - 1 ? (
+                        <BreadcrumbPage className="flex items-center gap-2">
+                          {item.icon && item.isFirst && (
+                            <item.icon className="h-3 w-3" />
+                          )}
+                          {item.title}
+                        </BreadcrumbPage>
+                      ) : (
+                        <BreadcrumbLink
+                          href={item.href}
+                          className="flex items-center gap-2"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            router.push(item.href);
+                          }}
+                        >
+                          {item.icon && item.isFirst && (
+                            <item.icon className="h-3 w-3" />
+                          )}
+                          {item.label}
+                        </BreadcrumbLink>
+                      )}
+                    </BreadcrumbItem>
+                  </React.Fragment>
+                ));
+              })()}
             </BreadcrumbList>
           </Breadcrumb>
         </div>

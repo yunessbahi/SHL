@@ -1226,11 +1226,11 @@ export default function CampaignsPage({ user }: CampaignsPageProps) {
               <Card
                 key={c.id}
                 className={cn(
-                  "relative hover:scale-105 hover:shadow-lg transition-all duration-200 rounded-lg flex flex-col min-h-[200px]",
+                  "relative rounded-lg hover:scale-105 hover:shadow-lg  transition-all duration-200  flex flex-col min-h-[200px] border border-border inset-relative hover:shadow-lg hover:scale-105 transition-all duration-200 rounded-lg flex flex-col min-h-[200px] border border-border inset-1 overflow-visible z-[10] ",
                 )}
               >
-                <div className="absolute inset-0 pointer-events-none [background-size:20px_20px] [background-image:linear-gradient(to_right,#e5e6e4_1px,transparent_1px),linear-gradient(to_bottom,#e4e4e7_1px,transparent_1px)] dark:[background-image:linear-gradient(to_right,#262626_1px,transparent_1px),linear-gradient(to_bottom,#262626_1px,transparent_1px)]"></div>
-                <div className="absolute inset-0 pointer-events-none bg-card [mask-image:radial-gradient(ellipse_at_center,transparent_0%,transparent_5%,black_70%)]"></div>
+                <div className="absolute inset-0 pointer-events-none rounded-lg [background-size:20px_20px] [background-image:linear-gradient(to_right,#e5e6e4_1px,transparent_1px),linear-gradient(to_bottom,#e4e4e7_1px,transparent_1px)] dark:[background-image:linear-gradient(to_right,#262626_1px,transparent_1px),linear-gradient(to_bottom,#262626_1px,transparent_1px)]"></div>
+                <div className="absolute inset-0 pointer-events-none rounded-lg bg-card [mask-image:radial-gradient(ellipse_at_center,transparent_0%,transparent_5%,black_70%)]"></div>
                 <div className="relative z-20">
                   <CardHeader className=" bg-muted/40 dark:bg-black/15 mb-4">
                     <div className="flex items-start justify-between">

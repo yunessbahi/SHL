@@ -2,12 +2,12 @@ import React from "react";
 import Sidebar from "./SidebarClient";
 
 export const metadata = {
-  title: "Analytics - Linker",
-  description: "Analytics dashboard for your link and campaign performance",
+  title: "Workspace - Linker",
+  description: "Your space for managing and creating links, templates and more",
 };
 
 // Main Layout Component
-export default function AnalyticsLayout({
+export default function WorkspaceLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -18,11 +18,6 @@ export default function AnalyticsLayout({
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Main Content */}
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
-
-        {/* Footer */}
-        {/* <footer className="border-t bg-background p-4 text-center text-sm text-muted-foreground">
-          © 2024 Linker
-        </footer> */}
       </div>
     </div>
   );

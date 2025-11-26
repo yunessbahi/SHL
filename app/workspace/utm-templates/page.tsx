@@ -13,7 +13,7 @@ export default async function UtmTemplates() {
   const sessionResult = await getSafeSession(request);
 
   if (!sessionResult || !sessionResult.user) {
-    redirect("/auth/login?redirectedFrom=/utm-templates");
+    redirect("/auth/login?redirectedFrom=/workspace/utm-templates");
   }
 
   return <UtmTemplatesPageClient user={sessionResult.user} />;

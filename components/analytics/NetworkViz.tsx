@@ -764,8 +764,10 @@ const NetworkViz = ({ data, dimensions, className }: NetworkVizProps) => {
               <div className="overflow-hidden relative">
                 {hoveredNode && (
                   <div className="absolute top-4 right-4 p-3 max-w-xs z-0">
-                    <div className="text-xs text-muted-foreground/70">
-                      <div className="font-bold">{hoveredNode.label}</div>
+                    <div className="font-mono text-xs text-muted-foreground/80">
+                      <div className="font-bold">
+                        {hoveredNode.label.toUpperCase()}
+                      </div>
                       <Separator className="my-1 opacity-20" />
                       <div className="flex justify-between gap-2">
                         <span className="font-medium">Dimension:</span>

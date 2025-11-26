@@ -20,6 +20,18 @@ export async function authFetch(url: string, options: RequestInit = {}) {
 
   const base = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/+$/, "");
   const path = url.startsWith("/") ? url : `/${url}`;
+  const fullUrl = `${base}${path}`;
 
-  return fetch(`${base}${path}`, { ...options, headers });
+  console.log("API Fetch URL:", fullUrl);
+  console.log("API Fetch Headers:", Object.fromEntries(headers.entries()));
+
+  try {
+    const response = await fetch(fullUrl, { ...options, headers });
+    console.log("API Fetch Response Status:", response.status);
+    return response;
+  } catch (error) {
+    console.error("API Fetch Error:", error);
+    console.error("Failed to fetch from:", fullUrl);
+    throw error;
+  }
 }

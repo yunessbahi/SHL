@@ -81,6 +81,7 @@ export default async function RootLayout({
           inter.variable,
           roboto.variable,
           mono.variable,
+          "h-screen",
           "font-inter antialiased isolate",
           "bg-background text-foreground",
           "min-h-screen overflow-hidden",
@@ -100,7 +101,7 @@ export default async function RootLayout({
         >
           <Sidebar hasSession={!!user} user={safeUser}>
             <Header user={safeUser}>
-              <div className="py-4">{children}</div>
+              <div className="">{children}</div>
             </Header>
           </Sidebar>
           <Toaster theme="system" />
