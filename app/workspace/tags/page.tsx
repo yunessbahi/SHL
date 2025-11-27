@@ -13,7 +13,7 @@ export default async function Tags() {
   const sessionResult = await getSafeSession(request);
 
   if (!sessionResult || !sessionResult.user) {
-    redirect("/auth/login?redirectedFrom=/tags");
+    redirect("/auth/login?redirectedFrom=/workspace/tags");
   }
 
   return <TagsPageClient user={sessionResult.user} />;

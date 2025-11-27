@@ -14,7 +14,7 @@ export default async function Campaigns() {
   const sessionResult = await getSafeSession(request);
 
   if (!sessionResult || !sessionResult.user) {
-    redirect("/auth/login?redirectedFrom=/campaigns");
+    redirect("/auth/login?redirectedFrom=/workspace/campaigns");
   }
 
   return <CampaignsPageClient user={sessionResult.user} />;

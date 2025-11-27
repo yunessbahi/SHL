@@ -13,7 +13,7 @@ export default async function Groups() {
   const sessionResult = await getSafeSession(request);
 
   if (!sessionResult || !sessionResult.user) {
-    redirect("/auth/login?redirectedFrom=/groups");
+    redirect("/auth/login?redirectedFrom=/workspace/groups");
   }
 
   return <GroupsPageClient user={sessionResult.user} />;
