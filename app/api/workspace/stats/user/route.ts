@@ -1,7 +1,7 @@
 import { UserStats } from "@/app/workspace/landing/types/workspaceTypes";
 import { NextResponse } from "next/server";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 /**
  * GET /api/workspace/stats/user
