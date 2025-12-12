@@ -1,6 +1,8 @@
 import { LinkCreationStats } from "@/app/workspace/landing/types/workspaceTypes";
 import { NextResponse } from "next/server";
 
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/workspace/stats/links
  * Fetch link creation statistics

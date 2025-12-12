@@ -159,9 +159,7 @@ export default function CommandMenu13() {
             View and manage your notifications.
           </DialogDescription>
         </DialogHeader>
-        <DialogContent
-          className="gap-0 overflow-hidden p-0 sm:max-w-md"
-        >
+        <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-md">
           <Command>
             {/* Header */}
             <div className="flex items-center justify-between border-b px-3 py-2">

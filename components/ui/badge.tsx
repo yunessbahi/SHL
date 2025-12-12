@@ -30,7 +30,8 @@ const badgeVariants = cva(
       },
       appearance: {
         filled: "",
-        outline: "border-current bg-transparent hover:bg-current hover:text-current-foreground",
+        outline:
+          "border-current bg-transparent hover:bg-current hover:text-current-foreground",
       },
       shape: {
         rounded: "rounded-md",
@@ -50,9 +51,22 @@ export interface BadgeProps
   extends React.HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof badgeVariants> {}
 
-function Badge({ className, variant, size, appearance, shape, ...props }: BadgeProps) {
+function Badge({
+  className,
+  variant,
+  size,
+  appearance,
+  shape,
+  ...props
+}: BadgeProps) {
   return (
-    <div className={cn(badgeVariants({ variant, size, appearance, shape }), className)} {...props} />
+    <div
+      className={cn(
+        badgeVariants({ variant, size, appearance, shape }),
+        className,
+      )}
+      {...props}
+    />
   );
 }
 
