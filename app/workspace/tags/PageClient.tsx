@@ -1,10 +1,6 @@
 "use client";
 import React, { useEffect, useState, useMemo, useCallback } from "react";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   Plus,
@@ -28,7 +24,6 @@ import TagModal from "@/app/components/TagModal";
 import { SafeUser } from "@/lib/getSafeSession";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
-  createFilter,
   Filters,
   type Filter,
   type FilterFieldConfig,
@@ -719,21 +714,19 @@ export default function TagsPage({ user }: TagsPageProps) {
 
   if (loading)
     return (
-      <div className="flex items-center justify-center py-16">
-        <div className="text-center">
-          <Spinner className="size-6 mx-auto" />
-          <p className="text-xs mt-4 text-muted-foreground">Loading...</p>
-        </div>
+      <div className="flex items-center justify-center h-64 text-muted-foreground">
+        <Spinner className="size-4" />
+        <span className="ml-2 text-sm">Loading</span>
       </div>
     );
 
   return (
     <div className="space-y-4">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+        <h1 className="text-3xl font-bold tracking-tight text-muted-foreground">
           Tags
         </h1>
-        <p className="text-lg text-gray-600 dark:text-gray-300 mt-2">
+        <p className="text-md text-muted-foreground">
           Create and organize custom tags with colors to categorize and manage
           your campaigns effectively.
         </p>

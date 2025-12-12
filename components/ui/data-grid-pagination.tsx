@@ -1,6 +1,4 @@
-import React from "react";
 
-import { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { useDataGrid } from "@/components/ui/data-grid";
 import {
@@ -11,8 +9,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
+import { ReactNode } from "react";
 
 interface DataGridPaginationProps {
   sizes?: number[];
@@ -155,13 +154,12 @@ function DataGridPagination(props: DataGridPaginationProps) {
             </div>
             <Select
               value={`${pageSize}`}
-              indicatorPosition="right"
               onValueChange={(value) => {
                 const newPageSize = Number(value);
                 table.setPageSize(newPageSize);
               }}
             >
-              <SelectTrigger className="w-fit" size="sm">
+              <SelectTrigger className="w-fit">
                 <SelectValue placeholder={`${pageSize}`} />
               </SelectTrigger>
               <SelectContent side="top" className="min-w-[50px]">

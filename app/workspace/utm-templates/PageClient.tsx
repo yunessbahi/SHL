@@ -1,68 +1,16 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
-import { motion } from "motion/react";
 import { Button } from "@/app/components/ui/button";
+import { UtmTemplateModal } from "@/app/components/UtmTemplateModal";
+import { Pill, PillIndicator, PillStatus } from "@/components/kibo-ui/pill";
 import { Badge } from "@/components/ui/badge";
+import { CalendarReUI } from "@/components/ui/calendarReUI";
 import {
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-  TooltipProvider,
-} from "@/components/ui/tooltip";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Plus,
-  Edit,
-  Trash2,
-  Pin,
-  Globe,
-  MoreHorizontal,
-  Hash,
-  MousePointer,
-  Target,
-  Zap,
-  CheckCircleIcon,
-  Settings,
-  Bookmark,
-  FilePenLine,
-  X,
-  Calendar,
-  Check,
-} from "lucide-react";
-import { authFetch } from "@/lib/api";
-import { cn, toTitleCase, truncateText } from "@/lib/utils";
-import { UtmTemplateModal } from "@/app/components/UtmTemplateModal";
-import { Separator } from "@/components/ui/separator";
-import { Spinner } from "@/components/ui/spinner";
-import localFont from "next/font/local";
-import {
-  Pill,
-  PillIcon,
-  PillIndicator,
-  PillStatus,
-} from "@/components/kibo-ui/pill";
-import { SafeUser } from "@/lib/getSafeSession";
-import { EmptyState } from "@/components/ui/empty-state";
-import {
-  createFilter,
-  Filters,
-  type Filter,
-  type FilterFieldConfig,
-} from "@/components/ui/filters";
 import {
   Command,
   CommandEmpty,
@@ -71,20 +19,50 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { CalendarReUI } from "@/components/ui/calendarReUI";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { EmptyState } from "@/components/ui/empty-state";
+import {
+  Filters,
+  type Filter,
+  type FilterFieldConfig,
+} from "@/components/ui/filters";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { Spinner } from "@/components/ui/spinner";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { authFetch } from "@/lib/api";
+import { SafeUser } from "@/lib/getSafeSession";
+import { cn, toTitleCase, truncateText } from "@/lib/utils";
+import {
+  Calendar,
+  Check,
+  FilePenLine,
+  Globe,
+  Hash,
+  MoreHorizontal,
+  Plus,
+  Settings,
+  Target,
+  Trash2,
+  X,
+} from "lucide-react";
+import { motion } from "motion/react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+
 import {
   endOfMonth,
   endOfYear,
@@ -950,11 +928,9 @@ export default function UTMTemplatesPage({ user }: UTMTemplatesPageProps) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <div className="text-center">
-          <Spinner className="size-6 mx-auto" />
-          <p className="text-xs mt-4 text-muted-foreground">Loading...</p>
-        </div>
+      <div className="flex items-center justify-center h-64 text-muted-foreground">
+        <Spinner className="size-4" />
+        <span className="ml-2 text-sm">Loading</span>
       </div>
     );
   }
@@ -964,10 +940,10 @@ export default function UTMTemplatesPage({ user }: UTMTemplatesPageProps) {
   return (
     <TooltipProvider>
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+        <h1 className="text-3xl font-bold tracking-tight text-muted-foreground">
           UTM Templates
         </h1>
-        <p className="text-lg text-gray-600 dark:text-gray-300 mt-2">
+        <p className="text-md text-muted-foreground">
           Create and manage UTM parameter templates to maintain consistent
           tracking across your campaigns.
         </p>
@@ -1034,7 +1010,7 @@ export default function UTMTemplatesPage({ user }: UTMTemplatesPageProps) {
                   <div className="absolute inset-0 pointer-events-none rounded-lg [background-size:20px_20px] [background-image:linear-gradient(to_right,#e5e6e4_1px,transparent_1px),linear-gradient(to_bottom,#e4e4e7_1px,transparent_1px)] dark:[background-image:linear-gradient(to_right,#262626_1px,transparent_1px),linear-gradient(to_bottom,#262626_1px,transparent_1px)]"></div>
                   <div className="absolute inset-0 pointer-events-none rounded-lg bg-card [mask-image:radial-gradient(ellipse_at_center,transparent_0%,transparent_5%,black_70%)]"></div>
                   <div className="relative overflow-visible z-[1]">
-                    <CardHeader className="bg-muted/40 dark:bg-black/15 p-6 mb-4">
+                    <CardHeader className="bg-muted dark:bg-black/15 p-6 mb-4">
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-2 flex-wrap">
                           <BookmarkIcon
@@ -1047,7 +1023,7 @@ export default function UTMTemplatesPage({ user }: UTMTemplatesPageProps) {
                           </Pill>
 
                           {template.is_global && (
-                            <Pill className="bg-primary/90 text-muted">
+                            <Pill className="bg-popover-foreground text-muted">
                               Global
                             </Pill>
                           )}

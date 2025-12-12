@@ -1,8 +1,8 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { MultiSelect, MultiSelectOption } from "@/components/multi-select";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DateTimePicker24h } from "@/components/ui/date-time-picker-24h";
 import {
   Dialog,
   DialogContent,
@@ -18,11 +18,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -30,11 +27,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MultiSelect } from "@/components/multi-select";
-import { CalendarWithTimeInput } from "@/components/ui/calendar-with-time-input";
+import { Textarea } from "@/components/ui/textarea";
 import { authFetch } from "@/lib/api";
-import { Clock, Calendar, Infinity, Tag } from "lucide-react";
-import { MultiSelectOption } from "@/components/multi-select";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Calendar, Clock, Infinity, Tag } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 
 const campaignSchema = z
   .object({
@@ -336,31 +335,35 @@ export default function CampaignModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="font-black">
             {initialData ? "Edit Campaign" : "Create New Campaign"}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Form Section */}
-          <div className="space-y-6">
+          <div className="space-y-6 max-h-[75vh] lg:col-span-8 overflow-y-auto pr-6 scrollbar-none">
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(handleSubmit)}
                 className="space-y-4"
               >
                 {/* Basic Info */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Basic Information</h3>
+                <div className="space-y-4 p-2 ">
+                  <h3 className="text-lg font-bold text-popover-foreground">
+                    Basic Information
+                  </h3>
 
                   <FormField
                     control={form.control}
                     name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Campaign Name *</FormLabel>
+                        <FormLabel className="text-muted-foreground">
+                          Campaign Name *
+                        </FormLabel>
                         <FormControl>
                           <Input placeholder="Enter campaign name" {...field} />
                         </FormControl>
@@ -374,7 +377,9 @@ export default function CampaignModal({
                     name="description"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Description</FormLabel>
+                        <FormLabel className="text-muted-foreground">
+                          Description
+                        </FormLabel>
                         <FormControl>
                           <Textarea
                             placeholder="Enter campaign description"
@@ -389,45 +394,70 @@ export default function CampaignModal({
                 </div>
 
                 {/* Lifecycle Selection */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Campaign Lifecycle</h3>
+                <div className="space-y-4 px-2">
+                  <h3 className="text-lg font-bold text-popover-foreground">
+                    Campaign Lifecycle
+                  </h3>
 
                   <FormField
                     control={form.control}
                     name="lifecycle_attr"
                     render={({ field }) => (
-                      <FormItem>
-                        <FormControl>
+                      <FormItem className="">
+                        <FormControl className="border-none ">
                           <RadioGroup
                             value={field.value.toString()}
                             onValueChange={(value) =>
                               field.onChange(parseInt(value))
                             }
-                            className="grid grid-cols-1 gap-4"
+                            defaultValue={"1"}
+                            className="w-full justify-items-center sm:grid-cols-3"
                           >
                             {lifecycleOptions.map((option) => {
                               const Icon = option.icon;
                               return (
-                                <div key={option.id}>
+                                <div
+                                  key={option.id}
+                                  className={`
+                                    relative flex w-full max-w-50 flex-col items-center gap-3
+                                    rounded-md border  p-4 shadow-sm outline-none
+                                    border-border hover:bg-muted/35
+                                    ${field.value === option.id ? "border-primary/70" : ""}
+                                    cursor-pointer
+                                  `}
+                                  ref={(el) => {
+                                    if (el) {
+                                      const radioItem =
+                                        el.querySelector("[data-state]");
+                                      console.log(
+                                        `Radio item for ${option.id}:`,
+                                        radioItem?.getAttribute("data-state"),
+                                      );
+                                    }
+                                  }}
+                                >
                                   <RadioGroupItem
                                     value={option.id.toString()}
                                     id={`lifecycle-${option.id}`}
-                                    className="peer sr-only"
+                                    className="order-1 size-5 after:absolute after:inset-0 [&_svg]:size-3 border-muted-foreground/50 bg-muted"
+                                    aria-describedby={`lifecycle-${option.id}-description`}
                                   />
-                                  <Label
-                                    htmlFor={`lifecycle-${option.id}`}
-                                    className="flex items-center space-x-3 p-4 border rounded-lg cursor-pointer hover:bg-accent peer-checked:border-primary"
-                                  >
+
+                                  <div className="grid grow justify-items-center content-baseline gap-3">
                                     <Icon className="h-5 w-5 text-primary" />
-                                    <div>
-                                      <div className="font-medium">
-                                        {option.name}
-                                      </div>
-                                      <div className="text-sm text-muted-foreground">
-                                        {option.description}
-                                      </div>
-                                    </div>
-                                  </Label>
+                                    <Label
+                                      htmlFor={`lifecycle-${option.id}`}
+                                      className="justify-center"
+                                    >
+                                      {option.name}
+                                    </Label>
+                                    <p
+                                      id={`lifecycle-${option.id}-description`}
+                                      className="text-muted-foreground text-center text-xs"
+                                    >
+                                      {option.description}
+                                    </p>
+                                  </div>
                                 </div>
                               );
                             })}
@@ -441,8 +471,8 @@ export default function CampaignModal({
 
                 {/* Conditional Fields */}
                 {watchedValues.lifecycle_attr === 1 && (
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">
+                  <div className="space-y-4 px-2">
+                    <h3 className="text-lg font-bold text-popover-foreground">
                       Always-on Settings
                     </h3>
 
@@ -451,7 +481,9 @@ export default function CampaignModal({
                       name="default_link_ttl_days"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Default Link TTL (days) *</FormLabel>
+                          <FormLabel className="text-muted-foreground">
+                            Default Link TTL (days) *
+                          </FormLabel>
                           <FormControl>
                             <Input
                               type="number"
@@ -470,21 +502,33 @@ export default function CampaignModal({
                 )}
 
                 {watchedValues.lifecycle_attr === 2 && (
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">One-off Settings</h3>
+                  <div className="space-y-4 px-2">
+                    <h3 className="text-lg font-bold text-popover-foreground">
+                      One-off Settings
+                    </h3>
 
                     <FormField
                       control={form.control}
                       name="campaign_start_date"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Start Date & Time *</FormLabel>
+                          <FormLabel className="text-muted-foreground">
+                            Start Date & Time *
+                          </FormLabel>
                           <FormControl>
-                            <CalendarWithTimeInput
-                              value={field.value}
-                              onChange={field.onChange}
-                              placeholder="Select start date and time"
-                            />
+                            <div onWheel={(e) => e.stopPropagation()}>
+                              <DateTimePicker24h
+                                className=""
+                                value={
+                                  field.value ? field.value.toISOString() : ""
+                                }
+                                onChange={(dateStr) =>
+                                  field.onChange(
+                                    dateStr ? new Date(dateStr) : undefined,
+                                  )
+                                }
+                              />
+                            </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -496,13 +540,22 @@ export default function CampaignModal({
                       name="campaign_end_date"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>End Date & Time *</FormLabel>
+                          <FormLabel className="text-muted-foreground">
+                            End Date & Time *
+                          </FormLabel>
                           <FormControl>
-                            <CalendarWithTimeInput
-                              value={field.value}
-                              onChange={field.onChange}
-                              placeholder="Select end date and time"
-                            />
+                            <div onWheel={(e) => e.stopPropagation()}>
+                              <DateTimePicker24h
+                                value={
+                                  field.value ? field.value.toISOString() : ""
+                                }
+                                onChange={(dateStr) =>
+                                  field.onChange(
+                                    dateStr ? new Date(dateStr) : undefined,
+                                  )
+                                }
+                              />
+                            </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -512,15 +565,19 @@ export default function CampaignModal({
                 )}
 
                 {/* Status */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Status</h3>
+                <div className="space-y-4 px-2">
+                  <h3 className="text-lg font-bold text-popover-foreground">
+                    Status
+                  </h3>
 
                   <FormField
                     control={form.control}
                     name="status"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Campaign Status</FormLabel>
+                        <FormLabel className="text-muted-foreground">
+                          Campaign Status
+                        </FormLabel>
                         <Select
                           value={field.value}
                           onValueChange={field.onChange}
@@ -548,15 +605,19 @@ export default function CampaignModal({
                 </div>
 
                 {/* Tags */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Tags</h3>
+                <div className="space-y-4 px-2">
+                  <h3 className="text-lg font-bold text-popover-foreground">
+                    Tags
+                  </h3>
 
                   <FormField
                     control={form.control}
                     name="tags"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Campaign Tags</FormLabel>
+                        <FormLabel className="text-muted-foreground">
+                          Campaign Tags
+                        </FormLabel>
                         <FormControl>
                           <MultiSelect
                             fetchTags={fetchTags}
@@ -566,8 +627,18 @@ export default function CampaignModal({
                             onValueChange={(values: string[]) =>
                               field.onChange(values.map(Number))
                             }
+                            variant={"secondary"}
+                            animationConfig={{
+                              optionHoverAnimation: "none",
+                              badgeAnimation: "bounce",
+                              popoverAnimation: "none",
+                            }}
                             placeholder="Select or create tags"
-                            emptyIndicator="No tags found"
+                            emptyIndicator={
+                              <p className="text-center text-sm">
+                                No tags found
+                              </p>
+                            }
                           />
                         </FormControl>
                         <FormMessage />
@@ -577,14 +648,7 @@ export default function CampaignModal({
                 </div>
 
                 {/* Submit Buttons */}
-                <div className="flex gap-2 pt-4">
-                  <Button type="submit" disabled={loading}>
-                    {loading
-                      ? "Saving..."
-                      : initialData
-                        ? "Update Campaign"
-                        : "Create Campaign"}
-                  </Button>
+                <div className="flex gap-2 pt-4 px-2 justify-end">
                   <Button
                     type="button"
                     variant="outline"
@@ -592,21 +656,28 @@ export default function CampaignModal({
                   >
                     Cancel
                   </Button>
+                  <Button type="submit" disabled={loading}>
+                    {loading
+                      ? "Saving..."
+                      : initialData
+                        ? "Update Campaign"
+                        : "Create Campaign"}
+                  </Button>
                 </div>
               </form>
             </Form>
           </div>
 
           {/* Summary Card */}
-          <div className="space-y-4">
+          <div className="space-y-4 lg:col-span-4 max-h-[75vh] overflow-y-auto">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 font-bold text-popover-foreground">
                   <Tag className="h-5 w-5" />
                   Campaign Summary
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 text-sm">
                 <div>
                   <h4 className="font-medium">Name</h4>
                   <p className="text-sm text-muted-foreground">
@@ -639,7 +710,10 @@ export default function CampaignModal({
                   <div>
                     <h4 className="font-medium">Default TTL</h4>
                     <p className="text-sm text-muted-foreground">
-                      {watchedValues.default_link_ttl_days} days
+                      {watchedValues.default_link_ttl_days}{" "}
+                      {watchedValues.default_link_ttl_days === 1
+                        ? "day"
+                        : "days"}
                     </p>
                   </div>
                 )}

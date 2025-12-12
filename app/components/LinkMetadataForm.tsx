@@ -264,7 +264,8 @@ export default function LinkMetadataForm({
           <CardHeader className="pb-3">
             <CardTitle className="text-sm">Group</CardTitle>
             <CardDescription className="text-xs">
-              Organize for A/B testing
+              Select an existing group or create a new one to better organize
+              and analyze your links
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">

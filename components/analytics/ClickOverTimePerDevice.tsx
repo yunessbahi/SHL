@@ -1,14 +1,11 @@
-import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
-  Smartphone,
   LaptopMinimal,
-  CreditCard,
-  PencilRuler,
-  EllipsisVertical,
-  TabletSmartphoneIcon,
   RefreshCw,
+  Smartphone,
+  TabletSmartphoneIcon,
 } from "lucide-react";
+import React, { useState } from "react";
 
 interface Project {
   name: string;
@@ -83,7 +80,7 @@ const ProjectDashboardCard: React.FC<ProjectDashboardCardProps> = ({
 
   return (
     <div
-      className={`bg-muted/5 text-card-foreground border-l  ansparent shadow-sm grid gap-0 ${
+      className={`bg-muted text-card-foreground border-l ansparent grid gap-0 ${
         showProjectList ? "lg:grid-cols-3" : "lg:grid-cols-1"
       } w-full ${className}`}
     >

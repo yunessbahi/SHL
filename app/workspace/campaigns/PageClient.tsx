@@ -1,49 +1,95 @@
 "use client";
-import React, {
-  useEffect,
-  useState,
-  useRef,
-  useMemo,
-  useCallback,
-} from "react";
-import { useRouter } from "next/navigation";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Button } from "@/components/ui/button";
+import CampaignModal from "@/app/components/CampaignModal";
+import { Status } from "@/app/components/ui/badges-var1";
+import { UtmTemplateModal } from "@/app/components/UtmTemplateModal";
+import { MultiSelect } from "@/components/multi-select";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { CalendarReUI } from "@/components/ui/calendarReUI";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
-  Plus,
-  Link,
-  X,
-  Edit,
-  Trash2,
-  Eye,
-  Info,
-  Clock,
-  Infinity,
-  MoreHorizontal,
-  Target,
-  Timer,
-  Tag as TagIcon,
-  TimerReset,
-  Clock3,
-  Calendar,
-  FilePenLine,
-} from "lucide-react";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { EmptyState } from "@/components/ui/empty-state";
+import {
+  Filters,
+  type Filter,
+  type FilterFieldConfig,
+} from "@/components/ui/filters";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Toaster } from "@/components/ui/sonner";
+import { Spinner } from "@/components/ui/spinner";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { authFetch } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { Spinner } from "@/components/ui/spinner";
-import { createClient } from "@/lib/supabase/client";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  endOfMonth,
+  endOfYear,
+  format,
+  isEqual,
+  startOfDay,
+  startOfMonth,
+  startOfYear,
+  subDays,
+  subMonths,
+  subYears,
+} from "date-fns";
+import {
+  Calendar,
+  Clock,
+  Clock3,
+  Edit,
+  Eye,
+  FilePenLine,
+  Infinity,
+  Info,
+  MoreHorizontal,
+  Plus,
+  Tag as TagIcon,
+  Target,
+  Timer,
+  TimerReset,
+  Trash2,
+  X,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { DateRange } from "react-day-picker";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { Toaster } from "@/components/ui/sonner";
+import { z } from "zod";
 
 // Delete Confirmation Message Component
 interface DeleteConfirmationMessageProps {
@@ -74,61 +120,6 @@ const DeleteConfirmationMessage = ({
     </div>
   );
 };
-import { UtmTemplateModal } from "@/app/components/UtmTemplateModal";
-import CampaignModal from "@/app/components/CampaignModal";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { MultiSelect } from "@/components/multi-select";
-import { EmptyState } from "@/components/ui/empty-state";
-import { Status } from "@/app/components/ui/badges-var1";
-import {
-  createFilter,
-  Filters,
-  type Filter,
-  type FilterFieldConfig,
-} from "@/components/ui/filters";
-import { CalendarReUI } from "@/components/ui/calendarReUI";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
-  endOfMonth,
-  endOfYear,
-  format,
-  isEqual,
-  startOfDay,
-  startOfMonth,
-  startOfYear,
-  subDays,
-  subMonths,
-  subYears,
-} from "date-fns";
-import { DateRange } from "react-day-picker";
-import { Label } from "@/components/ui/label";
 
 function getUtmParams(obj: any) {
   let utm = obj?.utm_params;
@@ -354,14 +345,13 @@ type CampaignFormValues = z.infer<typeof campaignSchema>;
 
 import { SafeUser } from "@/lib/getSafeSession";
 import {
-  BarChart,
   Bar,
-  XAxis,
-  YAxis,
+  BarChart,
   Tooltip as ChartTooltip,
   ResponsiveContainer,
+  XAxis,
+  YAxis,
 } from "recharts";
-import { ChartTooltipContent } from "@/components/ui/chart";
 
 interface CampaignsPageProps {
   user: SafeUser;
@@ -1129,11 +1119,9 @@ export default function CampaignsPage({ user }: CampaignsPageProps) {
 
   if (loading)
     return (
-      <div className="flex items-center justify-center py-16">
-        <div className="text-center">
-          <Spinner className="size-6 mx-auto" />
-          <p className="text-xs mt-4 text-muted-foreground">Loading...</p>
-        </div>
+      <div className="flex items-center justify-center h-64 text-muted-foreground">
+        <Spinner className="size-4" />
+        <span className="ml-2 text-sm">Loading</span>
       </div>
     );
 
@@ -1180,10 +1168,10 @@ export default function CampaignsPage({ user }: CampaignsPageProps) {
     <TooltipProvider>
       <div className="space-y-4">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-3xl font-bold tracking-tight text-muted-foreground">
             Campaigns
           </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-300 mt-2">
+          <p className="text-md text-muted-foreground">
             Create and manage campaigns to organize your marketing efforts and
             track performance.
           </p>
@@ -1232,7 +1220,7 @@ export default function CampaignsPage({ user }: CampaignsPageProps) {
                 <div className="absolute inset-0 pointer-events-none rounded-lg [background-size:20px_20px] [background-image:linear-gradient(to_right,#e5e6e4_1px,transparent_1px),linear-gradient(to_bottom,#e4e4e7_1px,transparent_1px)] dark:[background-image:linear-gradient(to_right,#262626_1px,transparent_1px),linear-gradient(to_bottom,#262626_1px,transparent_1px)]"></div>
                 <div className="absolute inset-0 pointer-events-none rounded-lg bg-card [mask-image:radial-gradient(ellipse_at_center,transparent_0%,transparent_5%,black_70%)]"></div>
                 <div className="relative z-20">
-                  <CardHeader className=" bg-muted/40 dark:bg-black/15 mb-4">
+                  <CardHeader className=" bg-muted dark:bg-black/15 mb-4">
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-lg truncate">
@@ -1624,8 +1612,7 @@ export default function CampaignsPage({ user }: CampaignsPageProps) {
                                       className: "fill-green-500 opacity-80",
                                     }}
                                     background={{
-                                      className:
-                                        "dark:fill-muted/80 fill-muted",
+                                      className: "dark:fill-muted fill-muted",
                                     }}
                                   />
                                 </BarChart>
@@ -1744,7 +1731,7 @@ export default function CampaignsPage({ user }: CampaignsPageProps) {
                   {(activeCampaign.templates || []).map((t) => (
                     <tr key={t.id} className="border-t">
                       <td
-                        className="p-2 cursor-pointer hover:text-primary/70"
+                        className="p-2 cursor-pointer hover:text-popover-foreground"
                         onClick={() => setTemplateDetail(t)}
                       >
                         {t.name}

@@ -4,8 +4,7 @@ import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Eye, EyeOff, BadgeCheckIcon } from "lucide-react";
+import { Plus, Trash2, Eye, EyeOff, CurlyBraces } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -54,6 +53,7 @@ interface TargetFormProps {
   campaignStartDate?: string;
   campaignEndDate?: string;
   showRemove?: boolean;
+  showWeightSlider?: boolean;
 
   // Change handlers
   onTargetUrlChange: (url: string) => void;
@@ -89,6 +89,7 @@ export default function TargetForm({
   campaignStartDate,
   campaignEndDate,
   showRemove = false,
+  showWeightSlider = true,
   onTargetUrlChange,
   onWeightChange,
   onRulesChange,
@@ -116,6 +117,13 @@ export default function TargetForm({
       });
     }
   }, [utmTemplateId, currentTemplate?.id]); // Only trigger when template changes, not on every render
+
+  // Ensure weight is 100 for single links when slider is not shown
+  React.useEffect(() => {
+    if (!showWeightSlider && weight !== 100) {
+      onWeightChange(100);
+    }
+  }, [showWeightSlider, weight, onWeightChange]);
 
   // Wrapper function to handle string/number conversion for UTM template change
   const handleUtmTemplateChange = (value: string | number | null) => {
@@ -172,13 +180,15 @@ export default function TargetForm({
         </div>
 
         {/* Weight Slider */}
-        <div>
-          <Label>Weight Distribution</Label>
-          <WeightSlider value={weight} onChange={onWeightChange} />
-          <p className="text-xs text-muted-foreground mt-1">
-            Controls traffic distribution when multiple targets exist
-          </p>
-        </div>
+        {showWeightSlider && (
+          <div>
+            <Label>Weight Distribution</Label>
+            <WeightSlider value={weight} onChange={onWeightChange} />
+            <p className="text-xs text-muted-foreground mt-1">
+              Controls traffic distribution when multiple targets exist
+            </p>
+          </div>
+        )}
 
         {/* UTM Template Selector */}
         <div>
@@ -239,17 +249,18 @@ export default function TargetForm({
 
           {/* UTM Preview Section */}
           {showPreview && currentTemplate && (
-            <div className="mt-3 p-3 bg-gray-50 rounded-md border">
-              <h4 className="text-sm font-medium mb-2">
+            <div className="mt-3  text-xs dark:bg-amber-200/5 dark:text-amber-300 bg-amber-400/5 text-amber-700 p-3 rounded-md">
+              <h4 className="flex items-center gap-2 font-medium mb-2">
+                <CurlyBraces className="w-4 h-4 " />
                 UTM Parameters Preview
               </h4>
               <div className="space-y-1">
                 {Object.entries(currentTemplate.utm_params).map(
                   ([key, value]) => (
                     <div key={key} className="flex justify-between text-xs">
-                      <span className="font-mono text-gray-600">{key}:</span>
+                      <span className="font-mono opacity-70">{key}:</span>
                       <span
-                        className={`font-mono ${value ? "text-green-600" : "text-gray-400"}`}
+                        className={`font-mono ${value ? "opacity-80" : "text-muted-foreground/70"}`}
                       >
                         {value || "Not set"}
                       </span>

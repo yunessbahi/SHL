@@ -1,6 +1,7 @@
+import { Badge } from "@/components/ui/badge";
 import { getSafeSession } from "@/lib/getSafeSession";
-import { redirect } from "next/navigation";
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { NextRequest } from "next/server";
 import ExplorePageClient from "./PageClient";
 
@@ -20,21 +21,25 @@ export default async function ExplorePage() {
     <div className="min-h-screen overflow-y-auto">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-6">
         <div>
-          <h1 className="text-3xl font-bold text-accent-foreground">
+          <h1 className="text-3xl font-bold tracking-tight text-muted-foreground">
             Analytics Explorer
           </h1>
-          <p className="text-gray-600 mt-1">
+          <p className="text-md text-muted-foreground">
             Deep dive into your data with custom filters, metrics, and
             dimensions
           </p>
         </div>
+
         <div className="flex items-center gap-2">
-          <div className="px-3 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-full text-sm font-medium">
+          <Badge
+            variant="outline"
+            className="bg-neutral-100/10 text-neutral-700 border-neutral-400 dark:bg-neutral-500/10 dark:text-neutral-400 dark:border-neutral-700"
+          >
             Advanced Analytics
-          </div>
+          </Badge>
         </div>
       </div>
-      <ExplorePageClient user={sessionResult.user} />
+      <ExplorePageClient />
     </div>
   );
 }

@@ -1,24 +1,16 @@
-import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import {
   CheckIcon,
-  XCircle,
   ChevronDown,
-  XIcon,
-  WandSparkles,
   Plus,
+  WandSparkles,
   X,
+  XIcon,
 } from "lucide-react";
+import * as React from "react";
 
-import { cn } from "@/lib/utils";
-import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
 import {
   Command,
   CommandEmpty,
@@ -28,6 +20,14 @@ import {
   CommandList,
   CommandSeparator,
 } from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
+import { Spinner } from "./ui/spinner";
 
 /**
  * Animation types and configurations
@@ -946,7 +946,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                 getAllOptions().length
               } options selected. ${placeholder}`}
               className={cn(
-                "flex p-1 rounded-md border min-h-10 h-auto items-center justify-between bg-input hover:bg-input/40 shadow-xs transition-colors  [&_svg]:pointer-events-auto",
+                "flex rounded-md p-1 h-auto min-h-9 items-center justify-between transition-colors [&_svg]:pointer-events-auto text-left font-normal bg-input border border-border hover:bg-accent shadow-none",
                 autoSize ? "w-auto" : "w-full",
                 responsiveSettings.compactMode && "min-h-8 text-sm",
                 screenSize === "mobile" && "min-h-12 text-base",
@@ -1074,7 +1074,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                     {selectedValues.length > responsiveSettings.maxCount && (
                       <Badge
                         className={cn(
-                          "bg-transparent text-foreground border-foreground/1 hover:bg-transparent",
+                          " text-foreground border-foreground",
                           getBadgeAnimationClass(),
                           multiSelectVariants({ variant }),
                           responsiveSettings.compactMode &&
@@ -1121,7 +1121,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                         }
                       }}
                       aria-label={`Clear all ${selectedValues.length} selected options`}
-                      className="flex items-center justify-center h-4 w-4 mx-2 cursor-pointer text-muted-foreground hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 rounded-sm"
+                      className="flex items-center justify-center h-4 w-4 mx-2 cursor-pointer text-muted-foreground hover:text-foreground focus:outline-none focus:ring-1 focus:ring-ring focus:ring-offset-1 rounded-sm"
                     >
                       <XIcon className="h-4 w-4" />
                     </div>
@@ -1137,7 +1137,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                 </div>
               ) : (
                 <div className="flex items-center justify-between w-full mx-auto">
-                  <span className="text-sm font-medium text-primary mx-3">
+                  <span className="text-sm font-normal text-primary mx-3">
                     {placeholder}
                   </span>
                   <ChevronDown className="h-4 cursor-pointer text-muted-foreground mx-2" />
@@ -1193,11 +1193,9 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
               >
                 <CommandEmpty>
                   {isLoadingTags ? (
-                    <div className="flex items-center justify-center py-2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                      <span className="ml-2 text-sm text-muted-foreground">
-                        Loading tags...
-                      </span>
+                    <div className="flex items-center justify-center h-64 text-muted-foreground">
+                      <Spinner className="size-4" />
+                      <span className="ml-2 text-sm">Loading Tags...</span>
                     </div>
                   ) : (
                     emptyIndicator || "No results found."
@@ -1393,4 +1391,4 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
 );
 
 MultiSelect.displayName = "MultiSelect";
-export type { MultiSelectOption, MultiSelectGroup, MultiSelectProps };
+export type { MultiSelectGroup, MultiSelectOption, MultiSelectProps };

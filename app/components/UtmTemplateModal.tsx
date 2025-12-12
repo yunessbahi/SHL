@@ -37,7 +37,6 @@ import {
 } from "@/components/kibo-ui/combobox";
 import { Plus, Trash2 } from "lucide-react";
 import { Label } from "@/components/ui/label";
-import { flushSync } from "react-dom";
 
 interface Campaign {
   id: number;
@@ -414,7 +413,7 @@ export function UtmTemplateModal({
               control={control}
               name="is_global"
               render={({ field }) => (
-                <FormItem className="flex items-end space-x-2">
+                <FormItem className="flex items-center space-x-2">
                   <FormControl>
                     <Checkbox
                       checked={field.value}
@@ -434,7 +433,7 @@ export function UtmTemplateModal({
               control={control}
               name="pinned"
               render={({ field }) => (
-                <FormItem className="flex items-end space-x-2">
+                <FormItem className="flex items-center space-x-2">
                   <FormControl>
                     <Checkbox
                       checked={field.value}

@@ -569,7 +569,7 @@ export default function SingleLinkForm({
       }
 
       toast.success(`Link ${isEdit ? "updated" : "created"} successfully!`);
-      router.push("/links");
+      router.push("/workspace/links");
     } catch (error) {
       console.error("Failed to save single link:", error);
       const errorMessage =
@@ -587,10 +587,10 @@ export default function SingleLinkForm({
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">
+        <h1 className="text-2xl font-bold">
           {isEdit ? "Edit Single Link" : "Create Single Link"}
         </h1>
-        <p className="text-gray-600">
+        <p className="text-muted-foreground">
           {isEdit
             ? "Update your single link configuration."
             : "Create a straightforward link that redirects to a single destination."}
@@ -683,37 +683,11 @@ export default function SingleLinkForm({
           onCreateUtmTemplate={utmTemplateModal.open}
           isAlwaysOn={selectedCampaign?.lifecycle_attr === 1}
           showTimeWindow={false}
+          showWeightSlider={false}
           inheritedTimeWindow={timeWindowOverride}
           linkStartDate={startDate}
           linkEndDate={endDate}
         />
-
-        {/* Upgrade to Smart Link */}
-        {isEdit && (
-          <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-medium text-blue-900">
-                  Upgrade to Smart Link
-                </h3>
-                <p className="text-sm text-blue-700">
-                  Convert this single link to a smart link with multiple
-                  targets, A/B testing, and advanced targeting.
-                </p>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  // TODO: Implement upgrade functionality
-                  alert("Upgrade functionality will be implemented");
-                }}
-              >
-                Upgrade
-              </Button>
-            </div>
-          </div>
-        )}
 
         {/* Submit Error */}
         {submitError && (

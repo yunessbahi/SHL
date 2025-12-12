@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { NextRequest } from "next/server";
 import PreviewPageClient from "./PageClient";
-import { Badge } from "@/components/ui/badge";
 
 interface PageProps {
   params: Promise<{ id: string }>;

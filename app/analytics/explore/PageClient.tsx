@@ -1,90 +1,56 @@
+//clientpage
 "use client";
 
-import React, { useState, useEffect, useMemo, useRef } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  TooltipProvider as GlobalTooltipProvider,
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { TooltipProvider as GlobalTooltipProvider } from "@/components/ui/global-tooltip";
+} from "@/components/ui/global-tooltip";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
+
+import ExploreDataTable from "@/components/analytics/ExploreDataTable";
+import MapCompact from "@/components/analytics/mapCompact";
+import NetworkViz from "@/components/analytics/NetworkViz";
 import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import {
-  CalendarDays,
-  Filter,
-  BarChart3,
-  PieChart,
-  TrendingUp,
-  Globe,
-  Smartphone,
-  Monitor,
-  Chrome,
-  Users,
-  Target,
-  Zap,
-  X,
-  Plus,
-  Minus,
-  Link2,
-  ChartNoAxesColumn,
-  ChartNoAxesCombined,
-  Table2,
-  Info,
-} from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
-import {
-  LineChart,
-  Line,
-  AreaChart,
-  Area,
-  BarChart,
-  Bar,
-  PieChart as RechartsPieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip as RechartsTooltip,
-  Legend,
-  ResponsiveContainer,
-  ComposedChart,
-  Scatter,
-  ReferenceDot,
-} from "recharts";
 import {
   analyticsAPI,
   AnalyticsFilters,
-  formatNumber,
-  formatPercentage,
   getDateRange,
 } from "@/lib/analytics-api";
-import MapCompact from "@/components/analytics/mapCompact";
-import NetworkViz from "@/components/analytics/NetworkViz";
-import ExploreDataTable from "@/components/analytics/ExploreDataTable";
-import { SafeUser } from "@/lib/getSafeSession";
-import { toast } from "sonner";
-import MultipleSelector, { type Option } from "@/components/ui/multi-select";
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+  ChartNoAxesColumn,
+  ChartNoAxesCombined,
+  Globe,
+  Minus,
+  Plus,
+  Table2,
+} from "lucide-react";
+import {
+  Area,
+  Bar,
+  CartesianGrid,
+  Cell,
+  ComposedChart,
+  Line,
+  LineChart,
+  Tooltip as RechartsTooltip,
+  ReferenceDot,
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
+} from "recharts";
+//import { SafeUser } from "@/lib/getSafeSession";
+import { type Option } from "@/components/ui/multi-select";
+import { toast } from "sonner";
+
+import { AnalyticsFiltersSheet } from "./AnalyticsFiltersSheet";
 
 const GroupingCountInput = ({
   value,
@@ -130,7 +96,7 @@ const GroupingCountInput = ({
         `,
         }}
       />
-      <div className="relative m-0! inline-flex h-9 gap-2 items-center overflow-hidden rounded-md border bg-transparent text-base shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50">
+      <div className="relative m-0! inline-flex h-9 gap-2 items-center overflow-hidden rounded-md border bg-transparent text-base shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-0 focus-within:ring-ring/50">
         <Label className="text-xs text-muted-foreground/50 pl-2">Groups</Label>
         <input
           type="number"
@@ -143,7 +109,7 @@ const GroupingCountInput = ({
         <Button
           onClick={handleDecrement}
           disabled={value <= 1}
-          className="absolute right-7 border-input bg-background text-muted-foreground hover:bg-accent hover:text-foreground flex h-4 w-4 p-2 items-center justify-center rounded-sm border text-xs disabled:pointer-events-none disabled:opacity-50"
+          className="absolute right-7 border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground flex h-4 w-4 p-2 items-center justify-center rounded-sm border text-xs disabled:pointer-events-none disabled:opacity-50"
         >
           <Minus className="size-3" />
           <span className="sr-only">Decrement</span>
@@ -151,7 +117,7 @@ const GroupingCountInput = ({
         <Button
           onClick={handleIncrement}
           disabled={value >= max}
-          className="absolute right-1 border-input bg-background text-muted-foreground hover:bg-accent hover:text-foreground flex h-4 w-4 p-2 items-center justify-center rounded-sm border text-xs disabled:pointer-events-none disabled:opacity-50"
+          className="absolute right-1 border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground flex h-4 w-4 p-2 items-center justify-center rounded-sm border text-xs disabled:pointer-events-none disabled:opacity-50"
         >
           <Plus className="size-3" />
           <span className="sr-only">Increment</span>
@@ -168,9 +134,7 @@ const GroupingCountInput = ({
   );
 };
 
-interface ExplorePageClientProps {
-  user: SafeUser;
-}
+interface ExplorePageClientProps {}
 
 interface ExploreData {
   data: Array<Record<string, any>>;
@@ -196,6 +160,8 @@ const DIMENSIONS: Option[] = [
   { value: "ref_type", label: "Referral Type" },
   { value: "campaign", label: "Campaign (CONTEXT)" },
   { value: "link", label: "Link (CONTEXT)" },
+  { value: "group", label: "Group (CONTEXT)" },
+  { value: "tag", label: "Tag (CONTEXT)" },
 ];
 
 const TIME_PERIODS = [
@@ -215,7 +181,36 @@ const COLORS = [
   "#f97316",
 ];
 
-export default function ExplorePageClient({ user }: ExplorePageClientProps) {
+/* Helper: map flow section ids to your Accordion item values */
+const mapFlowSectionToAccordion = (sectionId: string) => {
+  // sectionId is what AnalyticsFiltersFlow will pass to onNodeClick
+  switch (sectionId) {
+    case "period":
+      return "time-period";
+    case "metrics":
+      return "metrics";
+    case "dimensions":
+      return "dimensions";
+    case "context":
+    case "context_dimension":
+      return "context-filters";
+    case "drilldown":
+    case "drilldown_dimension":
+      return "drilldown-filters";
+    default:
+      // if it's a dimension key like "campaign" or "device_type"
+      // open context or drilldown depending on whether that dim is context-tagged:
+      if (
+        ["campaign", "link", "group", "tag"].includes(sectionId) ||
+        sectionId.startsWith("utm_")
+      ) {
+        return "context-filters";
+      }
+      return "drilldown-filters";
+  }
+};
+
+export default function ExplorePageClient({}: ExplorePageClientProps) {
   const [exploreData, setExploreData] = useState<ExploreData | null>(null);
   const [loading, setLoading] = useState(false);
   const [selectedMetrics, setSelectedMetrics] = useState<Option[]>([
@@ -235,6 +230,9 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
   const [groupingCount, setGroupingCount] = useState(5);
   const [groupingWarning, setGroupingWarning] = useState<string | null>(null);
   const [selectedGrouping, setSelectedGrouping] = useState<string | null>(null);
+  const [activeSection, setActiveSection] = useState<string | undefined>(
+    undefined,
+  );
   const isRequestInProgress = useRef(false);
 
   // Note: campaigns and links are now sourced from filterOptions for single source of truth
@@ -242,7 +240,7 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
   // Dynamic filter options based on selected dimensions
   const filterOptions = useMemo(() => {
     if (!exploreData?.data) return {};
-
+    console.log("exploreData: ", exploreData);
     // Base filtered data (exclude invalid combinations)
     const baseFiltered = exploreData.data.filter((item) => {
       return (
@@ -261,6 +259,13 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
       // Check link filter
       if (filters.link !== undefined && item.link !== filters.link)
         return false;
+
+      // Check group filter
+      if (filters.group !== undefined && item.group !== filters.group)
+        return false;
+
+      // Check tag filter
+      if (filters.tag !== undefined && item.tag !== filters.tag) return false;
 
       // Check UTM filters
       for (const key in filters) {
@@ -347,11 +352,20 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
       if (filters.link !== undefined && item.link !== filters.link)
         return false;
 
+      // Check group filter
+      if (filters.group !== undefined && item.group !== filters.group)
+        return false;
+
+      // Check tag filter
+      if (filters.tag !== undefined && item.tag !== filters.tag) return false;
+
       // Check other filters
       for (const key in filters) {
         if (
           key !== "campaign" &&
           key !== "link" &&
+          key !== "group" &&
+          key !== "tag" &&
           filters[key] !== undefined &&
           item[key] !== filters[key]
         ) {
@@ -517,11 +531,20 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
       if (filters.link !== undefined && item.link !== filters.link)
         return false;
 
+      // Check group filter
+      if (filters.group !== undefined && item.group !== filters.group)
+        return false;
+
+      // Check tag filter
+      if (filters.tag !== undefined && item.tag !== filters.tag) return false;
+
       // Check other filters
       for (const key in filters) {
         if (
           key !== "campaign" &&
           key !== "link" &&
+          key !== "group" &&
+          key !== "tag" &&
           filters[key] !== undefined &&
           item[key] !== filters[key]
         ) {
@@ -531,7 +554,7 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
       return true;
     });
 
-    return filteredData.map((item, index) => {
+    return filteredData.map((item) => {
       // Use the coalesce variable from the data as the name
       const coalesceValue = item.coalesce;
 
@@ -573,11 +596,20 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
       if (filters.link !== undefined && item.link !== filters.link)
         return false;
 
+      // Check group filter
+      if (filters.group !== undefined && item.group !== filters.group)
+        return false;
+
+      // Check tag filter
+      if (filters.tag !== undefined && item.tag !== filters.tag) return false;
+
       // Check other filters
       for (const key in filters) {
         if (
           key !== "campaign" &&
           key !== "link" &&
+          key !== "group" &&
+          key !== "tag" &&
           filters[key] !== undefined &&
           item[key] !== filters[key]
         ) {
@@ -698,7 +730,7 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                   strokeOpacity={0}
                   barSize={10}
                   background={
-                    index === 0 ? { className: "fill-muted/40" } : undefined
+                    index === 0 ? { className: "fill-muted" } : undefined
                   }
                   onClick={(data) =>
                     setSelectedGrouping(
@@ -794,11 +826,20 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
       if (filters.link !== undefined && item.link !== filters.link)
         return false;
 
+      // Check group filter
+      if (filters.group !== undefined && item.group !== filters.group)
+        return false;
+
+      // Check tag filter
+      if (filters.tag !== undefined && item.tag !== filters.tag) return false;
+
       // Check other filters
       for (const key in filters) {
         if (
           key !== "campaign" &&
           key !== "link" &&
+          key !== "group" &&
+          key !== "tag" &&
           filters[key] !== undefined &&
           item[key] !== filters[key]
         ) {
@@ -1012,12 +1053,11 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
   };
 
   return (
-    <div className="grid grid-cols-6 gap-4 ">
+    <div className="flex flex-row h-full gap-4">
       {/* Controls Section */}
-
-      <div className="col-span-4 h-full flex flex-col gap-4">
+      <div className="flex-1 flex flex-col gap-4 min-h-0">
         {/* Results Section */}
-        <Tabs defaultValue="chart" className="space-y-4">
+        <Tabs defaultValue="chart" className="space-y-4 flex-1 overflow-auto">
           <TabsList>
             <TabsTrigger value="chart">Chart View</TabsTrigger>
             <TabsTrigger value="table">Data Table</TabsTrigger>
@@ -1028,9 +1068,9 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
           <TabsContent value="chart" className="space-y-4">
             <div
               //className="grid grid-cols-1 lg:grid-cols-2 gap-4"
-              className="flex flex-col gap-4 w-full"
+              className="flex flex-row gap-4 w-full"
             >
-              <Card className="h-">
+              <Card className="w-[50%]">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <ChartNoAxesColumn className="w-5 h-5" />
@@ -1041,20 +1081,60 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                       </Badge>
                     )}
                   </CardTitle>
+
                   {selectedDimensions.length > 1 && (
-                    <span className="text-sm font-normal text-muted-foreground">
-                      Showing combined dimension values from:{" "}
-                      <p className="flex flex-inline items-center gap-2 text-xs font-mono font-normal">
-                        <Link2 className="h4 w-4" />
-                        {selectedDimensions.map((d) => d.label).join(" ⥂ ")}
-                      </p>
-                    </span>
+                    <div className="text-sm font-normal text-muted-foreground">
+                      Showing combined dimension values from:
+                      <div className="flex flex-wrap items-center gap-1 text-xs font-mono font-normal mt-1 max-w-full overflow-hidden">
+                        {selectedDimensions.slice(0, 5).map((d, index) => (
+                          <React.Fragment key={index}>
+                            {index > 0 && (
+                              <span className="text-sm">&#183;</span>
+                            )}
+                            <span className="truncate max-w-[120px] inline-block">
+                              {d.label}
+                            </span>
+                          </React.Fragment>
+                        ))}
+                        {selectedDimensions.length > 5 && (
+                          <GlobalTooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <span className="text-xs px-2 py-0.5 h-5 ml-1 cursor-help hover:bg-primary hover:text-primary-foreground rounded">
+                                  +{selectedDimensions.length - 5}
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <div className="text-xs">
+                                  <div className="font-semibold mb-2 pb-1">
+                                    Additional Dimensions
+                                  </div>
+                                  <div className="space-y-1">
+                                    {selectedDimensions
+                                      .slice(5)
+                                      .map((d, index) => (
+                                        <div
+                                          key={index}
+                                          className="truncate border-t px-2 bg-muted border-muted-foreground/40 pt-1"
+                                        >
+                                          {d.label}
+                                        </div>
+                                      ))}
+                                  </div>
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
+                          </GlobalTooltipProvider>
+                        )}
+                      </div>
+                    </div>
                   )}
                 </CardHeader>
                 <CardContent>
                   {loading ? (
-                    <div className="flex items-center justify-center h-96">
-                      <Spinner />
+                    <div className="flex items-center justify-center h-64 text-muted-foreground">
+                      <Spinner className="size-4" />
+                      <span className="ml-2 text-sm">Loading</span>
                     </div>
                   ) : (
                     renderChart()
@@ -1062,7 +1142,7 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="w-[50%]">
                 <CardHeader className="flex flex-row justify-between itmens-center">
                   <div>
                     <CardTitle className="flex items-center gap-2">
@@ -1073,8 +1153,7 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                       </Badge>
                     </CardTitle>
                     <p className="text-sm text-muted-foreground">
-                      Time-based trends for the top performing dimension
-                      combinations
+                      Trends for the top performing dimension combinations
                     </p>
                   </div>
                   <div className="m-0!">
@@ -1088,12 +1167,42 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                 </CardHeader>
                 <CardContent>
                   {loading ? (
-                    <div className="flex items-center justify-center h-96">
-                      <Spinner />
+                    <div className="flex items-center justify-center h-64 text-muted-foreground">
+                      <Spinner className="size-4" />
+                      <span className="ml-2 text-sm">Loading</span>
                     </div>
                   ) : (
                     renderTimeseriesChart()
                   )}
+                </CardContent>
+              </Card>
+            </div>
+            <div className="flex flex-row gap-4 w-full">
+              <Card className="w-[50%] p-2 bg-secondary/20 dark:bg-teal-900/5">
+                {loading ? (
+                  <div className="flex items-center justify-center h-64 text-muted-foreground">
+                    <Spinner className="size-4" />
+                    <span className="ml-2 text-sm">Loading</span>
+                  </div>
+                ) : (
+                  <div className="h-full">{renderDataTable()}</div>
+                )}
+              </Card>
+              <Card className="w-[50%] h-auto items-center justify-center content-center">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 tracking-tight">
+                    <Globe className="w-5 h-5" />
+                    Geographic Distribution
+                  </CardTitle>
+                  <span className="text-sm font-normal text-muted-foreground">
+                    Showing combined dimension values from
+                  </span>
+                  <span className="text-sm font-normal text-muted-foreground">
+                    Showing combined dimension values from
+                  </span>
+                </CardHeader>
+                <CardContent>
+                  <MapCompact size={"lg"} data={mapData} />
                 </CardContent>
               </Card>
             </div>
@@ -1107,15 +1216,7 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                   Raw Data
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <div className="flex items-center justify-center h-96">
-                    <Spinner />
-                  </div>
-                ) : (
-                  <ScrollArea className="h-96">{renderDataTable()}</ScrollArea>
-                )}
-              </CardContent>
+              <CardContent></CardContent>
             </Card>
           </TabsContent>
 
@@ -1128,7 +1229,7 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <MapCompact size="responsive" data={mapData} />
+                {/* <MapCompact size="responsive" data={mapData} /> */}
               </CardContent>
             </Card>
           </TabsContent>
@@ -1137,675 +1238,31 @@ export default function ExplorePageClient({ user }: ExplorePageClientProps) {
             <NetworkViz
               data={chartData}
               dimensions={selectedDimensions.map((d) => d.value)}
-              className="h-[600px]"
+              className="h-auto"
             />
           </TabsContent>
         </Tabs>
       </div>
 
-      <Card className="col-span-2">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="w-5 h-5" />
-            Analytics Configuration
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <Accordion type="single" collapsible className="w-full">
-            {/* Time Period */}
-            <AccordionItem value="time-period">
-              <AccordionTrigger className="[&>svg]:hidden text-sm font-medium group">
-                <div className="flex gap-2 items-center">
-                  <div className="relative w-4 h-4">
-                    <Plus className="absolute inset-0 h-4 w-4 transition-opacity group-data-[state=closed]:opacity-100 group-data-[state=open]:opacity-0" />
-                    <Minus className="absolute inset-0 h-4 w-4 transition-opacity group-data-[state=closed]:opacity-0 group-data-[state=open]:opacity-100" />
-                  </div>
-                  Time Period
-                  <Badge variant="secondary">
-                    {selectedPeriod.toUpperCase()}
-                  </Badge>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="space-y-2 pt-2">
-                <Select
-                  value={selectedPeriod}
-                  onValueChange={setSelectedPeriod}
-                >
-                  <SelectTrigger className="w-48 text-xs">
-                    <div className="flex gap-2 items-center animate-fadeIn bg-background text-secondary-foreground hover:bg-background relative inline-flex cursor-default items-center text-xs font-medium transition-all disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-fixed:pr-2">
-                      <Label className="w-15 text-left text-xs text-muted-foreground/60">
-                        Period
-                      </Label>
-                      <SelectValue />
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TIME_PERIODS.map((period) => (
-                      <SelectItem
-                        key={period.value}
-                        value={period.value}
-                        className="text-xs"
-                      >
-                        {period.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </AccordionContent>
-            </AccordionItem>
-
-            {/* Metrics Selection */}
-            <AccordionItem value="metrics">
-              <AccordionTrigger className="[&>svg]:hidden text-sm font-medium group">
-                <div className="flex gap-2 items-center">
-                  <div className="relative w-4 h-4">
-                    <Plus className="absolute inset-0 h-4 w-4 transition-opacity group-data-[state=closed]:opacity-100 group-data-[state=open]:opacity-0" />
-                    <Minus className="absolute inset-0 h-4 w-4 transition-opacity group-data-[state=closed]:opacity-0 group-data-[state=open]:opacity-100" />
-                  </div>
-                  Metrics
-                  <Badge variant="secondary">{selectedMetrics.length}</Badge>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="space-y-3 pt-2">
-                <MultipleSelector
-                  value={selectedMetrics}
-                  onChange={setSelectedMetrics}
-                  defaultOptions={METRICS}
-                  placeholder="Select metrics"
-                  emptyIndicator={
-                    <p className="text-center text-xs text-muted-foreground">
-                      No metrics found
-                    </p>
-                  }
-                  className="w-full text-sm focus:border-ring"
-                />
-              </AccordionContent>
-            </AccordionItem>
-
-            {/* Dimensions Selection */}
-            <AccordionItem value="dimensions">
-              <AccordionTrigger className="[&>svg]:hidden text-sm font-medium group">
-                <div className="flex gap-2 items-center">
-                  <div className="relative w-4 h-4">
-                    <Plus className="absolute inset-0 h-4 w-4 transition-opacity group-data-[state=closed]:opacity-100 group-data-[state=open]:opacity-0" />
-                    <Minus className="absolute inset-0 h-4 w-4 transition-opacity group-data-[state=closed]:opacity-0 group-data-[state=open]:opacity-100" />
-                  </div>
-                  Dimensions
-                  <Badge variant="secondary">{selectedDimensions.length}</Badge>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="space-y-3 pt-2">
-                <MultipleSelector
-                  badgeClassName="text-xs"
-                  value={selectedDimensions}
-                  onChange={setSelectedDimensions}
-                  defaultOptions={availableDimensions}
-                  options={availableDimensions}
-                  placeholder="Select dimensions"
-                  emptyIndicator={
-                    <p className="text-center text-xs">No dimensions found</p>
-                  }
-                  className="w-full text-xs"
-                />
-              </AccordionContent>
-            </AccordionItem>
-
-            {/* Context Filters - Campaign, Link, and UTM filters when their dimensions are selected */}
-            {selectedDimensions.some(
-              (d) =>
-                ["campaign", "link"].includes(d.value) ||
-                d.value.startsWith("utm_") ||
-                !DIMENSIONS.some((baseDim) => baseDim.value === d.value),
-            ) && (
-              <Accordion type="single" collapsible className="w-full">
-                <AccordionItem value="context-filters">
-                  <AccordionTrigger className="[&>svg]:hidden text-sm font-medium group">
-                    <div className="flex gap-2 items-center">
-                      <div className="relative w-4 h-4">
-                        <Plus className="absolute inset-0 h-4 w-4 transition-opacity group-data-[state=closed]:opacity-100 group-data-[state=open]:opacity-0" />
-                        <Minus className="absolute inset-0 h-4 w-4 transition-opacity group-data-[state=closed]:opacity-0 group-data-[state=open]:opacity-100" />
-                      </div>
-                      Context Filters
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="space-y-4 pt-2">
-                    <div className="grid grid-cols-1 gap-4">
-                      {(() => {
-                        const orderedFilters = selectedDimensions
-                          .filter(
-                            (d) =>
-                              ["campaign", "link"].includes(d.value) ||
-                              d.value.startsWith("utm_") ||
-                              !DIMENSIONS.some(
-                                (baseDim) => baseDim.value === d.value,
-                              ),
-                          )
-                          .map((d) => d.value);
-
-                        return orderedFilters.map((dimension) => {
-                          if (dimension === "campaign") {
-                            return (
-                              <div key="campaign" className="space-y-2">
-                                <Select
-                                  value={filters.campaign || "all"}
-                                  onValueChange={(value) =>
-                                    setFilters({
-                                      ...filters,
-                                      campaign:
-                                        value === "all" ? undefined : value,
-                                    })
-                                  }
-                                >
-                                  <SelectTrigger className="h-8">
-                                    <div className="flex gap-2 items-center animate-fadeIn bg-background text-secondary-foreground hover:bg-background relative inline-flex cursor-default items-center text-xs font-medium transition-all disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-fixed:pr-2">
-                                      <Label className="w-15 text-left text-xs text-muted-foreground/60">
-                                        Campaigns
-                                      </Label>
-                                      <SelectValue
-                                        className="text-right "
-                                        placeholder="All campaigns"
-                                      />
-                                    </div>
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <Label className="text-xs text-muted-foreground/70">
-                                      Campaigns
-                                    </Label>
-                                    <Separator className="mt-2" />
-                                    <SelectItem
-                                      className="text-left text-xs"
-                                      value="all"
-                                    >
-                                      All campaigns
-                                    </SelectItem>
-                                    {filterOptions.campaign?.map(
-                                      (value: string) => (
-                                        <SelectItem
-                                          key={value}
-                                          value={value}
-                                          className="text-xs"
-                                        >
-                                          {value}
-                                        </SelectItem>
-                                      ),
-                                    )}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            );
-                          } else if (dimension === "link") {
-                            return (
-                              <div key="link" className="space-y-2">
-                                <Select
-                                  value={filters.link || "all"}
-                                  onValueChange={(value) =>
-                                    setFilters({
-                                      ...filters,
-                                      link: value === "all" ? undefined : value,
-                                    })
-                                  }
-                                >
-                                  <SelectTrigger className="h-8">
-                                    <div className="flex gap-2 items-center animate-fadeIn bg-background text-secondary-foreground hover:bg-background relative inline-flex cursor-default items-center text-xs font-medium transition-all disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-fixed:pr-2">
-                                      <Label className="w-15 text-left text-xs text-muted-foreground/60">
-                                        Links
-                                      </Label>
-                                      <SelectValue
-                                        className="text-xs text-foreground"
-                                        placeholder="All links"
-                                      />
-                                    </div>
-                                  </SelectTrigger>
-                                  <SelectContent className="">
-                                    <Label className="text-xs text-muted-foreground/70">
-                                      Links
-                                    </Label>
-                                    <Separator className="mt-2" />
-
-                                    <SelectItem
-                                      className="text-muted-foreground text-xs"
-                                      value="all"
-                                    >
-                                      All links
-                                    </SelectItem>
-                                    {filterOptions.link?.map(
-                                      (value: string) => (
-                                        <SelectItem
-                                          className="font-normal text-xs"
-                                          key={value}
-                                          value={value}
-                                        >
-                                          {value}
-                                        </SelectItem>
-                                      ),
-                                    )}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            );
-                          } else if (
-                            dimension.startsWith("utm_") ||
-                            !DIMENSIONS.some(
-                              (baseDim) => baseDim.value === dimension,
-                            )
-                          ) {
-                            // Handle UTM dimensions dynamically
-                            const utmKey = dimension.startsWith("utm_")
-                              ? dimension
-                              : dimension;
-                            const displayName = dimension
-                              .replace(/^utm_/, "")
-                              .replace(/_/g, " ")
-                              .replace(/\b\w/g, (l) => l.toUpperCase());
-                            const filterKey = dimension;
-
-                            return (
-                              <div key={dimension} className="space-y-2">
-                                <Select
-                                  value={(filters as any)[filterKey] || "all"}
-                                  onValueChange={(value) =>
-                                    setFilters({
-                                      ...filters,
-                                      [filterKey]:
-                                        value === "all" ? undefined : value,
-                                    })
-                                  }
-                                >
-                                  <SelectTrigger className="h-8">
-                                    <div className="flex gap-2 items-center animate-fadeIn bg-background text-secondary-foreground hover:bg-background relative inline-flex cursor-default items-center text-xs font-medium transition-all disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-fixed:pr-2">
-                                      <Label className="w-15 text-left text-xs text-muted-foreground/60">
-                                        {displayName} (UTM)
-                                      </Label>
-                                      <SelectValue
-                                        className="text-xs text-foreground"
-                                        placeholder={`All ${displayName.toLowerCase()}`}
-                                      />
-                                    </div>
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <Label className="text-xs text-muted-foreground/70">
-                                      {displayName} (UTM)
-                                    </Label>
-                                    <Separator className="mt-2" />
-                                    <SelectItem className="text-xs" value="all">
-                                      All {displayName.toLowerCase()}
-                                    </SelectItem>
-                                    {filterOptions[dimension]?.map(
-                                      (value: string) => (
-                                        <SelectItem
-                                          key={value}
-                                          value={value}
-                                          className="text-xs"
-                                        >
-                                          {value}
-                                        </SelectItem>
-                                      ),
-                                    )}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            );
-                          }
-                          return null;
-                        });
-                      })()}
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-            )}
-
-            {/* Advanced Filters */}
-          </Accordion>
-          <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="drilldown-filters">
-              <AccordionTrigger className="[&>svg]:hidden text-sm font-medium group">
-                <div className="flex gap-2 items-center">
-                  <div className="relative w-4 h-4">
-                    <Plus className="absolute inset-0 h-4 w-4 transition-opacity group-data-[state=closed]:opacity-100 group-data-[state=open]:opacity-0" />
-                    <Minus className="absolute inset-0 h-4 w-4 transition-opacity group-data-[state=closed]:opacity-0 group-data-[state=open]:opacity-100" />
-                  </div>
-                  Drilldown Filters
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="space-y-4 pt-2">
-                <div className="grid grid-cols-1 gap-4">
-                  {/* Device Type Filter - Always shown */}
-                  <div className="space-y-2">
-                    <Select
-                      value={filters.device_type || "all"}
-                      onValueChange={(value) =>
-                        setFilters({
-                          ...filters,
-                          device_type: value === "all" ? undefined : value,
-                        })
-                      }
-                    >
-                      <SelectTrigger className="h-8">
-                        <div className="flex gap-2 items-center animate-fadeIn bg-background text-secondary-foreground hover:bg-background relative inline-flex cursor-default items-center text-xs font-medium transition-all disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-fixed:pr-2">
-                          <Label className="w-15 text-left text-xs text-muted-foreground/60">
-                            Device Type
-                          </Label>
-                          <SelectValue
-                            className="text-xs text-foreground"
-                            placeholder="All devices"
-                          />
-                        </div>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <Label className="text-xs text-muted-foreground/70">
-                          Device Type
-                        </Label>
-                        <Separator className="mt-2" />
-                        <SelectItem className="text-xs" value="all">
-                          All devices
-                        </SelectItem>
-                        {filterOptions.device_type?.map((device) => (
-                          <SelectItem
-                            key={device}
-                            value={device}
-                            className="text-xs"
-                          >
-                            {device}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Dynamic filters based on selected dimensions */}
-                  {selectedDimensions.some(
-                    (d) => d.value === "browser_name",
-                  ) && (
-                    <div className="space-y-2">
-                      <Select
-                        value={filters.browser_name || "all"}
-                        onValueChange={(value) =>
-                          setFilters({
-                            ...filters,
-                            browser_name: value === "all" ? undefined : value,
-                          })
-                        }
-                      >
-                        <SelectTrigger className="h-8">
-                          <div className="flex gap-2 items-center animate-fadeIn bg-background text-secondary-foreground hover:bg-background relative inline-flex cursor-default items-center text-xs font-medium transition-all disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-fixed:pr-2">
-                            <Label className="w-15 text-left text-xs text-muted-foreground/60">
-                              Browser
-                            </Label>
-                            <SelectValue
-                              className="text-xs text-foreground"
-                              placeholder="All browsers"
-                            />
-                          </div>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <Label className="text-xs text-muted-foreground/70">
-                            Browser
-                          </Label>
-                          <Separator className="mt-2" />
-                          <SelectItem className="text-xs" value="all">
-                            All browsers
-                          </SelectItem>
-                          {filterOptions.browser_name?.map((browser) => (
-                            <SelectItem
-                              key={browser}
-                              value={browser}
-                              className="text-xs"
-                            >
-                              {browser}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-
-                  {selectedDimensions.some((d) => d.value === "country") && (
-                    <div className="space-y-2">
-                      <Select
-                        value={filters.country || "all"}
-                        onValueChange={(value) =>
-                          setFilters({
-                            ...filters,
-                            country: value === "all" ? undefined : value,
-                          })
-                        }
-                      >
-                        <SelectTrigger className="h-8">
-                          <div className="flex gap-2 items-center animate-fadeIn bg-background text-secondary-foreground hover:bg-background relative inline-flex cursor-default items-center text-xs font-medium transition-all disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-fixed:pr-2">
-                            <Label className="w-15 text-left text-xs text-muted-foreground/60">
-                              Country
-                            </Label>
-                            <SelectValue
-                              className="text-xs text-foreground"
-                              placeholder="All countries"
-                            />
-                          </div>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <Label className="text-xs text-muted-foreground/70">
-                            Country
-                          </Label>
-                          <Separator className="mt-2" />
-                          <SelectItem className="text-xs" value="all">
-                            All countries
-                          </SelectItem>
-                          {filterOptions.country?.map((country) => (
-                            <SelectItem
-                              key={country}
-                              value={country}
-                              className="text-xs"
-                            >
-                              {country}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-
-                  {selectedDimensions.some((d) => d.value === "region") && (
-                    <div className="space-y-2">
-                      <Select
-                        value={filters.region || "all"}
-                        onValueChange={(value) =>
-                          setFilters({
-                            ...filters,
-                            region: value === "all" ? undefined : value,
-                          })
-                        }
-                      >
-                        <SelectTrigger className="h-8">
-                          <div className="flex gap-2 items-center animate-fadeIn bg-background text-secondary-foreground hover:bg-background relative inline-flex cursor-default items-center text-xs font-medium transition-all disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-fixed:pr-2">
-                            <Label className="w-15 text-left text-xs text-muted-foreground/60">
-                              Region
-                            </Label>
-                            <SelectValue
-                              className="text-xs text-foreground"
-                              placeholder="All regions"
-                            />
-                          </div>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <Label className="text-xs text-muted-foreground/70">
-                            Region
-                          </Label>
-                          <Separator className="mt-2" />
-                          <SelectItem className="text-xs" value="all">
-                            All regions
-                          </SelectItem>
-                          {filterOptions.region?.map((region) => (
-                            <SelectItem
-                              key={region}
-                              value={region}
-                              className="text-xs"
-                            >
-                              {region}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-
-                  {selectedDimensions.some((d) => d.value === "city") && (
-                    <div className="space-y-2">
-                      <Select
-                        value={filters.city || "all"}
-                        onValueChange={(value) =>
-                          setFilters({
-                            ...filters,
-                            city: value === "all" ? undefined : value,
-                          })
-                        }
-                      >
-                        <SelectTrigger className="h-8">
-                          <div className="flex gap-2 items-center animate-fadeIn bg-background text-secondary-foreground hover:bg-background relative inline-flex cursor-default items-center text-xs font-medium transition-all disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-fixed:pr-2">
-                            <Label className="w-15 text-left text-xs text-muted-foreground/60">
-                              City
-                            </Label>
-                            <SelectValue
-                              className="text-xs text-foreground"
-                              placeholder="All cities"
-                            />
-                          </div>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <Label className="text-xs text-muted-foreground/70">
-                            City
-                          </Label>
-                          <Separator className="mt-2" />
-                          <SelectItem className="text-xs" value="all">
-                            All cities
-                          </SelectItem>
-                          {filterOptions.city?.map((city) => (
-                            <SelectItem
-                              key={city}
-                              value={city}
-                              className="text-xs"
-                            >
-                              {city}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-
-                  {selectedDimensions.some((d) => d.value === "ref_source") && (
-                    <div className="space-y-2">
-                      <Select
-                        value={filters.ref_source || "all"}
-                        onValueChange={(value) =>
-                          setFilters({
-                            ...filters,
-                            ref_source: value === "all" ? undefined : value,
-                          })
-                        }
-                      >
-                        <SelectTrigger className="h-8">
-                          <div className="flex gap-2 items-center animate-fadeIn bg-background text-secondary-foreground hover:bg-background relative inline-flex cursor-default items-center text-xs font-medium transition-all disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-fixed:pr-2">
-                            <Label className="w-15 text-left text-xs text-muted-foreground/60">
-                              Referral Source
-                            </Label>
-                            <SelectValue
-                              className="text-xs text-foreground"
-                              placeholder="All sources"
-                            />
-                          </div>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <Label className="text-xs text-muted-foreground/70">
-                            Referral Source
-                          </Label>
-                          <Separator className="mt-2" />
-                          <SelectItem className="text-xs" value="all">
-                            All sources
-                          </SelectItem>
-                          {filterOptions.ref_source?.map((source) => (
-                            <SelectItem
-                              key={source}
-                              value={source}
-                              className="text-xs"
-                            >
-                              {source}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-
-                  {selectedDimensions.some((d) => d.value === "ref_type") && (
-                    <div className="space-y-2">
-                      <Select
-                        value={filters.ref_type || "all"}
-                        onValueChange={(value) =>
-                          setFilters({
-                            ...filters,
-                            ref_type: value === "all" ? undefined : value,
-                          })
-                        }
-                      >
-                        <SelectTrigger className="h-8">
-                          <div className="flex gap-2 items-center animate-fadeIn bg-background text-secondary-foreground hover:bg-background relative inline-flex cursor-default items-center text-xs font-medium transition-all disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-fixed:pr-2">
-                            <Label className="w-15 text-left text-xs text-muted-foreground/60">
-                              Referral Type
-                            </Label>
-                            <SelectValue
-                              className="text-xs text-foreground"
-                              placeholder="All types"
-                            />
-                          </div>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <Label className="text-xs text-muted-foreground/70">
-                            Referral Type
-                          </Label>
-                          <Separator className="mt-2" />
-                          <SelectItem className="text-xs" value="all">
-                            All types
-                          </SelectItem>
-                          {filterOptions.ref_type?.map((type) => (
-                            <SelectItem
-                              key={type}
-                              value={type}
-                              className="text-xs"
-                            >
-                              {type}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-                </div>
-
-                {/* Clear Filters Button */}
-                {(filters.device_type ||
-                  filters.browser_name ||
-                  filters.country ||
-                  filters.region ||
-                  filters.city ||
-                  filters.campaign ||
-                  filters.link ||
-                  filters.ref_source ||
-                  filters.ref_type) && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setFilters({})}
-                    className="flex items-center gap-2"
-                  >
-                    <X className="w-4 h-4" />
-                    Clear Filters
-                  </Button>
-                )}
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        </CardContent>
-      </Card>
+      {/* Sidebar Trigger - Full Height */}
+      <div className="h-auto">
+        <AnalyticsFiltersSheet
+          filters={filters}
+          setFilters={setFilters}
+          selectedPeriod={selectedPeriod}
+          setSelectedPeriod={setSelectedPeriod}
+          selectedMetrics={selectedMetrics}
+          setSelectedMetrics={setSelectedMetrics}
+          selectedDimensions={selectedDimensions}
+          setSelectedDimensions={setSelectedDimensions}
+          availableDimensions={availableDimensions}
+          filterOptions={filterOptions}
+          exploreData={exploreData}
+          TIME_PERIODS={TIME_PERIODS}
+          METRICS={METRICS}
+          DIMENSIONS={DIMENSIONS}
+        />
+      </div>
     </div>
   );
 }

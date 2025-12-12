@@ -1,7 +1,7 @@
 "use client";
 
-import * as React from "react";
 import { cn } from "@/lib/utils";
+import * as React from "react";
 
 function Table({
   className,
@@ -55,7 +55,7 @@ function TableFooter({
     <tfoot
       data-slot="table-footer"
       className={cn(
-        "border-t bg-muted/50 font-medium last:[&>tr]:border-b-0",
+        "border-t bg-muted font-medium last:[&>tr]:border-b-0",
         className,
       )}
       {...props}
@@ -71,7 +71,7 @@ function TableRow({
     <tr
       data-slot="table-row"
       className={cn(
-        "border-b transition-colors [&:has(td):hover]:bg-muted/50 data-[state=selected]:bg-muted",
+        "border-b transition-colors [&:has(td):hover]:bg-muted data-[state=selected]:bg-muted",
         className,
       )}
       {...props}

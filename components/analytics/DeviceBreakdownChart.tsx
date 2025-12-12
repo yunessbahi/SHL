@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -8,13 +8,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import {
-  analyticsAPI,
-  type DeviceBreakdownPoint,
-  formatNumber,
-} from "@/lib/analytics-api";
 import { Spinner } from "@/components/ui/spinner";
+import { type DeviceBreakdownPoint, formatNumber } from "@/lib/analytics-api";
+import { useEffect, useState } from "react";
 
 interface DeviceBreakdownChartProps {
   data?: DeviceBreakdownPoint[];
@@ -190,16 +186,12 @@ export default function DeviceBreakdownChart({
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="h-[200px] flex items-center justify-center">
-            <div className="text-center">
-              <Spinner className="size-6 mx-auto mb-2" />
-              <p className="text-xs text-muted-foreground">
-                Loading device breakdown...
-              </p>
-            </div>
+          <div className="flex items-center justify-center h-40 text-muted-foreground">
+            <Spinner className="size-4" />
+            <span className="ml-2 text-xs">Loading device breakdown...</span>
           </div>
         ) : hasError ? (
-          <div className="h-[200px] flex items-center justify-center">
+          <div className="h-40 flex items-center justify-center">
             <div className="text-center">
               <span className="text-4xl mb-2 block">💻</span>
               <p className="text-sm text-muted-foreground mb-2">
@@ -211,7 +203,7 @@ export default function DeviceBreakdownChart({
             </div>
           </div>
         ) : data.length === 0 ? (
-          <div className="h-[200px] flex items-center justify-center">
+          <div className="h-[200p flex items-center justify-center">
             <div className="text-center">
               <span className="text-4xl mb-2 block">💻</span>
               <p className="text-sm text-muted-foreground">
@@ -224,7 +216,7 @@ export default function DeviceBreakdownChart({
             {data.map((item, index) => (
               <div key={item.device_type} className="flex items-center gap-3">
                 {/* Rank number */}
-                <div className="text-center text-sm font-medium text-muted-foreground">
+                <div className="text-center text-sm font-medium font-mono text-muted-foreground content-center rounded-full bg-muted w-6 h-6">
                   {index + 1}
                 </div>
 
@@ -237,7 +229,7 @@ export default function DeviceBreakdownChart({
                 <div className="flex-1 relative">
                   <div className="h-6 bg-muted rounded-md overflow-hidden">
                     <div
-                      className="h-full bg-primary rounded-md transition-all duration-500 ease-out"
+                      className="h-full bg-popover-foreground rounded-md transition-all duration-500 ease-out"
                       style={{
                         width: `${(item.click_count / Math.max(...data.map((d) => d.click_count))) * 100}%`,
                       }}

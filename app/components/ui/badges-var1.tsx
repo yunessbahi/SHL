@@ -46,7 +46,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Minus, TrendingDown, TrendingUp } from "lucide-react";
 
 type StatusVariant = "danger" | "active" | "warn" | "default";
 
@@ -134,7 +134,7 @@ export const Status = ({
         arrowIcon
       ) : (
         <span
-          className={cn("size-1.5 rounded-full", styles.dot)}
+          className={cn("size-1.5 rounded-full mr-1", styles.dot)}
           aria-hidden="true"
         />
       )}

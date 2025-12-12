@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
+import { useEffect, useState } from "react";
 //import { Checkbox } from "@/components/ui/checkbox";
-import { DateTimePicker24h } from "@/components/ui/date-time-picker-24h";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, RotateCcw, Calendar } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DateTimePicker24h } from "@/components/ui/date-time-picker-24h";
+import { Calendar, Clock, RotateCcw } from "lucide-react";
 
 interface CampaignInfo {
   campaignStartDate?: string;
@@ -44,14 +44,6 @@ interface BehaviorFormProps {
   onResetBehavior?: () => void;
 }
 
-const convertStringToDate = (dateString: string): Date | undefined => {
-  return dateString ? new Date(dateString) : undefined;
-};
-
-const convertDateToString = (date: Date | undefined): string => {
-  return date ? date.toISOString() : "";
-};
-
 /**
  * Redesigned BehaviorForm with new lifecycle logic:
  * - Always-on: Show "TTL Expiry (Auto-calculated)" from expires_at
@@ -64,13 +56,12 @@ export default function BehaviorForm({
   expiresAt,
   onStartDateChange,
   onEndDateChange,
-  onExpiresAtChange,
+  //onExpiresAtChange,
   campaignStartDate,
   campaignEndDate,
   campaignTtlDays,
   campaignLifecycle,
   hasCampaign = false,
-  isEdit = false,
   onResetBehavior,
 }: BehaviorFormProps) {
   // Reset behavior when campaign changes
@@ -195,7 +186,7 @@ export default function BehaviorForm({
           {campaignInfo.isAlwaysOn && (
             <div>
               <Label htmlFor="expires-at">TTL Expiry (Auto-calculated)</Label>
-              <div className="px-3 py-2 border rounded-md bg-blue-50 text-sm font-mono">
+              <div className="px-3 py-2 border rounded-md text-sm font-mono">
                 {expiresAt
                   ? new Date(expiresAt).toLocaleString()
                   : "Calculating..."}

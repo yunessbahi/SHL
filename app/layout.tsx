@@ -1,16 +1,16 @@
 //app/layout.tsx
-import "./globals.css";
-import type { Metadata } from "next";
-import Sidebar from "@/app/components/sidebar/Sidebar";
 import Header from "@/app/components/Header";
-import { Inter, Roboto } from "next/font/google";
-import { cn } from "@/lib/utils";
-import localFont from "next/font/local";
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import Sidebar from "@/app/components/sidebar/Sidebar";
 import type { SafeUser } from "@/lib/getSafeSession";
-import { ThemeProvider } from "@/components/theme-provider";
+import { cn } from "@/lib/utils";
+import { createServerClient } from "@supabase/ssr";
+import type { Metadata } from "next";
+import { Inter, Roboto } from "next/font/google";
+import localFont from "next/font/local";
+import { cookies } from "next/headers";
 import { Toaster } from "sonner";
+import "./globals.css";
+import { Providers } from "./providers";
 
 export const metadata: Metadata = {
   title: "Linker",
@@ -87,25 +87,21 @@ export default async function RootLayout({
           "min-h-screen overflow-hidden",
           "font-feature-settings-normal",
           "text-rendering-optimizeLegibility",
+          "scrollbar-hide",
         )}
         style={{
           WebkitFontSmoothing: "antialiased",
           MozOsxFontSmoothing: "grayscale",
         }}
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
+        <Providers>
           <Sidebar hasSession={!!user} user={safeUser}>
             <Header user={safeUser}>
               <div className="">{children}</div>
             </Header>
           </Sidebar>
           <Toaster theme="system" />
-        </ThemeProvider>
+        </Providers>
       </body>
     </html>
   );

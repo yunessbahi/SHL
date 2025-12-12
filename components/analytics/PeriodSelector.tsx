@@ -8,7 +8,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { format } from "date-fns";
 import { CalendarIcon, BarChart3, TrendingUp } from "lucide-react";
 
 interface PeriodPreset {

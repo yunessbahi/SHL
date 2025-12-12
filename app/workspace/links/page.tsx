@@ -21,17 +21,17 @@ export default async function Links() {
     <div className="min-h-screen overflow-y-auto">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-6">
         <div>
-          <h1 className="text-3xl font-bold text-accent-foreground">
+          <h1 className="text-3xl font-bold tracking-tight text-muted-foreground">
             Links Management
           </h1>
-          <p className="text-gray-600 mt-1">
+          <p className="text-md text-muted-foreground">
             Testing the new data table component for links management
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Badge
             variant="outline"
-            className="bg-green-50 text-green-700 border-green-200"
+            className="bg-neutral-100/10 text-neutral-700 border-neutral-400 dark:bg-neutral-500/10 dark:text-neutral-400 dark:border-neutral-700"
           >
             New Feature
           </Badge>

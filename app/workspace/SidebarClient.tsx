@@ -1,16 +1,16 @@
 "use client";
 
-import React from "react";
-import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
-  ChartNoAxesCombinedIcon,
-  Link as LinkIcon,
-  Megaphone,
-  Users,
-  Tag,
   FolderPlus,
+  Link2,
+  Megaphone,
+  SquareChartGantt,
+  Tag,
+  Users,
 } from "lucide-react";
+import { usePathname } from "next/navigation";
+import React from "react";
 
 // Sidebar Item Component
 interface SidebarItemProps {
@@ -32,7 +32,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
     <a
       href={href}
       className={cn(
-        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:bg-accent hover:text-accent-foreground",
+        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-all hover:bg-accent hover:text-accent-foreground",
         isActive && "bg-accent text-accent-foreground",
       )}
     >
@@ -68,9 +68,12 @@ const Sidebar: React.FC = React.memo(() => {
         <SidebarItem href="/workspace" icon={FolderPlus}>
           Create
         </SidebarItem>
-        <SidebarSection title="Master Data">
-          <SidebarItem href="/workspace/links" icon={LinkIcon}>
-            Links
+        <SidebarSection title="Links">
+          <SidebarItem href="/workspace/links" icon={Link2}>
+            Master Data
+          </SidebarItem>
+          <SidebarItem href="/workspace/schedules" icon={SquareChartGantt}>
+            Schedules
           </SidebarItem>
         </SidebarSection>
 

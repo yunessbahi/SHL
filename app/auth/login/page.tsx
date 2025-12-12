@@ -7,37 +7,39 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { LoginForm } from "@/app/components/auth/login-form";
 
 function getSafeRedirect(redirectedFrom: string | null): string {
-  if (!redirectedFrom) return "/dashboard";
+  if (!redirectedFrom) return "/workspace";
 
   // Decode URI component if encoded
   try {
     redirectedFrom = decodeURIComponent(redirectedFrom);
   } catch {
-    return "/dashboard";
+    return "/workspace";
   }
 
   // Trim whitespace
   redirectedFrom = redirectedFrom.trim();
 
   // Validate it's a safe relative path
-  if (!redirectedFrom.startsWith("/")) return "/dashboard";
-  if (redirectedFrom.includes("://")) return "/dashboard";
-  if (redirectedFrom.startsWith("//")) return "/dashboard";
+  if (!redirectedFrom.startsWith("/")) return "/workspace";
+  if (redirectedFrom.includes("://")) return "/workspace";
+  if (redirectedFrom.startsWith("//")) return "/workspace";
 
   // Whitelist allowed paths to prevent open redirect
   const allowedPaths = [
     "/dashboard",
-    "/campaigns",
-    "/links",
-    "/groups",
-    "/settings",
-    "/tags",
-    "/utm-templates",
     "/workspace",
+    "/workspace/campaigns",
+    "/workspace/links",
+    "/workspace/groups",
+    "/workspace/tags",
+    "/workspace/utm-templates",
+    "/analytics",
+    "/analytics/explore",
+    "/settings",
   ];
 
   if (!allowedPaths.some((path) => redirectedFrom.startsWith(path))) {
-    return "/dashboard";
+    return "/workspace";
   }
 
   return redirectedFrom;
@@ -61,7 +63,6 @@ export default function LoginPage() {
     const checkInitialSession = async () => {
       const {
         data: { user },
-        error,
       } = await supabase.auth.getUser();
       if (user) {
         router.replace(redirectedFrom);

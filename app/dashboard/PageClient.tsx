@@ -2,7 +2,6 @@
 import React, { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { authFetch } from "@/lib/api";
-import { Spinner } from "@/components/ui/spinner";
 import type { SafeUser } from "@/lib/getSafeSession";
 
 interface LinkData {

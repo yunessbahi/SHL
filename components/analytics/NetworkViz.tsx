@@ -1,11 +1,5 @@
 "use client";
-import React, { useEffect, useRef, useState } from "react";
-import * as d3 from "d3";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
-import { Separator } from "@/components/ui/separator";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   TooltipProvider as GlobalTooltipProvider,
@@ -14,7 +8,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/global-tooltip";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Separator } from "@/components/ui/separator";
+import * as d3 from "d3";
 import { Info, Link2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 interface NodeData extends d3.SimulationNodeDatum {
   id: string;
@@ -39,6 +39,7 @@ interface NetworkVizProps {
 const NetworkViz = ({ data, dimensions, className }: NetworkVizProps) => {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const simulationRef = useRef<d3.Simulation<NodeData, LinkData> | null>(null);
+  const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
   const selectedNodeRef = useRef<NodeData | null>(null);
   const [selectedDimension, setSelectedDimension] = useState<string | null>(
     null,
@@ -46,6 +47,10 @@ const NetworkViz = ({ data, dimensions, className }: NetworkVizProps) => {
   const [layoutMode, setLayoutMode] = useState<"force" | "bipartite">("force");
   const [hoveredNode, setHoveredNode] = useState<NodeData | null>(null);
   const isIsolatedRef = useRef(false);
+  const currentZoomRef = useRef(1); // ADD THIS LINE
+
+  const baseWidth = 1030;
+  const baseHeight = 600;
 
   useEffect(() => {
     if (!svgRef.current || !data.length) return;
@@ -125,8 +130,8 @@ const NetworkViz = ({ data, dimensions, className }: NetworkVizProps) => {
     const maxClicks = Math.max(...links.map((l) => l.clicks), 1);
 
     // SVG setup
-    const width = 694;
-    const height = 600;
+    const width = baseWidth;
+    const height = baseHeight;
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
 
@@ -169,17 +174,17 @@ const NetworkViz = ({ data, dimensions, className }: NetworkVizProps) => {
     arrowMarker
       .append("path")
       .attr("d", "M0,-5L10,0L0,5")
-      .attr("fill", "hsl(var(--muted-foreground))");
+      .attr("fill", "var(--muted-foreground)");
 
     const g = svg.append("g");
 
     const getNodeRadius = (d: NodeData) =>
-      Math.max(10, Math.sqrt(d.clicks) * 4);
+      Math.max(10, Math.min(40, Math.sqrt(d.clicks) * 4)); // Cap at 40px
 
     // Links
     const link = g
       .append("g")
-      .attr("stroke", "hsl(var(--muted-foreground))")
+      .attr("stroke", "var(--muted-foreground)")
       .attr("stroke-opacity", 0.6)
       .selectAll("line")
       .data(links)
@@ -199,18 +204,18 @@ const NetworkViz = ({ data, dimensions, className }: NetworkVizProps) => {
       .attr("text-anchor", "middle")
       .attr("font-size", "10px")
       .attr("font-weight", "400")
-      .attr("fill", "hsl(var(--foreground))")
+      .attr("fill", "var(--foreground)")
       .attr("opacity", 0)
       .attr("pointer-events", "none")
       .style("paint-order", "stroke")
-      .style("stroke", "hsl(var(--background))")
+      .style("stroke", "var(--background)")
       .style("stroke-width", "1px")
       .text((d) => d.clicks);
 
     // Nodes
     const node = g
       .append("g")
-      .attr("stroke", "hsl(var(--background))")
+      .attr("stroke", "(var(--background)")
       //.attr('stroke-width', 2.5)
       .attr("stroke-width", 1)
       .selectAll("g")
@@ -234,30 +239,52 @@ const NetworkViz = ({ data, dimensions, className }: NetworkVizProps) => {
       .attr("y", (d) => -(getNodeRadius(d) + 8))
       .attr("text-anchor", "middle")
       .attr("font-size", "11px")
-      .attr("fill", "hsl(var(--foreground))")
+      .attr("fill", "var(--foreground)")
       .attr("font-weight", "400")
       .style("pointer-events", "none")
       .style("user-select", "none")
       .style("paint-order", "stroke")
-      .style("stroke", "hsl(var(--background))")
+      .style("stroke", "var(--background)")
       .style("stroke-width", "1px");
 
-    // Simulation
+    // Calculate dynamic spacing based on node count and average node size
+    const avgNodeSize =
+      nodes.reduce((sum, n) => sum + getNodeRadius(n), 0) / nodes.length;
+    const nodeCountFactor = Math.sqrt(nodes.length);
+    const baseDistance = Math.max(100, 150 - nodeCountFactor * 5);
+
+    // Simulation with gentler forces
+    // const simulation = d3
+    //   .forceSimulation(nodes)
+    //   .alphaDecay(0.02) // Slower decay for smoother settling
+    //   .velocityDecay(0.4) // Higher damping to reduce bouncing
     const simulation = d3
       .forceSimulation(nodes)
+      .alphaDecay(0.028) // Faster decay to stop sooner
+      .velocityDecay(0.6) // Much higher damping to reduce movement
+      .alphaMin(0.001) // ADD THIS - simulation stops when alpha drops below this
       .force(
         "link",
         d3
           .forceLink(links)
           .id((d: any) => d.id)
-          .distance((d) => 150 - d.clicks * 10)
-          .strength((d) => 0.3 + (d.clicks / maxClicks) * 0.5),
+          .distance((d) => {
+            const sourceRadius = getNodeRadius(d.source as NodeData);
+            const targetRadius = getNodeRadius(d.target as NodeData);
+            return baseDistance + sourceRadius + targetRadius;
+          })
+          .strength(0.2), // Weaker link strength to reduce pulling
       )
-      .force("charge", d3.forceManyBody().strength(-800))
-      .force("center", d3.forceCenter(width / 2, height / 2))
+      .force("charge", d3.forceManyBody().strength(-400).distanceMax(400)) // Reduced charge strength
+      .force("center", d3.forceCenter(width / 2, height / 2).strength(0.05)) // Gentler centering
       .force(
         "collision",
-        d3.forceCollide().radius((d: any) => getNodeRadius(d) + 10),
+        d3
+          .forceCollide()
+          .radius(
+            (d: any) => getNodeRadius(d) + Math.max(20, avgNodeSize * 0.5),
+          )
+          .strength(0.7), // Strong collision to prevent overlap
       );
 
     // Apply layout based on mode
@@ -283,9 +310,10 @@ const NetworkViz = ({ data, dimensions, className }: NetworkVizProps) => {
 
       // Weaker forces for bipartite layout
       simulation
-        .force("charge", d3.forceManyBody().strength(-100))
-        .force("x", d3.forceX((d: any) => d.fx).strength(1))
-        .force("y", d3.forceY((d: any) => d.fy).strength(0.5));
+        .force("charge", d3.forceManyBody().strength(-50).distanceMax(200))
+        .force("x", d3.forceX((d: any) => d.fx).strength(0.8))
+        .force("y", d3.forceY((d: any) => d.fy).strength(0.3))
+        .alphaDecay(0.05); // Faster settling for bipartite
     } else {
       // Force-directed layout - unpin nodes
       nodes.forEach((node) => {
@@ -293,10 +321,17 @@ const NetworkViz = ({ data, dimensions, className }: NetworkVizProps) => {
         node.fy = null;
       });
 
+      // simulation
+      //   .force("charge", d3.forceManyBody().strength(-400).distanceMax(400))
+      //   .force("x", d3.forceX(width / 2).strength(0.02))
+      //   .force("y", d3.forceY(height / 2).strength(0.02))
+      //   .alphaDecay(0.02);
       simulation
-        .force("charge", d3.forceManyBody().strength(-800))
-        .force("x", d3.forceX(width / 2).strength(0.01))
-        .force("y", d3.forceY(height / 2).strength(0.01));
+        .force("charge", d3.forceManyBody().strength(-400).distanceMax(400))
+        .force("x", d3.forceX(width / 2).strength(0.02))
+        .force("y", d3.forceY(height / 2).strength(0.02))
+        .alphaDecay(0.028) // Faster stabilization
+        .alphaMin(0.001); // Stop simulation earlier
     }
 
     simulation.on("tick", ticked);
@@ -305,11 +340,42 @@ const NetworkViz = ({ data, dimensions, className }: NetworkVizProps) => {
     // Immediately update positions to sync visual elements with data changes
     ticked();
 
+    // Function to update simulation bounds based on zoom
+    const updateSimulationBounds = (scale: number) => {
+      // Calculate expanded space when zooming out
+      const spaceMultiplier = scale < 1 ? 1 / scale : 1;
+      const expandedWidth = baseWidth * spaceMultiplier;
+      const expandedHeight = baseHeight * spaceMultiplier;
+
+      // Update center force with expanded dimensions
+      simulation
+        .force(
+          "center",
+          d3.forceCenter(expandedWidth / 2, expandedHeight / 2).strength(0.05),
+        )
+        .force("x", d3.forceX(expandedWidth / 2).strength(0.02))
+        .force("y", d3.forceY(expandedHeight / 2).strength(0.02));
+
+      // Gently reheat simulation to spread nodes into new space
+      if (scale < 1) {
+        simulation.alpha(0.15).restart(); // Lower alpha to prevent continuous rotation
+      }
+    };
+
     function ticked() {
+      // Don't constrain boundaries - let nodes spread freely
+      // The zoom transform will handle the visual scaling
+
       if (layoutMode === "force") {
+        // Only apply minimal constraints to prevent nodes from going too far
+        const currentScale = currentZoomRef.current;
+        const maxBound = currentScale < 1 ? 5000 : 2000; // Very large bounds
+
         nodes.forEach((d) => {
-          if (d.x !== undefined) d.x = Math.max(50, Math.min(644, d.x));
-          if (d.y !== undefined) d.y = Math.max(50, Math.min(450, d.y));
+          if (d.x !== undefined)
+            d.x = Math.max(-maxBound, Math.min(maxBound, d.x));
+          if (d.y !== undefined)
+            d.y = Math.max(-maxBound, Math.min(maxBound, d.y));
         });
       }
 
@@ -388,7 +454,7 @@ const NetworkViz = ({ data, dimensions, className }: NetworkVizProps) => {
 
     // Drag behavior
     function dragstarted(event: any) {
-      if (!event.active) simulation.alphaTarget(0.3).restart();
+      if (!event.active) simulation.alphaTarget(0.1).restart(); // Lower alpha target
       event.subject.fx = event.subject.x;
       event.subject.fy = event.subject.y;
     }
@@ -424,9 +490,9 @@ const NetworkViz = ({ data, dimensions, className }: NetworkVizProps) => {
           dimIndex++;
         }
       } else {
-        // In force-directed mode, release the node
-        event.subject.fx = null;
-        event.subject.fy = null;
+        // In force-directed mode, keep the node pinned where it was dragged
+        // This prevents it from being pulled back by forces
+        // User can click background to reset all pins if needed
       }
     }
 
@@ -476,8 +542,8 @@ const NetworkViz = ({ data, dimensions, className }: NetworkVizProps) => {
         .attr("opacity", (l) => (connectedLinks.has(l) ? 0.9 : 0.05))
         .attr("stroke", (l) =>
           connectedLinks.has(l)
-            ? "hsl(var(--foreground))"
-            : "hsl(var(--muted-foreground))",
+            ? "var(--foreground)"
+            : "var(--muted-foreground)",
         );
 
       linkLabels
@@ -493,7 +559,7 @@ const NetworkViz = ({ data, dimensions, className }: NetworkVizProps) => {
         .transition()
         .duration(300)
         .attr("opacity", (d) => 0.3 + (d.clicks / maxClicks) * 0.7)
-        .attr("stroke", "hsl(var(--muted-foreground))");
+        .attr("stroke", "var(--muted-foreground)");
       linkLabels.transition().duration(300).attr("opacity", 0);
     };
 
@@ -527,8 +593,8 @@ const NetworkViz = ({ data, dimensions, className }: NetworkVizProps) => {
         .attr("opacity", (l) => (connectedLinks.has(l) ? 0.9 : 0.02))
         .attr("stroke", (l) =>
           connectedLinks.has(l)
-            ? "hsl(var(--foreground))"
-            : "hsl(var(--muted-foreground))",
+            ? "var(--foreground)"
+            : "var(--muted-foreground)",
         );
 
       linkLabels
@@ -567,17 +633,40 @@ const NetworkViz = ({ data, dimensions, className }: NetworkVizProps) => {
         setSelectedDimension(null);
         toast.dismiss();
         resetHighlight();
+
+        // Unpin all nodes in force mode
+        if (layoutMode === "force") {
+          nodes.forEach((node) => {
+            node.fx = null;
+            node.fy = null;
+          });
+          simulation.alphaTarget(0.3).restart();
+        }
       }
     });
 
-    // Zoom
+    // Zoom with dynamic canvas expansion
     const zoom = d3
       .zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.1, 4])
       .on("zoom", (event) => {
         g.attr("transform", event.transform);
+
+        const newScale = event.transform.k;
+        const previousScale = currentZoomRef.current;
+        currentZoomRef.current = newScale;
+
+        // Update bounds when zooming out or back in past threshold
+        if (newScale < 0.95 && Math.abs(newScale - previousScale) > 0.1) {
+          updateSimulationBounds(newScale);
+        }
+        // Reset to base bounds when zooming back close to 1x
+        else if (previousScale < 0.95 && newScale >= 0.95) {
+          updateSimulationBounds(1);
+        }
       });
 
+    zoomRef.current = zoom;
     svg.call(zoom).on("dblclick.zoom", null);
 
     return () => {
@@ -606,7 +695,7 @@ const NetworkViz = ({ data, dimensions, className }: NetworkVizProps) => {
           .transition()
           .duration(300)
           .attr("opacity", 0.6)
-          .attr("stroke", "hsl(var(--muted-foreground))");
+          .attr("stroke", "var(--muted-foreground)");
         linkLabels.transition().duration(300).attr("opacity", 0);
       }
     } else {
@@ -738,8 +827,8 @@ const NetworkViz = ({ data, dimensions, className }: NetworkVizProps) => {
           <div className={`w-full ${className || ""}`}>
             <div className="max-w-7xl mx-auto h-full flex flex-col">
               <div className="mb-4 space-y-3">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex flex-wrap gap-3">
+                <div className="flex items-center justify-between gap-2 relative">
+                  <div className="flex flex-col gap-3 absolute top-4 left-0 p-3 max-w-xs z-[40]">
                     {legendItems.map((item) => (
                       <Badge
                         key={item.dimension}
@@ -764,7 +853,7 @@ const NetworkViz = ({ data, dimensions, className }: NetworkVizProps) => {
               <div className="overflow-hidden relative">
                 {hoveredNode && (
                   <div className="absolute top-4 right-4 p-3 max-w-xs z-0">
-                    <div className="font-mono text-xs text-muted-foreground/80">
+                    <div className="font-mono text-xs text-muted-foreground">
                       <div className="font-bold">
                         {hoveredNode.label.toUpperCase()}
                       </div>
@@ -788,8 +877,8 @@ const NetworkViz = ({ data, dimensions, className }: NetworkVizProps) => {
                 )}
                 <svg
                   ref={svgRef}
-                  width={694}
-                  height={600}
+                  width={baseWidth}
+                  height={baseHeight}
                   style={{ cursor: "grab" }}
                   className="relative z-10"
                 />

@@ -1,8 +1,5 @@
 "use client";
 
-import * as React from "react";
-import { Check, ChevronsUpDown } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -17,6 +14,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { Check, ChevronsUpDown } from "lucide-react";
+import * as React from "react";
 
 export interface Option {
   value: string | number;
@@ -94,18 +94,18 @@ export function Combobox({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
-          variant="outline"
+          variant={"outline"}
           role="combobox"
           aria-expanded={open}
           className={cn(
-            "w-full justify-between bg-input/30 hover:bg-input/40 shadow-xs border border-input transition-colors ",
+            "w-full justify-between bg-input hover:bg-accent shadow-xs border border-border transition-colors font-normal",
             className,
           )}
           disabled={disabled}
         >
           {selectedOption ? (
             <div className="flex items-center gap-2">
-              <span>{selectedOption.label}</span>
+              <span className="text-primary">{selectedOption.label}</span>
               {showGlobalBadge && selectedOptionData?.is_global && (
                 <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-foreground text-background border">
                   Global

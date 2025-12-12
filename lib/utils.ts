@@ -27,3 +27,12 @@ export function toTitleCase(text: string): string {
     .toLowerCase()
     .replace(/\b\w/g, (char) => char.toUpperCase()); // capitalize each word
 }
+
+export function toUpper(text: string): string {
+  if (!text) return "";
+
+  return text
+    .replace(/[_-]+/g, " ") // replace underscores/dashes with spaces
+    .trim()
+    .toUpperCase(); // make all text uppercase
+}

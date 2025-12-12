@@ -4,7 +4,6 @@ import * as React from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Minus, Plus } from "lucide-react";
-import { Label } from "@/components/ui/label";
 
 interface NumberStepperProps {
   value: number;

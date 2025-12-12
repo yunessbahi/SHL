@@ -1,5 +1,4 @@
 import * as React from "react";
-import { Progress } from "@/components/ui/base-progress";
 import { Badge } from "@/components/ui/badge";
 import {
   Tooltip,
@@ -7,13 +6,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  AlertTriangle,
-  ArrowLeft,
-  ChevronLeft,
-  ChevronRight,
-  InfoIcon,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, InfoIcon } from "lucide-react";
 import { Separator } from "@/app/components/ui/separator";
 
 interface ProgressTTLProps {

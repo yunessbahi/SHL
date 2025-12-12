@@ -40,8 +40,9 @@ export default function EditPageClient({ user, linkId }: EditPageClientProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Spinner />
+      <div className="flex items-center justify-center h-64 text-muted-foreground">
+        <Spinner className="size-4" />
+        <span className="ml-2 text-sm">Loading</span>
       </div>
     );
   }

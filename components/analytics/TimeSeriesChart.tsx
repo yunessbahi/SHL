@@ -1,30 +1,26 @@
 // components/analytics/TimeSeriesChart.tsx
 "use client";
 
-import { TrendingUp, Calendar, EllipsisVertical } from "lucide-react";
-import {
-  CartesianGrid,
-  Line,
-  LineChart,
-  Bar,
-  BarChart,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
-import { TimeSeriesPoint } from "@/lib/analytics-api";
-import { Button } from "@/components/ui/button";
-import React, { useMemo, useEffect } from "react";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
-import { ChartConfig, ChartContainer } from "@/components/ui/chart";
+import { ChartConfig } from "@/components/ui/chart";
+import { TimeSeriesPoint } from "@/lib/analytics-api";
+import { EllipsisVertical, TrendingUp } from "lucide-react";
+import { useEffect, useMemo } from "react";
+import {
+  Bar,
+  BarChart,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 interface TimeSeriesChartProps {
   data: TimeSeriesPoint[];
@@ -353,7 +349,7 @@ export default function TimeSeriesChart({
                     const totalValue = mobileValue + desktopValue + otherValue;
 
                     return (
-                      <div className="grid min-w-[8rem] items-start gap-1.5 rounded-lg border border-muted bg-muted/90  p-3 shadow-md">
+                      <div className="grid min-w-[8rem] items-start gap-1.5 rounded-lg border border-muted bg-muted  p-3 shadow-md">
                         <div className="text-xs font-medium">
                           {formattedDate}
                         </div>
@@ -490,7 +486,7 @@ export default function TimeSeriesChart({
                       <RoundedBar {...props} dataKey={bar.dataKey} />
                     )}
                     background={
-                      index === 0 ? { className: "fill-muted/40" } : undefined
+                      index === 0 ? { className: "fill-muted" } : undefined
                     }
                   />
                 ));

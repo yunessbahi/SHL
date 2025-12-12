@@ -1,42 +1,50 @@
 "use client";
 
-import {
-  ReactNode,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import { Alert, AlertIcon, AlertTitle } from "@/components/ui/alert";
+import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 //import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge, BadgeButton, BadgeDot } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { CalendarReUI } from "@/components/ui/calendarReUI";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
-import { DataGrid, DataGridContainer } from "@/components/ui/data-grid";
-import { DataGridColumnHeader } from "@/components/ui/data-grid-column-header";
-import { DataGridPagination } from "@/components/ui/data-grid-pagination";
-import { DataGridTable } from "@/components/ui/data-grid-table";
-import {
-  createFilter,
-  Filters,
-  type Filter,
-  type FilterFieldConfig,
-} from "@/components/ui/filters";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { CalendarReUI } from "@/components/ui/calendarReUI";
+import { DataGrid, DataGridContainer } from "@/components/ui/data-grid";
+import { DataGridColumnHeader } from "@/components/ui/data-grid-column-header";
+import { DataGridPagination } from "@/components/ui/data-grid-pagination";
+import { DataGridTable } from "@/components/ui/data-grid-table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Filters,
+  type Filter,
+  type FilterFieldConfig,
+} from "@/components/ui/filters";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
+import { useGroups } from "@/lib/hooks/useGroups";
+import { cn } from "@/lib/utils";
 import {
   ColumnDef,
   getCoreRowModel,
@@ -47,8 +55,6 @@ import {
   SortingState,
   useReactTable,
 } from "@tanstack/react-table";
-import { useGroups } from "@/lib/hooks/useGroups";
-import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import {
   endOfMonth,
   endOfYear,
@@ -61,6 +67,33 @@ import {
   subMonths,
   subYears,
 } from "date-fns";
+import {
+  AlertTriangle,
+  Archive,
+  Archive as ArchiveIcon,
+  Calendar,
+  CalendarDays,
+  CheckCircle,
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  Edit,
+  ExternalLink,
+  Eye,
+  XCircle as FunnelX,
+  Globe,
+  Hash,
+  Link2,
+  List,
+  MegaphoneIcon,
+  Merge,
+  MoreHorizontal,
+  Pause,
+  Play,
+  Split,
+  Target,
+  XCircle,
+} from "lucide-react";
 import { DateRange } from "react-day-picker";
 
 // Type for custom renderer props
@@ -68,58 +101,6 @@ type CustomRendererProps = {
   values: unknown[];
   onChange: (values: unknown[]) => void;
 };
-import {
-  BarChart3,
-  Calendar,
-  CircleAlert,
-  Clock,
-  Edit,
-  ExternalLink,
-  X,
-  Globe,
-  Hash,
-  List,
-  Pause,
-  Play,
-  Archive,
-  Type,
-  CalendarDays,
-  MoreHorizontal,
-  Eye,
-  CheckCircle,
-  XCircle,
-  PauseCircle,
-  Archive as ArchiveIcon,
-  Megaphone,
-  AlertTriangle,
-  XCircle as FunnelX,
-  ChevronUp,
-  ChevronDown,
-  Copy,
-  Timer,
-  Target,
-  Merge,
-  Split,
-  LucideType,
-  icons,
-  Link2,
-  MegaphoneIcon,
-} from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 // Helper function to fetch detailed link data with targets
 const fetchDetailedLinkData = async (linkId: string): Promise<any> => {
   try {
@@ -133,30 +114,6 @@ const fetchDetailedLinkData = async (linkId: string): Promise<any> => {
     console.error(`Error fetching link details for ID ${linkId}:`, error);
     return null;
   }
-};
-
-// Lookup functions for ID to name conversion - FIXED: No prefix fallbacks
-const getGroupName = (groups: any[], id: number | null | undefined): string => {
-  // Handle null/undefined/0 ID cases
-  if (!id || id === 0) {
-    return "No Group";
-  }
-
-  const group = groups?.find((g) => g.id === id);
-  return group?.name || "No Group";
-};
-
-const getUtmTemplateName = (
-  utmTemplates: any[],
-  id: number | null | undefined,
-): string => {
-  // Handle null/undefined/0 ID cases
-  if (!id || id === 0) {
-    return "No Template";
-  }
-
-  const template = utmTemplates?.find((t) => t.id === id);
-  return template?.name || "No Template";
 };
 
 // Transform workspace API data to match Target interface
@@ -238,15 +195,13 @@ const transformRules = (workspaceLinkData: any): LinkRules | undefined => {
   };
 };
 
-import Link from "next/link";
-import { authFetch } from "@/lib/api";
-import { toast } from "sonner";
+import { Status } from "@/app/components/ui/badges-var1";
 import { Label } from "@/components/ui/label";
-import { BadgeDefault, Status } from "@/app/components/ui/badges-var1";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import ProgressTTL from "@/components/ui/progress-ttl";
+import { authFetch } from "@/lib/api";
 import { SafeUser } from "@/lib/getSafeSession";
+import Link from "next/link";
+import { toast } from "sonner";
 
 // Enhanced link data interface with all metadata for expanded row
 interface Target {
@@ -332,7 +287,7 @@ export default function LinksDataTable({
   );
 
   // Groups data state - use existing hook
-  const { groups, loading: loadingGroups } = useGroups();
+  const { groups } = useGroups();
 
   // UTM templates data state
   const [utmTemplates, setUtmTemplates] = useState<any[]>([]);
@@ -341,7 +296,6 @@ export default function LinksDataTable({
   // Async filtering state - exact demo pattern
   const [isLoading, setIsLoading] = useState(false);
   const [filteredData, setFilteredData] = useState<IData[]>([]);
-  const isInitialLoad = useRef(true);
 
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
@@ -400,7 +354,7 @@ export default function LinksDataTable({
             created_at: link.created_at,
             expires_at: link.expires_at,
             start_at: link.start_datetime,
-            group: link.group_name || "--",
+            group: link.group_name,
             fallback_url: link.fallback_url,
             link_badge:
               link.link_type === "smart" ? (
@@ -1196,7 +1150,6 @@ export default function LinksDataTable({
             const linkId = row.id;
             const isLoadingExpanded = loadingExpanded.has(linkId);
             const expandedData = expandedDataCache.get(linkId);
-            const utmParams = expandedData?.utm_params || {};
             return (
               <div className="p-6 rounded-lg mx-4 mb-2">
                 {/* 2-Column Grid Layout */}
@@ -1204,18 +1157,15 @@ export default function LinksDataTable({
                   {/* Grid Column 1 - LINK INFORMATION */}
                   <div className="space-y-4">
                     <h3 className="font-semibold text-lg border-b pb-2">
-                      LINK INFORMATION
+                      BASIC INFORMATION
                     </h3>
 
                     <div className={"w-full"}>
-                      <h4 className="font-normal text-balance mb-2 text-muted-foreground">
-                        Basic Information
-                      </h4>
                       <div className="border border-border rounded-lg overflow-hidden ">
                         <Table className="text-xs w-full text-balance">
                           <TableBody>
                             <TableRow className="*:border-border hover:bg-transparent [&>:not(:last-child)]:border-r">
-                              <TableCell className="bg-muted/50 py-2 font-medium">
+                              <TableCell className="bg-muted py-2 font-medium">
                                 Link Name
                               </TableCell>
                               <TableCell className="flex py-2 gap-2 items-center">
@@ -1224,56 +1174,54 @@ export default function LinksDataTable({
                               </TableCell>
                             </TableRow>
                             <TableRow className="*:border-border hover:bg-transparent [&>:not(:last-child)]:border-r">
-                              <TableCell className="bg-muted/50 py-2 font-medium">
+                              <TableCell className="bg-muted py-2 font-medium">
                                 Description
                               </TableCell>
                               <TableCell className="py-2">
-                                {row.description || "--"}
+                                {row.description || (
+                                  <span className="text-muted-foreground/50">
+                                    --
+                                  </span>
+                                )}
                               </TableCell>
                             </TableRow>
                             <TableRow className="*:border-border hover:bg-transparent [&>:not(:last-child)]:border-r">
-                              <TableCell className="bg-muted/50 py-2 font-medium">
+                              <TableCell className="bg-muted py-2 font-medium">
                                 Campaign
                               </TableCell>
                               <TableCell className="py-2">
-                                {row.campaign || "--"}
+                                {row.campaign || (
+                                  <span className="text-muted-foreground/50">
+                                    --
+                                  </span>
+                                )}
                               </TableCell>
                             </TableRow>
                             <TableRow className="*:border-border hover:bg-transparent [&>:not(:last-child)]:border-r">
-                              <TableCell className="bg-muted/50 py-2 font-medium">
+                              <TableCell className="bg-muted py-2 font-medium">
                                 Group
                               </TableCell>
                               <TableCell className="py-2">
-                                {row.group || "Default Group"}
+                                {row.group || (
+                                  <span className="text-muted-foreground/50">
+                                    --
+                                  </span>
+                                )}
                               </TableCell>
                             </TableRow>
 
                             <TableRow className="*:border-border hover:bg-transparent [&>:not(:last-child)]:border-r">
-                              <TableCell className="bg-muted/50 py-2 font-medium">
+                              <TableCell className="bg-muted py-2 font-medium">
                                 Short URL
                               </TableCell>
                               <TableCell className="py-2">
-                                {/*{row.short_url ? (
-                                            <a
-                                                href={row.short_url}
-                                                className="text-blue-600 hover:underline"
-                                            >
-                                                {row.short_url}
-                                            </a>
-                                        ) : (
-                                            <span className="text-muted-foreground/50">
-                                      --
-                                    </span>
-                                        )}*/}
-
-                                {/* <GlimpsePreview url={row.short_url} label={row.short_url} />*/}
                                 {row.short_url}
                               </TableCell>
                             </TableRow>
 
                             <TableRow className="*:border-border hover:bg-transparent [&>:not(:last-child)]:border-r">
-                              <TableCell className="bg-muted/50 py-2 font-medium">
-                                Fallback URL
+                              <TableCell className="flex flex-nowrap bg-muted py-2 font-medium">
+                                Fallback
                               </TableCell>
                               <TableCell className="py-2">
                                 {row.fallback_url ? (
@@ -1287,107 +1235,6 @@ export default function LinksDataTable({
                                   <span className="text-muted-foreground/50">
                                     --
                                   </span>
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          </TableBody>
-                        </Table>
-                      </div>
-                    </div>
-                    <div className={"w-full"}>
-                      <h4 className="font-normal text-sm mb-2 text-muted-foreground">
-                        Advanced Rules
-                      </h4>
-                      <div className="w-full border border-border rounded-lg overflow-hidden flex-1">
-                        <Table className="text-xs">
-                          <TableBody>
-                            <TableRow className="*:border-border hover:bg-transparent [&>:not(:last-child)]:border-r">
-                              <TableCell className=" bg-muted/50 py-2 font-medium">
-                                IP Address
-                              </TableCell>
-                              <TableCell className="flex py-2">
-                                {row.rules?.ip_addresses &&
-                                row.rules.ip_addresses.length > 0 ? (
-                                  row.rules.ip_addresses.length === 1 ? (
-                                    row.rules.ip_addresses[0]
-                                  ) : (
-                                    row.rules.ip_addresses.join(", ")
-                                  )
-                                ) : (
-                                  <span className={"text-muted-foreground"}>
-                                    No restrictions
-                                  </span>
-                                )}
-                              </TableCell>
-                            </TableRow>
-                            <TableRow className="*:border-border hover:bg-transparent [&>:not(:last-child)]:border-r">
-                              <TableCell className="bg-muted/50 py-2 font-medium">
-                                Referer
-                              </TableCell>
-                              <TableCell className="py-2">
-                                {row.rules?.referer_domains &&
-                                row.rules.referer_domains.length > 0 ? (
-                                  row.rules.referer_domains.length === 1 ? (
-                                    row.rules.referer_domains[0]
-                                  ) : (
-                                    row.rules.referer_domains.join(", ")
-                                  )
-                                ) : (
-                                  <span className={"text-muted-foreground"}>
-                                    No restrictions
-                                  </span>
-                                )}
-                              </TableCell>
-                            </TableRow>
-                            <TableRow className="*:border-border hover:bg-transparent [&>:not(:last-child)]:border-r">
-                              <TableCell className="w-25 bg-muted/50 py-2 font-medium">
-                                Start At
-                              </TableCell>
-                              <TableCell className="flex py-2">
-                                {row.start_at ? (
-                                  new Date(row.start_at).toLocaleDateString() +
-                                  " " +
-                                  new Date(row.start_at).toLocaleTimeString()
-                                ) : (
-                                  <span className={"text-muted-foreground"}>
-                                    mm/dd/yy hh:mm
-                                  </span>
-                                )}
-                              </TableCell>
-                            </TableRow>
-                            <TableRow className="*:border-border hover:bg-transparent [&>:not(:last-child)]:border-r">
-                              <TableCell className="bg-muted/50 py-2 font-medium">
-                                Expired At
-                              </TableCell>
-                              <TableCell className="py-2">
-                                {row.expires_at ? (
-                                  new Date(
-                                    row.expires_at,
-                                  ).toLocaleDateString() +
-                                  " " +
-                                  new Date(row.expires_at).toLocaleTimeString()
-                                ) : (
-                                  <span className={"text-muted-foreground"}>
-                                    mm/dd/yy hh:mm
-                                  </span>
-                                )}
-                              </TableCell>
-                            </TableRow>
-
-                            <TableRow className="*:border-border hover:bg-transparent [&>:not(:last-child)]:border-r">
-                              <TableCell className="bg-muted/50 py-2 font-medium"></TableCell>
-                              <TableCell className="py-2">
-                                {row.expires_at && (
-                                  <div className="w-full">
-                                    <ProgressTTL
-                                      startDate={row.start_at}
-                                      endDate={row.expires_at}
-                                      expiresAt={row.expires_at}
-                                      createdAt={row.created_at}
-                                      showTitle={true}
-                                      className="w-full"
-                                    />
-                                  </div>
                                 )}
                               </TableCell>
                             </TableRow>
@@ -1424,7 +1271,7 @@ export default function LinksDataTable({
                         //defaultValue={}
                         className="w-full"
                       >
-                        {row.targets.map((target, i) => (
+                        {row.targets.map((target) => (
                           <AccordionItem key={target.id} value={target.id}>
                             <AccordionTrigger className="text-left hover:no-underline">
                               <div className="flex items-center gap-2">
@@ -1442,7 +1289,7 @@ export default function LinksDataTable({
                             <AccordionContent className={"text-xs"}>
                               <div className="space-y-3">
                                 <div>
-                                  <h4 className="font-medium mb-2">
+                                  <h4 className="font-medium text-muted-foreground uppercase mb-2">
                                     Audience Rules
                                   </h4>
 
@@ -1529,6 +1376,9 @@ export default function LinksDataTable({
                                     </div>
 
                                     {/* UTM Template */}
+                                    <h4 className="font-medium text-muted-foreground uppercase mb-2">
+                                      UTM
+                                    </h4>
                                     <div className="flex items-center gap-3">
                                       <span className="font-medium min-w-[120px]">
                                         UTM Template:
@@ -1563,7 +1413,7 @@ export default function LinksDataTable({
                                               key={key}
                                               className={`grid grid-cols-2 gap-4 p-3 ${index < Object.keys(utmOverrides).length - 1 ? "border-b" : ""}`}
                                             >
-                                              <span className="font-medium text-accent-foreground">
+                                              <span className="font-medium text-muted-foreground">
                                                 {key}:
                                               </span>
                                               <span className="text-xs text-muted-foreground font-mono">
@@ -1597,7 +1447,105 @@ export default function LinksDataTable({
                       </div>
                     )}
                   </div>
-                  <div></div>
+                  <div className="space-y-4">
+                    <h3 className="font-semibold text-lg border-b pb-2">
+                      ADVANCED RULES
+                    </h3>
+                    <div className="w-full border border-border rounded-lg overflow-hidden flex-1">
+                      <Table className="text-xs">
+                        <TableBody>
+                          <TableRow className="*:border-border hover:bg-transparent [&>:not(:last-child)]:border-r">
+                            <TableCell className=" bg-muted py-2 font-medium">
+                              IP Address
+                            </TableCell>
+                            <TableCell className="flex py-2">
+                              {row.rules?.ip_addresses &&
+                              row.rules.ip_addresses.length > 0 ? (
+                                row.rules.ip_addresses.length === 1 ? (
+                                  row.rules.ip_addresses[0]
+                                ) : (
+                                  row.rules.ip_addresses.join(", ")
+                                )
+                              ) : (
+                                <span className={"text-muted-foreground"}>
+                                  No restrictions
+                                </span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                          <TableRow className="*:border-border hover:bg-transparent [&>:not(:last-child)]:border-r">
+                            <TableCell className="bg-muted py-2 font-medium">
+                              Referer
+                            </TableCell>
+                            <TableCell className="py-2">
+                              {row.rules?.referer_domains &&
+                              row.rules.referer_domains.length > 0 ? (
+                                row.rules.referer_domains.length === 1 ? (
+                                  row.rules.referer_domains[0]
+                                ) : (
+                                  row.rules.referer_domains.join(", ")
+                                )
+                              ) : (
+                                <span className={"text-muted-foreground"}>
+                                  No restrictions
+                                </span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                          <TableRow className="*:border-border hover:bg-transparent [&>:not(:last-child)]:border-r">
+                            <TableCell className="w-25 bg-muted py-2 font-medium">
+                              Start At
+                            </TableCell>
+                            <TableCell className="flex py-2">
+                              {row.start_at ? (
+                                new Date(row.start_at).toLocaleDateString() +
+                                " " +
+                                new Date(row.start_at).toLocaleTimeString()
+                              ) : (
+                                <span className={"text-muted-foreground"}>
+                                  mm/dd/yy hh:mm
+                                </span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                          <TableRow className="*:border-border hover:bg-transparent [&>:not(:last-child)]:border-r">
+                            <TableCell className="bg-muted py-2 font-medium">
+                              Expired At
+                            </TableCell>
+                            <TableCell className="py-2">
+                              {row.expires_at ? (
+                                new Date(row.expires_at).toLocaleDateString() +
+                                " " +
+                                new Date(row.expires_at).toLocaleTimeString()
+                              ) : (
+                                <span className={"text-muted-foreground"}>
+                                  mm/dd/yy hh:mm
+                                </span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+
+                          <TableRow className="*:border-border hover:bg-transparent [&>:not(:last-child)]:border-r">
+                            <TableCell className="bg-muted py-2 font-medium"></TableCell>
+                            <TableCell className="py-2">
+                              {row.expires_at && (
+                                <div className="w-full">
+                                  <ProgressTTL
+                                    startDate={row.start_at}
+                                    endDate={row.expires_at}
+                                    expiresAt={row.expires_at}
+                                    createdAt={row.created_at}
+                                    showTitle={true}
+                                    className="w-full"
+                                  />
+                                </div>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
                 </div>
               </div>
             );
@@ -1660,12 +1608,9 @@ export default function LinksDataTable({
       {
         accessorKey: "click_count",
         id: "click_count",
-        /*header: ({ column }) => (
-                          <DataGridColumnHeader title="Clicks" column={column} />
-                        ),*/
         header: "Clicks",
         cell: ({ row }) => (
-          <span className="font-normal text-sm">
+          <span className="font-normal font-mono text-xs">
             {row.original.click_count}
           </span>
         ),

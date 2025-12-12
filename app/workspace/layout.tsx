@@ -17,7 +17,9 @@ export default function WorkspaceLayout({
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto p-6 pr-0 scrollbar-hide">
+          {children}
+        </main>
       </div>
     </div>
   );

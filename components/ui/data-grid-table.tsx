@@ -1,7 +1,6 @@
-import React from "react";
-import { CSSProperties, Fragment, ReactNode } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useDataGrid } from "@/components/ui/data-grid";
+import { cn } from "@/lib/utils";
 import {
   Cell,
   Column,
@@ -11,7 +10,7 @@ import {
   Row,
 } from "@tanstack/react-table";
 import { cva } from "class-variance-authority";
-import { cn } from "@/lib/utils";
+import React, { CSSProperties, Fragment, ReactNode } from "react";
 
 const headerCellSpacingVariants = cva("", {
   variants: {
@@ -96,7 +95,7 @@ function DataGridTableHeadRow<TData>({
     <tr
       key={headerGroup.id}
       className={cn(
-        "bg-muted/40",
+        "bg-muted",
         props.tableLayout?.headerBorder && "[&>th]:border-b",
         props.tableLayout?.cellBorder && "[&_>:last-child]:border-e-0",
         props.tableLayout?.stripped && "bg-transparent",
@@ -158,7 +157,7 @@ function DataGridTableHeadRowCell<TData>({
           "truncate",
         props.tableLayout?.columnsPinnable &&
           column.getCanPin() &&
-          "[&:not([data-pinned]):has(+[data-pinned])_div.cursor-col-resize:last-child]:opacity-0 [&[data-last-col=left]_div.cursor-col-resize:last-child]:opacity-0 [&[data-pinned=left][data-last-col=left]]:border-e! [&[data-pinned=right]:last-child_div.cursor-col-resize:last-child]:opacity-0 [&[data-pinned=right][data-last-col=right]]:border-s! [&[data-pinned][data-last-col]]:border-border data-pinned:bg-muted/90 data-pinned:backdrop-blur-xs",
+          "[&:not([data-pinned]):has(+[data-pinned])_div.cursor-col-resize:last-child]:opacity-0 [&[data-last-col=left]_div.cursor-col-resize:last-child]:opacity-0 [&[data-pinned=left][data-last-col=left]]:border-e! [&[data-pinned=right]:last-child_div.cursor-col-resize:last-child]:opacity-0 [&[data-pinned=right][data-last-col=right]]:border-s! [&[data-pinned][data-last-col]]:border-border data-pinned:bg-muted data-pinned:backdrop-blur-xs",
         header.column.columnDef.meta?.headerClassName,
         column.getIndex() === 0 ||
           column.getIndex() === header.headerGroup.headers.length - 1
@@ -218,14 +217,14 @@ function DataGridTableBodyRowSkeleton({ children }: { children: ReactNode }) {
   return (
     <tr
       className={cn(
-        "hover:bg-muted/40 data-[state=selected]:bg-muted/50",
+        "hover:bg-muted data-[state=selected]:bg-muted",
         props.onRowClick && "cursor-pointer",
         !props.tableLayout?.stripped &&
           props.tableLayout?.rowBorder &&
           "border-b border-border [&:not(:last-child)>td]:border-b",
         props.tableLayout?.cellBorder && "[&_>:last-child]:border-e-0",
         props.tableLayout?.stripped &&
-          "odd:bg-muted/90 hover:bg-transparent odd:hover:bg-muted",
+          "odd:bg-muted hover:bg-transparent odd:hover:bg-muted",
         table.options.enableRowSelection && "[&_>:first-child]:relative",
         props.tableClassNames?.bodyRow,
       )}
@@ -295,14 +294,14 @@ function DataGridTableBodyRow<TData>({
       }
       onClick={() => props.onRowClick && props.onRowClick(row.original)}
       className={cn(
-        "hover:bg-muted/40 data-[state=selected]:bg-muted/50",
+        "hover:bg-muted data-[state=selected]:bg-muted",
         props.onRowClick && "cursor-pointer",
         !props.tableLayout?.stripped &&
           props.tableLayout?.rowBorder &&
           "border-b border-border [&:not(:last-child)>td]:border-b",
         props.tableLayout?.cellBorder && "[&_>:last-child]:border-e-0",
         props.tableLayout?.stripped &&
-          "odd:bg-muted/90 hover:bg-transparent odd:hover:bg-muted",
+          "odd:bg-muted hover:bg-transparent odd:hover:bg-muted",
         table.options.enableRowSelection && "[&_>:first-child]:relative",
         props.tableClassNames?.bodyRow,
       )}

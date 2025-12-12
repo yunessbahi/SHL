@@ -17,7 +17,7 @@ export default function SignupPage() {
   const supabase = createClient();
 
   const redirectedFrom =
-    searchParams.get("redirectedFrom")?.trim() || "/dashboard";
+    searchParams.get("redirectedFrom")?.trim() || "/workspace";
 
   useEffect(() => {
     const checkUser = async () => {

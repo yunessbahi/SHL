@@ -1,14 +1,9 @@
 "use client";
 
-import React from "react";
-import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import {
-  ChartNoAxesCombinedIcon,
-  Target,
-  TrendingUp,
-  Search,
-} from "lucide-react";
+import { ChartNoAxesCombinedIcon, Search } from "lucide-react";
+import { usePathname } from "next/navigation";
+import React from "react";
 
 // Sidebar Item Component
 interface SidebarItemProps {
@@ -30,7 +25,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
     <a
       href={href}
       className={cn(
-        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:bg-accent hover:text-accent-foreground",
+        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-all hover:bg-accent hover:text-accent-foreground",
         isActive && "bg-accent text-accent-foreground",
       )}
     >
@@ -66,12 +61,6 @@ const Sidebar: React.FC = React.memo(() => {
         <SidebarSection title="Analytics">
           <SidebarItem href="/analytics" icon={ChartNoAxesCombinedIcon}>
             Overview
-          </SidebarItem>
-          <SidebarItem href="/analytics/campaigns" icon={Target}>
-            Campaign Analytics
-          </SidebarItem>
-          <SidebarItem href="/analytics/links" icon={TrendingUp}>
-            Link Analytics
           </SidebarItem>
           <SidebarItem href="/analytics/explore" icon={Search}>
             Custom Explore

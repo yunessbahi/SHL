@@ -12,6 +12,9 @@ import {
   Folders,
   Calendar,
   X,
+  Link,
+  Merge,
+  Split,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -26,7 +29,6 @@ import { SafeUser } from "@/lib/getSafeSession";
 import { EmptyState } from "@/components/ui/empty-state";
 import GroupModal from "@/app/components/GroupModal";
 import {
-  createFilter,
   Filters,
   type Filter,
   type FilterFieldConfig,
@@ -51,12 +53,20 @@ import {
 } from "date-fns";
 import { DateRange } from "react-day-picker";
 import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Status } from "@/app/components/ui/badges-var1";
 
 interface Group {
   id: number;
   name: string;
   description: string;
   created_at: string;
+  links_count?: number;
 }
 
 interface GroupsPageProps {
@@ -75,12 +85,38 @@ export default function GroupsPage({ user }: GroupsPageProps) {
     group?: Group;
   }>({ open: false, mode: "create" });
 
+  // Links Modal State
+  const [activeGroup, setActiveGroup] = useState<Group | null>(null);
+  const [showLinksModal, setShowLinksModal] = useState(false);
+  const [groupLinks, setGroupLinks] = useState<any[]>([]);
+
   const loadGroups = async () => {
     try {
       const response = await authFetch("/api/groups/");
       if (response.ok) {
         const data = await response.json();
-        setGroups(data);
+        // Fetch links count for each group
+        const groupsWithCounts = await Promise.all(
+          data.map(async (group: Group) => {
+            try {
+              const linksResponse = await authFetch(
+                `/api/groups/${group.id}/links`,
+              );
+              if (linksResponse.ok) {
+                const links = await linksResponse.json();
+                return { ...group, links_count: links.length };
+              }
+              return { ...group, links_count: 0 };
+            } catch (error) {
+              console.error(
+                `Failed to load links count for group ${group.id}:`,
+                error,
+              );
+              return { ...group, links_count: 0 };
+            }
+          }),
+        );
+        setGroups(groupsWithCounts);
       }
     } catch (error) {
       console.error("Failed to load groups:", error);
@@ -134,6 +170,21 @@ export default function GroupsPage({ user }: GroupsPageProps) {
       }
     } catch (error) {
       console.error("Failed to delete group:", error);
+    }
+  };
+
+  const openLinksModal = async (group: Group) => {
+    setActiveGroup(group);
+    setShowLinksModal(true);
+    try {
+      const response = await authFetch(`/api/groups/${group.id}/links`);
+      if (response.ok) {
+        const links = await response.json();
+        setGroupLinks(links);
+      }
+    } catch (error) {
+      console.error("Failed to load group links:", error);
+      setGroupLinks([]);
     }
   };
 
@@ -475,11 +526,9 @@ export default function GroupsPage({ user }: GroupsPageProps) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <div className="text-center">
-          <Spinner className="size-6 mx-auto" />
-          <p className="text-xs mt-4 text-muted-foreground">Loading...</p>
-        </div>
+      <div className="flex items-center justify-center h-64 text-muted-foreground">
+        <Spinner className="size-4" />
+        <span className="ml-2 text-sm">Loading</span>
       </div>
     );
   }
@@ -487,10 +536,10 @@ export default function GroupsPage({ user }: GroupsPageProps) {
   return (
     <div className="space-y-4">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+        <h1 className="text-3xl font-bold tracking-tight text-muted-foreground">
           Groups
         </h1>
-        <p className="text-lg text-gray-600 dark:text-gray-300 mt-2">
+        <p className="text-md text-muted-foreground">
           Organize your links into groups for better management and analytics.
         </p>
       </div>
@@ -583,6 +632,10 @@ export default function GroupsPage({ user }: GroupsPageProps) {
                           <Edit className="h-4 w-4 mr-2" />
                           Edit Group
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => openLinksModal(group)}>
+                          <Link className="h-4 w-4 mr-2" />
+                          Assigned Links
+                        </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => handleDelete(group.id)}
                           className="text-red-400"
@@ -605,13 +658,21 @@ export default function GroupsPage({ user }: GroupsPageProps) {
                       </p>
                     </>
                   )}
-                  <div className="flex flex-inline gap-1 pt-3 text-xs justify-end text-muted-foreground/70">
-                    Created At
-                    <span className="font-mono">
-                      {group.created_at
-                        ? new Date(group.created_at).toLocaleDateString()
-                        : ""}
-                    </span>
+                  <div className="flex flex-inline gap-1 pt-3 text-xs justify-between text-muted-foreground/70">
+                    <div className="flex gap-1">
+                      Links:
+                      <span className="font-mono">
+                        {group.links_count || 0}
+                      </span>
+                    </div>
+                    <div className="flex gap-1">
+                      Created At
+                      <span className="font-mono">
+                        {group.created_at
+                          ? new Date(group.created_at).toLocaleDateString()
+                          : ""}
+                      </span>
+                    </div>
                   </div>
                 </CardContent>
               </div>
@@ -633,6 +694,103 @@ export default function GroupsPage({ user }: GroupsPageProps) {
         }
         onSave={handleSave}
       />
+
+      {/* Links Modal */}
+      {activeGroup && (
+        <Dialog
+          open={showLinksModal}
+          onOpenChange={(open) => {
+            setShowLinksModal(open);
+            if (!open) {
+              setActiveGroup(null);
+              setGroupLinks([]);
+            }
+          }}
+        >
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Links Assigned to {activeGroup.name}</DialogTitle>
+            </DialogHeader>
+            <div className="mb-4 p-4 bg-amber-400/5 border border-amber-500/30 dark:border-amber-200/20 text-amber-900/70 dark:text-amber-100/70 rounded">
+              <h3 className="font-semibold text-sm mb-2">Assigned Links</h3>
+              <p className="text-sm">
+                These links are assigned to this group and will be distributed
+                according to their weights and rules.
+              </p>
+            </div>
+            <table className="w-full text-sm mb-4">
+              <thead>
+                <tr className="text-left">
+                  <th className="p-2">Link Name</th>
+                  <th className="p-2">Type</th>
+                  <th className="p-2">Status</th>
+                  <th className="p-2">Created At</th>
+                  <th className="p-2">Start Date</th>
+                  <th className="p-2">End Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {groupLinks.map((link) => (
+                  <tr key={link.id} className="border-t">
+                    <td className="p-2 font-base">{link.link_name}</td>
+                    <td className="p-2">
+                      <Badge variant="outline" className="text-xs">
+                        {link.link_type === "Single" && (
+                          <Merge className="h-3 w-3 mr-1" />
+                        )}
+                        {link.link_type === "Smart" && (
+                          <Split className="h-3 w-3 mr-1" />
+                        )}
+                        {link.link_type}
+                      </Badge>
+                    </td>
+                    <td className="p-2">
+                      <Status
+                        variant={
+                          link.status === "active"
+                            ? "active"
+                            : link.status === "paused"
+                              ? "warn"
+                              : "default"
+                        }
+                        label={
+                          link.status.charAt(0).toUpperCase() +
+                          link.status.slice(1)
+                        }
+                        className="text-xs rounded-md"
+                      />
+                    </td>
+                    <td className="p-2 text-xs font-mono">
+                      {link.created_at
+                        ? new Date(link.created_at).toLocaleDateString()
+                        : ""}
+                    </td>
+                    <td className="p-2 text-xs font-mono">
+                      {link.start_datetime
+                        ? new Date(link.start_datetime).toLocaleDateString()
+                        : "--"}
+                    </td>
+                    <td className="p-2 text-xs font-mono">
+                      {link.end_datetime
+                        ? new Date(link.end_datetime).toLocaleDateString()
+                        : "--"}
+                    </td>
+                  </tr>
+                ))}
+                {groupLinks.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="p-4 text-center">
+                      <span className="text-sm text-muted-foreground">
+                        No links assigned to this group.
+                      </span>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

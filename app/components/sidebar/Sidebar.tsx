@@ -2,13 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
 import SidebarItem from "./SidebarItem";
 import { createClient } from "@/lib/supabase/client";
 import {
   Link as LinkIcon,
-  Briefcase,
-  BarChart3,
   Settings,
   FlaskConical,
   ChartSpline,

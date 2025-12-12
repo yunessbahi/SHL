@@ -1,12 +1,10 @@
 "use client";
-import React, { useMemo, useState } from "react";
-import JsonEditor from "../components/JsonEditor";
 import { MultiSelect } from "@/components/multi-select";
-import { CalendarWithTimeInput } from "@/components/ui/calendar-with-time-input";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, X } from "lucide-react";
-import { useCountries } from "@/lib/hooks/useCountries";
 import { Combobox } from "@/components/ui/combobox-default";
+import { useCountries } from "@/lib/hooks/useCountries";
+import { useMemo, useState } from "react";
+import JsonEditor from "../components/JsonEditor";
 
 type RuleTabsProps = {
   rules: any;
@@ -25,29 +23,12 @@ type RuleTabsProps = {
   onRestoreInheritedTimeWindow?: () => void;
 };
 
-const convertStringToDate = (dateString: string): Date | undefined => {
-  return dateString ? new Date(dateString) : undefined;
-};
-
-const convertDateToString = (date: Date | undefined): string => {
-  return date ? date.toISOString() : "";
-};
-
 export default function RuleTabs({
   rules,
   setRules,
   activeTab,
   onTabChange,
-  inheritedStartDate,
-  inheritedEndDate,
-  isAlwaysOn = false,
-  showTimeWindow = true,
   inheritedTimeWindow,
-  linkStartDate,
-  linkEndDate,
-  campaignStartDate,
-  campaignEndDate,
-  onRestoreInheritedTimeWindow,
 }: RuleTabsProps) {
   const [internalTab, setInternalTab] = useState("audience");
   const tab = activeTab ?? internalTab;
@@ -90,7 +71,7 @@ export default function RuleTabs({
   return (
     <div className="space-y-4">
       <div className="flex gap-2 border-b">
-        {["audience", "behavior", "utm", "json"].map((t) => (
+        {["audience", "utm", "json"].map((t) => (
           <button
             key={t}
             type="button"
@@ -112,7 +93,8 @@ export default function RuleTabs({
             <label className="block text-sm mb-1">Country allow</label>
             <MultiSelect
               placeholder="Any"
-              //variant={"secondary"}
+              variant={"default"}
+              //className="w-full pl-3 text-left font-normal bg-input/20 border border-border hover:bg-input/40 shadow-none"
               options={countryOptions}
               defaultValue={rules?.country_allow || []}
               onValueChange={(vals) =>
@@ -214,16 +196,6 @@ export default function RuleTabs({
               placeholder="Select device type"
               allowClear={false}
             />
-          </div>
-        </div>
-      )}
-
-      {tab === "behavior" && showTimeWindow && (
-        <div className="space-y-4">
-          <div className="text-sm text-muted-foreground">
-            Time window settings are managed in Behavior Settings for
-            centralized control. Use the Start/End Date fields in Behavior
-            Settings to override campaign dates.
           </div>
         </div>
       )}

@@ -781,7 +781,7 @@ export default function SmartLinkForm({
       toast.success(
         `Smart link ${isEdit ? "updated" : "created"} successfully!`,
       );
-      //router.push("/links");
+      router.push("/workspace/links");
     } catch (error) {
       console.error("Failed to save smart link:", error);
       const errorMessage =
@@ -799,10 +799,10 @@ export default function SmartLinkForm({
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">
+        <h1 className="text-2xl font-bold">
           {isEdit ? "Edit Smart Link" : "Create Smart Link"}
         </h1>
-        <p className="text-gray-600">
+        <p className="text-muted-foreground">
           {isEdit
             ? "Update your smart link configuration and targets."
             : "Create an advanced link with multiple targets, A/B testing, and audience targeting."}

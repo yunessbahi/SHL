@@ -1,26 +1,22 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Check, ChevronsUpDown, TimerReset } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Calendar, BarChart3 } from "lucide-react";
 import {
   Command,
   CommandEmpty,
   CommandGroup,
-  CommandInput,
   CommandItem,
   CommandList,
-  //CommandCheck,
 } from "@/components/ui/command";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { Calendar, Check, ChevronsUpDown, RefreshCw } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Label } from "../ui/label";
-import { Separator } from "../ui/separator";
 
 interface PeriodPreset {
   value: string;
@@ -169,11 +165,11 @@ export default function AnalyticsFilters({
                 variant="outline"
                 role="combobox"
                 aria-expanded={periodOpen}
-                className={`${inline ? "min-w-[180px]" : "min-w-[220px]"} justify-between w-full text-xs h-8`}
+                className={`${inline ? "min-w-[180px]" : "min-w-[220px]"} justify-between w-full text-xs h-8 border-border`}
               >
                 <div className="flex">
                   <label
-                    className="text-muted-foreground/80 font-normal text-xs"
+                    className="text-muted-foreground font-normal text-xs"
                     title="Period"
                   >
                     Period
@@ -239,18 +235,18 @@ export default function AnalyticsFilters({
       </div>
 
       {/* Interval Selector */}
-      <div className="flex flex-row gap-1 items-center">
+      <div className="flex flex-row gap-3 items-center">
         <Popover open={intervalOpen} onOpenChange={setIntervalOpen}>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
               role="combobox"
               aria-expanded={intervalOpen}
-              className={`${inline ? "min-w-[140px]" : "min-w-[170px]"} justify-between w-full text-xs h-8`}
+              className={`${inline ? "min-w-[140px]" : "min-w-[170px]"} justify-between w-full text-xs h-8 border-border`}
             >
               {/* <TimerReset className="m-0"/> */}
               <Label
-                className="text-muted-foreground/80 font-normal text-xs"
+                className="text-muted-foreground font-normal text-xs"
                 title="Interval"
               >
                 Interval
@@ -315,9 +311,9 @@ export default function AnalyticsFilters({
             <Button
               onClick={onRefresh}
               variant="outline"
-              size="sm"
+              size="icon"
               disabled={loading}
-              className="h-9"
+              className="h-8 border-border"
             >
               <RefreshCw
                 className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}

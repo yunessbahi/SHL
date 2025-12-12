@@ -2,10 +2,9 @@
 
 import * as React from "react";
 //import { CalendarIcon } from "@radix-ui/react-icons";
-import { Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
+import { Calendar as CalendarIcon } from "lucide-react";
 
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -14,6 +13,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 
 export function DateTimePicker24h({
   label,
@@ -101,9 +101,9 @@ export function DateTimePicker24h({
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
-            variant={"outline"}
+            //variant={"secondary"}
             className={cn(
-              "w-full pl-3 text-left font-normal",
+              "w-full pl-3 text-left font-normal text-foreground bg-input border border-border hover:bg-accent shadow-none",
               !value && "text-muted-foreground",
             )}
           >

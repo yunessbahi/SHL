@@ -1,8 +1,8 @@
-import * as React from "react";
+import { cn } from "@/lib/utils";
 import { cva, type VariantProps } from "class-variance-authority";
 import { ChevronDown, LucideIcon } from "lucide-react";
 import { Slot as SlotPrimitive } from "radix-ui";
-import { cn } from "@/lib/utils";
+import * as React from "react";
 
 const buttonVariants = cva(
   "cursor-pointer group whitespace-nowrap focus-visible:outline-hidden inline-flex items-center justify-center has-data-[arrow=true]:justify-between whitespace-nowrap text-sm font-medium ring-offset-background transition-[color,box-shadow] disabled:pointer-events-none disabled:opacity-60 [&_svg]:shrink-0",
@@ -10,16 +10,16 @@ const buttonVariants = cva(
     variants: {
       variant: {
         primary:
-          "bg-primary text-primary-foreground hover:bg-primary/90 data-[state=open]:bg-primary/90",
+          "bg-primary text-primary-foreground hover:bg-popover-foreground data-[state=open]:bg-popover-foreground",
         mono: "bg-zinc-950 text-white dark:bg-zinc-300 dark:text-black hover:bg-zinc-950/90 dark:hover:bg-zinc-300/90 data-[state=open]:bg-zinc-950/90 dark:data-[state=open]:bg-zinc-300/90",
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-destructive/90 data-[state=open]:bg-destructive/90",
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-secondary/90 data-[state=open]:bg-secondary/90",
         outline:
-          "bg-background text-accent-foreground border border-input hover:bg-accent data-[state=open]:bg-accent",
+          "bg-background text-accent-foreground border border-border hover:bg-accent data-[state=open]:bg-accent",
         dashed:
-          "text-accent-foreground border border-input border-dashed bg-background hover:bg-accent hover:text-accent-foreground data-[state=open]:text-accent-foreground",
+          "text-accent-foreground border border-border border-dashed bg-background hover:bg-accent hover:text-accent-foreground data-[state=open]:text-accent-foreground",
         ghost:
           "text-accent-foreground hover:bg-accent hover:text-accent-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground",
         dim: "text-muted-foreground hover:text-foreground data-[state=open]:text-foreground",
@@ -60,8 +60,8 @@ const buttonVariants = cva(
         link: "text-primary h-auto p-0 bg-transparent rounded-none hover:bg-transparent data-[state=open]:bg-transparent",
         input: `
             justify-start font-normal hover:bg-background [&_svg]:transition-colors [&_svg]:hover:text-foreground data-[state=open]:bg-background 
-            focus-visible:border-ring focus-visible:outline-hidden focus-visible:ring-[3px] focus-visible:ring-ring/30 
-            [[data-state=open]>&]:border-ring [[data-state=open]>&]:outline-hidden [[data-state=open]>&]:ring-[3px] 
+            focus-visible:border-ring focus-visible:outline-hidden focus-visible:ring-0 focus-visible:ring-ring/30 
+            [[data-state=open]>&]:border-ring [[data-state=open]>&]:outline-hidden [[data-state=open]>&]:ring-0 
             [[data-state=open]>&]:ring-ring/30 
             aria-invalid:border-destructive/60 aria-invalid:ring-destructive/10 dark:aria-invalid:border-destructive dark:aria-invalid:ring-destructive/20
             in-data-[invalid=true]:border-destructive/60 in-data-[invalid=true]:ring-destructive/10  dark:in-data-[invalid=true]:border-destructive dark:in-data-[invalid=true]:ring-destructive/20
@@ -217,28 +217,28 @@ const buttonVariants = cva(
         mode: "link",
         underline: "solid",
         className:
-          "font-medium text-primary hover:text-primary/90 [&_svg:not([role=img]):not([class*=text-])]:opacity-60 hover:underline hover:underline-offset-4 hover:decoration-solid",
+          "font-medium text-primary hover:text-popover-foreground [&_svg:not([role=img]):not([class*=text-])]:opacity-60 hover:underline hover:underline-offset-4 hover:decoration-solid",
       },
       {
         variant: "primary",
         mode: "link",
         underline: "dashed",
         className:
-          "font-medium text-primary hover:text-primary/90 [&_svg:not([role=img]):not([class*=text-])]:opacity-60 hover:underline hover:underline-offset-4 hover:decoration-dashed decoration-1",
+          "font-medium text-primary hover:text-popover-foreground [&_svg:not([role=img]):not([class*=text-])]:opacity-60 hover:underline hover:underline-offset-4 hover:decoration-dashed decoration-1",
       },
       {
         variant: "primary",
         mode: "link",
         underlined: "solid",
         className:
-          "font-medium text-primary hover:text-primary/90 [&_svg:not([role=img]):not([class*=text-])]:opacity-60 underline underline-offset-4 decoration-solid",
+          "font-medium text-primary hover:text-popover-foreground [&_svg:not([role=img]):not([class*=text-])]:opacity-60 underline underline-offset-4 decoration-solid",
       },
       {
         variant: "primary",
         mode: "link",
         underlined: "dashed",
         className:
-          "font-medium text-primary hover:text-primary/90 [&_svg]:opacity-60 underline underline-offset-4 decoration-dashed decoration-1",
+          "font-medium text-primary hover:text-popover-foreground [&_svg]:opacity-60 underline underline-offset-4 decoration-dashed decoration-1",
       },
 
       {
@@ -304,7 +304,7 @@ const buttonVariants = cva(
         variant: "primary",
         appearance: "ghost",
         className:
-          "bg-transparent text-primary/90 hover:bg-primary/5 data-[state=open]:bg-primary/5",
+          "bg-transparent text-popover-foreground hover:bg-muted data-[state=open]:bg-muted",
       },
       {
         variant: "destructive",

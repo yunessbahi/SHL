@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/app/components/ui/button";
 import {
   Card,
@@ -14,7 +14,6 @@ import { Label } from "@/app/components/ui/label";
 import { Switch } from "@/app/components/ui/switch";
 import { Separator } from "@/app/components/ui/separator";
 import { Save, User, Bell, Shield, Palette } from "lucide-react";
-import { Spinner } from "@/components/ui/spinner";
 import { SafeUser } from "@/lib/getSafeSession";
 
 interface SettingsPageProps {

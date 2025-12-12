@@ -13,16 +13,13 @@ export default function AnalyticsLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
+    <div className="flex h-[calc(100vh-4rem)] overflow-hidden scrollbar-hide">
       <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden scrollbar-hide">
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
-
-        {/* Footer */}
-        {/* <footer className="border-t bg-background p-4 text-center text-sm text-muted-foreground">
-          © 2024 Linker
-        </footer> */}
+        <main className="flex-1 overflow-y-auto p-6 pr-0 scrollbar-hide">
+          {children}
+        </main>
       </div>
     </div>
   );

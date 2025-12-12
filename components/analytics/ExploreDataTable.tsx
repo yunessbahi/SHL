@@ -1,25 +1,23 @@
 "use client";
 
-import React, { useCallback, useMemo, useState } from "react";
 import { DataGrid, DataGridContainer } from "@/components/ui/data-grid";
 import { DataGridColumnHeader } from "@/components/ui/data-grid-column-header";
 import { DataGridPagination } from "@/components/ui/data-grid-pagination";
 import { DataGridTable } from "@/components/ui/data-grid-table";
 import {
-  createFilter,
   Filters,
   type Filter,
   type FilterFieldConfig,
 } from "@/components/ui/filters";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { formatNumber, formatPercentage } from "@/lib/analytics-api";
 import {
   ColumnDef,
   getCoreRowModel,
@@ -30,7 +28,8 @@ import {
   SortingState,
   useReactTable,
 } from "@tanstack/react-table";
-import { formatNumber, formatPercentage } from "@/lib/analytics-api";
+import { Fingerprint, MousePointerClick, Table2, X } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
 
 // Data interface for analytics explore data
 interface AnalyticsRow {
@@ -91,7 +90,7 @@ export default function ExploreDataTable({
       {
         key: "name",
         label: "Dimension Value",
-        icon: <span>📊</span>,
+        icon: <Table2 />,
         type: "text",
         className: "w-40 bg-secondary",
         placeholder: "Search dimensions...",
@@ -102,7 +101,7 @@ export default function ExploreDataTable({
       flds.push({
         key: "clicks",
         label: "Clicks",
-        icon: <span>👆</span>,
+        icon: <MousePointerClick />,
         type: "number",
         min: 0,
         max: 1000000,
@@ -127,7 +126,7 @@ export default function ExploreDataTable({
       flds.push({
         key: "unique_visitors",
         label: "Unique Visitors",
-        icon: <span>👤</span>,
+        icon: <Fingerprint />,
         type: "number",
         min: 0,
         max: 1000000,
@@ -241,7 +240,9 @@ export default function ExploreDataTable({
           <DataGridColumnHeader title="Dimension Value" column={column} />
         ),
         cell: ({ row }) => (
-          <span className="font-medium">{row.original.name}</span>
+          <span className="font-normal text-[13px] text-muted-foreground">
+            {row.original.name}
+          </span>
         ),
         size: 300,
         enableSorting: true,
@@ -274,7 +275,7 @@ export default function ExploreDataTable({
           const formatted = formatNumber(clicks);
           return (
             <span
-              className={`font-mono text-sm ${formatted === "—" ? "text-muted-foreground/30" : ""}`}
+              className={`font-mono text-[13px] text-muted-foreground ${formatted === "—" ? "text-muted-foreground/30" : ""}`}
             >
               {formatted}
             </span>
@@ -311,7 +312,7 @@ export default function ExploreDataTable({
           const formatted = formatNumber(uv);
           return (
             <span
-              className={`font-mono text-sm text-right ${formatted === "—" ? "text-muted-foreground/30" : ""}`}
+              className={`font-mono text-[13px] text-muted-foreground text-right ${formatted === "—" ? "text-muted-foreground/30" : ""}`}
             >
               {formatted}
             </span>
@@ -347,7 +348,7 @@ export default function ExploreDataTable({
           cell: ({ row }) => {
             const cpuv = row.original.cpuv;
             return cpuv !== undefined && cpuv !== 0 ? (
-              <span className="font-mono text-sm text-right">
+              <span className="font-mono text-[13px] text-muted-foreground text-right">
                 {cpuv.toFixed(2)}
               </span>
             ) : (
@@ -379,7 +380,7 @@ export default function ExploreDataTable({
           cell: ({ row }) => {
             const rate = row.original.repeat_click_rate;
             return rate !== undefined && rate !== 0 ? (
-              <span className="font-mono text-sm text-right">
+              <span className="font-mono text-[13px] text-muted-foreground text-right">
                 {formatPercentage(rate)}
               </span>
             ) : (
@@ -436,10 +437,10 @@ export default function ExploreDataTable({
         </div>
         {filters.length > 0 && (
           <button
-            className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3"
+            className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-xs ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-border bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3"
             onClick={() => setFilters([])}
           >
-            <span>🗑️</span> Clear
+            <X className="w-4 h-4" /> Clear
           </button>
         )}
       </div>
@@ -460,7 +461,7 @@ export default function ExploreDataTable({
       >
         <div className="w-full space-y-2.5">
           <DataGridContainer>
-            <ScrollArea className="max-h-96 overflow-hidden">
+            <ScrollArea className="overflow-hidden">
               <DataGridTable />
               <ScrollBar orientation="horizontal" />
             </ScrollArea>

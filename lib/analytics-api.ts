@@ -99,6 +99,30 @@ export interface CampaignCardPoint {
   timeserie: CampaignTimeseriePoint[];
 }
 
+export interface ScheduleDataPoint {
+  id: number;
+  link_name: string;
+  link_type: string;
+  status: string;
+  short_url: string;
+  campaign_id: number | null;
+  campaign_name: string | null;
+  campaign_lifecycle: number | null;
+  campaign_stage: string | null;
+  campaign_lifecycle_display: {
+    text: string;
+    icon: string;
+  } | null;
+  is_one_off_campaign: boolean;
+  group_id: number | null;
+  group_name: string | null;
+  utm_medium: string;
+  is_independent: boolean;
+  start_date: string | null;
+  end_date: string | null;
+  created_at: string | null;
+}
+
 export interface AnalyticsFilters {
   start_date?: string;
   end_date?: string;
@@ -301,6 +325,11 @@ class AnalyticsAPIClient {
       `/api/analytics/campaigns/cards?period=${period}`,
     );
   }
+  // Get schedules data for Gantt chart
+  async getSchedulesData(): Promise<ScheduleDataPoint[]> {
+    return this.makeRequest<ScheduleDataPoint[]>("/api/analytics/schedules");
+  }
+
   // Explore analytics with custom filters
   async exploreAnalytics(
     filters: AnalyticsFilters,

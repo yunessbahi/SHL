@@ -1,13 +1,5 @@
 "use client";
 
-import type React from "react";
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-  useState,
-} from "react";
 import {
   Command,
   CommandEmpty,
@@ -34,9 +26,17 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 import { cva, type VariantProps } from "class-variance-authority";
 import { AlertCircle, Check, Plus, X } from "lucide-react";
-import { cn } from "@/lib/utils";
+import type React from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+} from "react";
 
 // i18n Configuration Interface
 export interface FilterI18nConfig {
@@ -230,7 +230,7 @@ const filterInputVariants = cva(
     "has-[[data-slot=filters-input]:focus-visible]:ring-ring/30",
     "has-[[data-slot=filters-input]:focus-visible]:border-ring",
     "has-[[data-slot=filters-input]:focus-visible]:outline-none",
-    "has-[[data-slot=filters-input]:focus-visible]:ring-[3px]",
+    "has-[[data-slot=filters-input]:focus-visible]:ring-0",
     "has-[[data-slot=filters-input]:focus-visible]:z-1",
     "has-[[data-slot=filters-input]:[aria-invalid=true]]:border",
     "has-[[data-slot=filters-input]:[aria-invalid=true]]:border-solid",
@@ -305,7 +305,7 @@ const filterAddButtonVariants = cva(
   {
     variants: {
       variant: {
-        solid: "border border-input hover:bg-secondary/60",
+        solid: "border border-border hover:bg-secondary/60",
         outline: "border border-border hover:bg-secondary",
       },
       size: {

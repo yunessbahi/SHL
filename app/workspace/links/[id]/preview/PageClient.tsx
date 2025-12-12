@@ -1,9 +1,6 @@
 "use client";
-import React, { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
-import { authFetch } from "@/lib/api";
-import { Spinner } from "@/components/ui/spinner";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -11,7 +8,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -21,30 +17,34 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Spinner } from "@/components/ui/spinner";
+import { authFetch } from "@/lib/api";
+import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
+import React, { useCallback, useEffect, useState } from "react";
+
+import TraceViewer from "@/app/components/TraceViewer";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DateTimePicker24h } from "@/components/ui/date-time-picker-24h";
+import { CopyButton } from "@/components/ui/shadcn-io/copy-button";
+import {
+  Tabs,
+  TabsContent,
+  TabsContents,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/shadcn-io/tabs";
+import { useCountries } from "@/lib/hooks/useCountries";
 import {
   CheckCircle,
-  XCircle,
-  Globe,
-  Smartphone,
-  Monitor,
   Clock,
   ExternalLink,
-  Copy,
+  Globe,
+  Monitor,
   RefreshCw,
+  Smartphone,
+  XCircle,
 } from "lucide-react";
-import TraceViewer from "@/app/components/TraceViewer";
-import { useCountries } from "@/lib/hooks/useCountries";
 
 interface PreviewPageProps {
   user: any;
@@ -103,7 +103,6 @@ export default function PreviewPage({ user, id }: PreviewPageProps) {
   const [authLoading, setAuthLoading] = useState(true);
   const [realtimeMode, setRealtimeMode] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [activeTab, setActiveTab] = useState("summary");
 
   // Debounced realtime preview
   const debouncedPreview = useCallback(
@@ -195,11 +194,9 @@ export default function PreviewPage({ user, id }: PreviewPageProps) {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Spinner className="size-6 mx-auto" />
-          <p className="text-xs mt-4 text-muted-foreground">Loading...</p>
-        </div>
+      <div className="flex items-center justify-center h-64 text-muted-foureground">
+        <Spinner className="size-4" />
+        <span className="ml-2 text-sm">Loading</span>
       </div>
     );
   }
@@ -219,7 +216,9 @@ export default function PreviewPage({ user, id }: PreviewPageProps) {
         </div>
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
-            <Label htmlFor="realtime-mode">Realtime mode</Label>
+            <Label htmlFor="realtime-mode leading-none tracking-tight">
+              Realtime mode
+            </Label>
             <Checkbox
               id="realtime-mode"
               checked={realtimeMode}
@@ -233,12 +232,12 @@ export default function PreviewPage({ user, id }: PreviewPageProps) {
           >
             {loading ? (
               <>
-                <Spinner className="h-4 w-4 mr-2" />
+                <Spinner className="size-4 mr-2" />
                 Evaluating...
               </>
             ) : (
               <>
-                <RefreshCw className="h-4 w-4 mr-2" />
+                <RefreshCw className="size-4 mr-2" />
                 Run Preview
               </>
             )}
@@ -393,7 +392,7 @@ export default function PreviewPage({ user, id }: PreviewPageProps) {
         </Card>
 
         {/* Results Panel */}
-        <Card>
+        <Card className="text-popover-foreground">
           <CardHeader>
             <CardTitle>Rule Evaluation Results</CardTitle>
             <CardDescription>
@@ -411,99 +410,112 @@ export default function PreviewPage({ user, id }: PreviewPageProps) {
             )}
 
             {loading && (
-              <div className="flex items-center justify-center py-8">
-                <Spinner className="h-8 w-8" />
-                <span className="ml-2">Evaluating rules...</span>
+              <div className="flex items-center justify-center h-64 text-muted-foreground">
+                <Spinner className="size-4" />
+                <span className="ml-2 text-sm">Evaluating rules...</span>
               </div>
             )}
 
             {result && !loading && (
-              <div className="space-y-4">
-                {/* Tab Navigation */}
-                <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
-                  <Button
-                    variant={activeTab === "summary" ? "default" : "secondary"}
-                    size="sm"
-                    onClick={() => setActiveTab("summary")}
-                    className="flex-1"
-                  >
-                    Summary
-                  </Button>
-                  <Button
-                    variant={activeTab === "url" ? "default" : "secondary"}
-                    size="sm"
-                    onClick={() => setActiveTab("url")}
-                    className="flex-1"
-                  >
-                    Final URL
-                  </Button>
-                  <Button
-                    variant={activeTab === "trace" ? "default" : "secondary"}
-                    size="sm"
-                    onClick={() => setActiveTab("trace")}
-                    className="flex-1"
-                  >
-                    Trace
-                  </Button>
-                </div>
-
-                {/* Tab Content */}
-                {activeTab === "summary" && (
-                  <div className="space-y-4">
+              <Tabs defaultValue="summary" className="space-y-4">
+                <TabsList>
+                  <TabsTrigger value="summary">Summary</TabsTrigger>
+                  <TabsTrigger value="url">Final URL</TabsTrigger>
+                  <TabsTrigger value="trace">Trace</TabsTrigger>
+                </TabsList>
+                <TabsContents className="rounded-sm h-auto">
+                  <TabsContent value="summary" className="space-y-4 h-auto">
                     {result.chosen ? (
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
-                          <h3 className="text-lg font-semibold">
+                          <h3 className="font-semibold leading-none tracking-tight">
                             Target Selected
                           </h3>
                           <Badge
                             variant="primary"
-                            className="bg-green-100 text-green-800"
+                            className="bg-green-500/5 border border-green-500 text-green-700 dark:text-green-400"
                           >
                             <CheckCircle className="h-3 w-3 mr-1" />
                             Match Found
                           </Badge>
                         </div>
 
-                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <div className="bg-green-500/5 border border-green-500 rounded-lg p-4">
                           <div className="flex items-center justify-between">
-                            <div>
-                              <p className="font-medium text-green-900">
-                                Target ID: {result.chosen.id}
+                            <div className="text-xs">
+                              <p className="flex flex-inline items-center gap-1 font-medium text-green-700 dark:text-green-400">
+                                <span className="opacity-70">Target ID:</span>
+                                <span className="font-base font-mono">
+                                  {result.chosen.id}
+                                </span>
                               </p>
-                              <p className="text-sm text-green-700 mt-1">
-                                Weight: {result.chosen.weight || 1}
+                              <p className="flex flex-inline items-center gap-1 font-medium text-green-700 dark:text-green-400 mt-1">
+                                <span className="opacity-70">Weight:</span>
+                                <span className="font-base font-mono">
+                                  {result.chosen.weight || 1}
+                                </span>
                               </p>
                               {result.chosen.target_url && (
-                                <p className="text-sm text-green-700 mt-1">
-                                  URL: {result.chosen.target_url}
+                                <p className="flex flex-inline items-center gap-1 font-medium text-green-700 dark:text-green-400 mt-1">
+                                  <span className="opacity-70">URL:</span>
+                                  <span className="font-normal font-mono">
+                                    {result.chosen.target_url}
+                                  </span>
                                 </p>
                               )}
                             </div>
                           </div>
                         </div>
 
-                        <div className="text-sm text-muted-foreground">
+                        <div className="text-xs text-muted-foreground">
                           <p>
                             <strong>Context Used:</strong>
                           </p>
                           <ul className="mt-2 space-y-1">
                             {context.country && (
-                              <li>Country: {context.country}</li>
+                              <li className="flex flex-inline gap-1 items-center justify-between">
+                                <span className="font-medium opacity-70">
+                                  Country:
+                                </span>
+                                <span className="font-mono uppercase">
+                                  {context.country}
+                                </span>
+                              </li>
                             )}
                             {context.is_mobile !== undefined && (
-                              <li>
-                                Device:{" "}
-                                {context.is_mobile ? "Mobile" : "Desktop"}{" "}
-                                (is_mobile: {context.is_mobile})
+                              <li className="flex flex-inline gap-1 items-center justify-between">
+                                <span className="font-medium opacity-70">
+                                  Device:
+                                </span>
+                                <span className="flex flex-inline items-center gap-1 font-mono">
+                                  {context.is_mobile ? "Mobile" : "Desktop"}
+                                  <code className="bg-secondary text-popover-foreground px-2 py-1 rounded">
+                                    is_mobile:{" "}
+                                    {context.is_mobile === true
+                                      ? "True"
+                                      : "False"}
+                                  </code>
+                                </span>
                               </li>
                             )}
                             {context.referer && (
-                              <li>Referer: {context.referer}</li>
+                              <li className="flex flex-inline gap-1 items-center justify-between">
+                                <span className="font-medium opacity-70">
+                                  Referer:
+                                </span>
+                                <span className="font-mono">
+                                  {context.referer}
+                                </span>
+                              </li>
                             )}
                             {context.custom_datetime && (
-                              <li>
-                                Custom DateTime: {context.custom_datetime}
+                              <li className="flex flex-inline gap-1 items-center justify-between">
+                                <span className="font-medium opacity-70">
+                                  Custom DateTime:
+                                </span>
+                                <span className="font-mono">
+                                  {context.custom_datetime}
+                                </span>
                               </li>
                             )}
                           </ul>
@@ -520,34 +532,33 @@ export default function PreviewPage({ user, id }: PreviewPageProps) {
                         </p>
                       </div>
                     )}
-                  </div>
-                )}
+                  </TabsContent>
 
-                {activeTab === "url" && (
-                  <div className="space-y-4">
+                  <TabsContent value="url" className="space-y-4 h-auto">
                     {result.final_url ? (
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
-                          <h3 className="text-lg font-semibold">Final URL</h3>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => copyToClipboard(result.final_url!)}
-                          >
-                            <Copy className="h-4 w-4 mr-2" />
-                            Copy
-                          </Button>
+                          <h3 className="font-semibold leading-none tracking-tight">
+                            Final URL
+                          </h3>
+                          <CopyButton
+                            size={"default"}
+                            variant={"muted"}
+                            content={result.final_url!}
+                            onCopy={() => console.log("Link copied!")}
+                          />
                         </div>
 
-                        <div className="bg-gray-50 border rounded-lg p-4">
-                          <code className="text-sm break-all">
+                        <div className="bg-muted border rounded-lg p-4">
+                          <code className="text-xs break-all">
                             {result.final_url}
                           </code>
                         </div>
 
-                        <div className="flex space-x-2">
+                        <div className="text-xs text-muted-foreground flex space-x-2">
                           <Button
                             variant="outline"
+                            size={"sm"}
                             onClick={() =>
                               window.open(result.final_url, "_blank")
                             }
@@ -564,16 +575,16 @@ export default function PreviewPage({ user, id }: PreviewPageProps) {
                         </p>
                       </div>
                     )}
-                  </div>
-                )}
+                  </TabsContent>
 
-                {activeTab === "trace" && (
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">Evaluation Trace</h3>
+                  <TabsContent value="trace" className="space-y-4 h-auto">
+                    <h3 className="font-semibold leading-none tracking-tight">
+                      Evaluation Trace
+                    </h3>
                     <TraceViewer trace={result.trace} />
-                  </div>
-                )}
-              </div>
+                  </TabsContent>
+                </TabsContents>
+              </Tabs>
             )}
           </CardContent>
         </Card>

@@ -1,10 +1,26 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/app/components/ui/theme-toggle";
+import CommandMenu13 from "@/components/blocks/command-menu/command-menu-notifications";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import { Button } from "@/components/ui/button";
+import {
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+} from "@/components/ui/command";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,47 +30,36 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Command,
-  CommandDialog,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import { createClient } from "@/lib/supabase/client";
-import {
-  User,
-  Settings,
-  LogOut,
-  Search,
-  LayoutDashboard,
-  Link as LinkIcon,
-  Megaphone,
-  Users,
-  Target,
-  ChevronRight,
-  Slash,
-  SearchIcon,
-  FlaskConical,
-  ChartSpline,
-} from "lucide-react";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-import { ThemeToggle } from "@/app/components/ui/theme-toggle";
-import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
 } from "@/components/ui/input-group";
 import { Kbd } from "@/components/ui/kbd";
 import type { SafeUser } from "@/lib/getSafeSession";
+import { createClient } from "@/lib/supabase/client";
+import {
+  BarChart3,
+  ChartSpline,
+  FlaskConical,
+  FolderTree,
+  LayoutDashboard,
+  Link as LinkIcon,
+  LogOut,
+  Megaphone,
+  Search,
+  SearchIcon,
+  Settings,
+  Sparkles,
+  Tag as TagIcon,
+  Target,
+  User,
+  Users,
+} from "lucide-react";
+import { useTheme } from "next-themes";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useNotificationPolling } from "../../lib/hooks/useNotificationPolling";
+import { useNotificationStore } from "../../lib/stores/notification-store";
 
 interface HeaderProps {
   children: React.ReactNode;
@@ -62,15 +67,14 @@ interface HeaderProps {
   user?: SafeUser | null;
 }
 
-export default function Header({
-  children,
-  items,
-  user: propUser,
-}: HeaderProps) {
+const HeaderComponent = ({ children, items, user: propUser }: HeaderProps) => {
+  useNotificationPolling();
+
+  const unread = useNotificationStore((s) => s.unreadCount);
+  const { theme } = useTheme();
+
   const [user, setUser] = useState<any>(propUser || null);
   const [open, setOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(!propUser);
-  const [isDark, setIsDark] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
@@ -88,33 +92,7 @@ export default function Header({
     return () => document.removeEventListener("keydown", down);
   }, []);
 
-  // Theme management
-  useEffect(() => {
-    // Load theme from localStorage
-    const savedTheme = localStorage.getItem("theme");
-    const initialDark = savedTheme === "dark";
-    setIsDark(initialDark);
-    // Apply to document
-    if (initialDark) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, []);
-
-  const handleThemeChange = (value: boolean) => {
-    setIsDark(value);
-    // Save to localStorage
-    localStorage.setItem("theme", value ? "dark" : "light");
-    // Apply to document
-    if (value) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  };
-
-  const handleSignOut = async () => {
+  const handleSignOut = useCallback(async () => {
     console.log("[DEBUG] Header: Sign out initiated");
     try {
       const { error } = await supabase.auth.signOut();
@@ -123,13 +101,13 @@ export default function Header({
     } catch (err) {
       console.error("[DEBUG] Header: Error during sign out", err);
     }
-  };
+  }, [supabase, router]);
 
   const getInitials = (email: string) => {
     return email.split("@")[0].slice(0, 2).toUpperCase();
   };
 
-  const getBreadcrumbItems = () => {
+  const getBreadcrumbItems = useMemo(() => {
     const pathSegments = pathname.split("/").filter(Boolean);
     const items = [];
 
@@ -216,7 +194,7 @@ export default function Header({
     });
 
     return items;
-  };
+  }, [pathname]);
 
   const getPageTitle = () => {
     if (pathname.startsWith("/workspace/create")) {
@@ -230,6 +208,45 @@ export default function Header({
     }
     return null;
   };
+
+  const quickActions = [
+    {
+      title: "New Single Link",
+      description: "Create a simple short link with custom slug",
+      href: "/workspace/create?type=single",
+      icon: LinkIcon,
+    },
+    {
+      title: "New Smart Link",
+      description: "Create intelligent links with device and geo-targeting",
+      href: "/workspace/create?type=smart",
+      icon: Sparkles,
+    },
+    {
+      title: "New Campaign",
+      description: "Set up a marketing campaign with tracking",
+      href: "/campaigns/create",
+      icon: Megaphone,
+    },
+    {
+      title: "New UTM Template",
+      description: "Create reusable UTM parameter templates",
+      href: "/utm-templates/create",
+      icon: BarChart3,
+    },
+    {
+      title: "Create Group",
+      description: "Organize links into custom groups",
+      href: "/groups/create",
+      icon: FolderTree,
+    },
+    {
+      title: "Create Tag",
+      description: "Add tags to categorize and filter links",
+      href: "/tags/create",
+      icon: TagIcon,
+    },
+  ];
 
   const searchItems = [
     {
@@ -271,7 +288,6 @@ export default function Header({
   useEffect(() => {
     if (propUser !== undefined) {
       setUser(propUser);
-      setIsLoading(false);
       return;
     }
 
@@ -285,7 +301,7 @@ export default function Header({
         console.error("Auth check failed:", error);
         setUser(null);
       } finally {
-        setIsLoading(false);
+        // Loading state removed
       }
     };
 
@@ -309,7 +325,7 @@ export default function Header({
       } else {
         setUser(null);
       }
-      setIsLoading(false);
+      // Loading state removed
     });
 
     return () => subscription.unsubscribe();
@@ -335,14 +351,14 @@ export default function Header({
           <h1 className={"text-xl font-black"}>
             {items?.title ||
               getPageTitle() ||
-              getBreadcrumbItems()[getBreadcrumbItems().length - 1]?.title ||
+              getBreadcrumbItems[getBreadcrumbItems.length - 1]?.title ||
               "Workspace"}
           </h1>
           <Breadcrumb className={""}>
             <BreadcrumbList className={"text-xs"}>
               {(() => {
-                const breadcrumbItems = getBreadcrumbItems().slice(0, -1);
-                return breadcrumbItems.map((item, index) => (
+                const breadcrumbItems = getBreadcrumbItems.slice(0, -1);
+                return breadcrumbItems.map((item: any, index: number) => (
                   <React.Fragment key={`${item.href}-${index}`}>
                     {index > 0 && <BreadcrumbSeparator />}
                     <BreadcrumbItem>
@@ -385,15 +401,15 @@ export default function Header({
               <SearchIcon />
             </InputGroupAddon>
             <InputGroupAddon align="inline-end">
-              <Kbd>⌘</Kbd>
-              <Kbd>K</Kbd>
+              <Kbd className="bg-border">⌘</Kbd>
+              <Kbd className="bg-border">K</Kbd>
             </InputGroupAddon>
           </InputGroup>
           {/* Theme Toggle */}
           <div className="">
-            <ThemeToggle isDark={isDark} onChange={handleThemeChange} />
+            <ThemeToggle />
           </div>
-
+          <CommandMenu13 unread={unread} isDark={theme === "dark"} />
           {/* User Avatar Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -445,6 +461,30 @@ export default function Header({
         <CommandInput placeholder="Type a command or search..." />
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
+
+          {/* Quick Actions Group */}
+          <CommandGroup heading="Quick Actions">
+            {quickActions.map((item) => (
+              <CommandItem
+                className="bg-popover"
+                key={item.href}
+                onSelect={() => {
+                  router.push(item.href);
+                  setOpen(false);
+                }}
+              >
+                <item.icon className="mr-2 h-4 w-4" />
+                <div className="flex flex-col">
+                  <span>{item.title}</span>
+                  <span className="text-muted-foreground text-xs">
+                    {item.description}
+                  </span>
+                </div>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+          <CommandSeparator />
+          {/* Navigation Group */}
           <CommandGroup heading="Navigation">
             {searchItems.map((item) => (
               <CommandItem
@@ -468,4 +508,6 @@ export default function Header({
       </div>
     </div>
   );
-}
+};
+
+export default React.memo(HeaderComponent);
